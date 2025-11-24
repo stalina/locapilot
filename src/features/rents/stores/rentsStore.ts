@@ -171,10 +171,10 @@ export const useRentsStore = defineStore('rents', {
       }
     },
 
-    async payRent(id: number, paymentDate?: Date) {
+    async payRent(id: number, paidDate?: Date) {
       await this.updateRent(id, {
         status: 'paid',
-        paidDate: paymentDate || new Date(),
+        paidDate: paidDate || new Date(),
       });
     },
 
@@ -189,7 +189,7 @@ export const useRentsStore = defineStore('rents', {
           dueDate.setHours(0, 0, 0, 0);
           return dueDate < today;
         })
-        .map((r: Rent) => r.id && this.updateRent(r.id, { status: 'late' }));
+        .map((r: Rent) => r.id! && this.updateRent(r.id!, { status: 'late' }));
 
       await Promise.all(updates);
     },

@@ -22,8 +22,7 @@ const filteredDocuments = computed(() => {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(
       d =>
-        d.name.toLowerCase().includes(query) ||
-        d.description?.toLowerCase().includes(query)
+        d.name.toLowerCase().includes(query)
     );
   }
 
@@ -44,9 +43,8 @@ async function handleUpload(files: File[]) {
     try {
       await documentsStore.uploadDocument(file, {
         type: 'other',
-        description: '',
-        entityType: null,
-        entityId: null,
+        relatedEntityType: null,
+        relatedEntityId: null,
       });
     } catch (error) {
       console.error('Failed to upload file:', file.name, error);
@@ -166,17 +164,10 @@ onMounted(async () => {
           </button>
           <button
             class="filter-button"
-            :class="{ active: filterType === 'invoice' }"
-            @click="filterType = 'invoice'"
+            :class="{ active: filterType === 'other' }"
+            @click="filterType = 'other'"
           >
-            Factures
-          </button>
-          <button
-            class="filter-button"
-            :class="{ active: filterType === 'insurance' }"
-            @click="filterType = 'insurance'"
-          >
-            Assurances
+            Autres
           </button>
           <button
             class="filter-button"

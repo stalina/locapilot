@@ -196,7 +196,7 @@ export const useDocumentsStore = defineStore('documents', {
         }
 
         // Créer un blob à partir des données
-        const blob = new Blob([document.fileData], { type: document.mimeType });
+        const blob = new Blob([document.data], { type: document.mimeType });
         const url = URL.createObjectURL(blob);
 
         // Créer un lien de téléchargement

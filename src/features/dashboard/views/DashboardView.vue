@@ -43,7 +43,7 @@ async function loadDashboardData() {
     const properties = await db.properties.toArray();
     stats.value.totalProperties = properties.length;
     
-    const occupiedProperties = properties.filter(p => p.status === 'occupied');
+    const occupiedProperties = properties.filter(p => p.status === 'rented');
     stats.value.occupancyRate = properties.length > 0
       ? Math.round((occupiedProperties.length / properties.length) * 100 * 10) / 10
       : 0;
@@ -60,7 +60,7 @@ async function loadDashboardData() {
       .toArray();
     
     const paidRents = rents.filter(r => r.status === 'paid');
-    const pendingRents = rents.filter(r => r.status === 'pending' || r.status === 'overdue');
+    const pendingRents = rents.filter(r => r.status === 'pending' || r.status === 'late');
     
     stats.value.monthlyRevenue = paidRents.reduce((sum, r) => sum + r.amount, 0);
     stats.value.pendingRents = pendingRents.length;

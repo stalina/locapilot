@@ -29,8 +29,7 @@ const formData = ref({
   email: '',
   phone: '',
   birthDate: '',
-  status: 'candidate' as Tenant['status'],
-  notes: '',
+  status: 'active' as Tenant['status'],
 });
 
 const errors = ref<Record<string, string>>({});
@@ -47,9 +46,8 @@ watch(() => props.tenant, (newTenant) => {
       lastName: newTenant.lastName,
       email: newTenant.email,
       phone: newTenant.phone || '',
-      birthDate: newTenant.birthDate || '',
+      birthDate: newTenant.birthDate ? new Date(newTenant.birthDate).toISOString().split('T')[0] : '',
       status: newTenant.status,
-      notes: newTenant.notes || '',
     };
   } else {
     resetForm();
@@ -63,8 +61,7 @@ function resetForm() {
     email: '',
     phone: '',
     birthDate: '',
-    status: 'candidate',
-    notes: '',
+    status: 'active',
   };
   errors.value = {};
 }
@@ -93,10 +90,22 @@ async function handleSubmit() {
   isSubmitting.value = true;
 
   try {
+    const data: any = {
+      firstName: formData.value.firstName,
+      lastName: formData.value.lastName,
+      email: formData.value.email,
+      phone: formData.value.phone,
+      status: formData.value.status,
+    };
+    
+    if (formData.value.birthDate) {
+      data.birthDate = new Date(formData.value.birthDate);
+    }
+
     if (isEditMode.value && props.tenant) {
-      await tenantsStore.updateTenant(props.tenant.id, formData.value);
+      await tenantsStore.updateTenant(props.tenant.id, data);
     } else {
-      await tenantsStore.createTenant(formData.value);
+      await tenantsStore.createTenant(data);
     }
 
     emit('success');
@@ -180,23 +189,9 @@ function handleClose() {
           <div class="field">
             <label class="field-label">Statut <span class="required">*</span></label>
             <select v-model="formData.status" class="select">
-              <option value="candidate">Candidat</option>
               <option value="active">Locataire actif</option>
               <option value="former">Ancien locataire</option>
             </select>
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div class="form-section">
-          <div class="field">
-            <label class="field-label">Notes</label>
-            <textarea
-              v-model="formData.notes"
-              class="textarea"
-              rows="4"
-              placeholder="Ajoutez des notes sur ce locataire..."
-            ></textarea>
           </div>
         </div>
       </div>

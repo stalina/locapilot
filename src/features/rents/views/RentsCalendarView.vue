@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import type { Rent } from '@/db/types';
 import { useRentsStore } from '../stores/rentsStore';
+import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Calendar from '@shared/components/Calendar.vue';
@@ -8,6 +10,7 @@ import StatCard from '@shared/components/StatCard.vue';
 import Button from '@shared/components/Button.vue';
 
 const rentsStore = useRentsStore();
+const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
 
@@ -16,13 +19,18 @@ const showPaymentModal = ref(false);
 
 // Calendar events
 const calendarEvents = computed(() => {
-  return rentsStore.rents.map(rent => ({
-    id: rent.id,
-    date: new Date(rent.dueDate),
-    title: getPropertyName(rent.propertyId),
-    status: rent.status,
-    amount: rent.amount,
-  }));
+  return rentsStore.rents.map((rent: Rent) => {
+    const lease = leasesStore.leases.find(l => l.id === rent.leaseId);
+    const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
+    
+    return {
+      id: rent.id?.toString() || '',
+      date: new Date(rent.dueDate),
+      title: property?.name || 'Bien inconnu',
+      status: rent.status,
+      amount: rent.amount,
+    };
+  });
 });
 
 // Upcoming rents (next 30 days)
@@ -31,22 +39,28 @@ const upcomingRents = computed(() => {
   const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   return rentsStore.rents
-    .filter(rent => {
+    .filter((rent: Rent) => {
       const dueDate = new Date(rent.dueDate);
       return dueDate >= today && dueDate <= next30Days && rent.status !== 'paid';
     })
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .sort((a: Rent, b: Rent) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 5);
 });
 
 // Methods
-function getPropertyName(propertyId: string): string {
-  const property = propertiesStore.properties.find(p => p.id === propertyId);
+function getPropertyName(leaseId: number): string {
+  const lease = leasesStore.leases.find(l => l.id === leaseId);
+  if (!lease) return 'Bien inconnu';
+  
+  const property = propertiesStore.properties.find(p => p.id === lease.propertyId);
   return property?.name || 'Bien inconnu';
 }
 
-function getTenantName(tenantId: string): string {
-  const tenant = tenantsStore.tenants.find(t => t.id === tenantId);
+function getTenantName(leaseId: number): string {
+  const lease = leasesStore.leases.find(l => l.id === leaseId);
+  if (!lease || !lease.tenantIds.length) return 'Locataire inconnu';
+  
+  const tenant = tenantsStore.tenants.find(t => t.id === lease.tenantIds[0]);
   return tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Locataire inconnu';
 }
 
@@ -55,7 +69,7 @@ function handleDateClick(date: Date) {
 }
 
 function handleEventClick(event: any) {
-  const rent = rentsStore.rents.find(r => r.id === event.id);
+  const rent = rentsStore.rents.find((r: Rent) => r.id === Number(event.id));
   if (rent) {
     selectedRent.value = rent;
     showPaymentModal.value = true;
@@ -66,7 +80,7 @@ function handleMonthChange(date: Date) {
   console.log('Month changed:', date);
 }
 
-async function handlePayRent(rentId: string) {
+async function handlePayRent(rentId: number) {
   try {
     await rentsStore.payRent(rentId);
     showPaymentModal.value = false;
@@ -82,15 +96,15 @@ function getStatusConfig(status: string) {
       return { label: 'Payé', color: 'success', icon: 'check-circle' };
     case 'pending':
       return { label: 'En attente', color: 'warning', icon: 'clock' };
-    case 'overdue':
+    case 'late':
       return { label: 'En retard', color: 'error', icon: 'alert-circle' };
     default:
       return { label: 'Inconnu', color: 'default', icon: 'help-circle' };
   }
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
+function formatDate(date: Date | string): string {
+  return new Date(date).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -200,7 +214,7 @@ onMounted(async () => {
             >
               <div class="rent-info">
                 <div class="rent-header">
-                  <span class="rent-property">{{ getPropertyName(rent.propertyId) }}</span>
+                  <span class="rent-property">{{ getPropertyName(rent.leaseId) }}</span>
                   <span
                     class="rent-badge"
                     :class="`badge-${getStatusConfig(rent.status).color}`"
@@ -209,7 +223,7 @@ onMounted(async () => {
                   </span>
                 </div>
                 <div class="rent-meta">
-                  <span class="rent-tenant">{{ getTenantName(rent.tenantId) }}</span>
+                  <span class="rent-tenant">{{ getTenantName(rent.leaseId) }}</span>
                   <span class="rent-date">{{ formatDate(rent.dueDate) }}</span>
                 </div>
               </div>
@@ -257,11 +271,11 @@ onMounted(async () => {
         <div class="modal-body">
           <div class="info-row">
             <span class="info-label">Bien</span>
-            <span class="info-value">{{ getPropertyName(selectedRent.propertyId) }}</span>
+            <span class="info-value">{{ getPropertyName(selectedRent.leaseId) }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Locataire</span>
-            <span class="info-value">{{ getTenantName(selectedRent.tenantId) }}</span>
+            <span class="info-value">{{ getTenantName(selectedRent.leaseId) }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Échéance</span>
