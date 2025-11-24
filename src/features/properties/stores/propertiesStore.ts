@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { db } from '@db/schema';
-import type { Property } from '@db/schema';
+import { db } from '@/db/database';
+import type { Property } from '@/db/types';
 
 export const usePropertiesStore = defineStore('properties', () => {
   // State
