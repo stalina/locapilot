@@ -1,7 +1,8 @@
 # Tasks - Configuration initiale du projet Locapilot
 
 **Change ID**: `add-initial-project-setup`  
-**Status**: Proposition
+**Status**: En cours  
+**Progression**: 95/190 tâches (50%)
 
 ## Phase 1: Configuration de Base ✅
 
@@ -72,8 +73,8 @@
   - [x] `/tenants` - Liste locataires
   - [x] `/tenants/:id` - Détail locataire
   - [x] `/rents` - Calendrier loyers
-  - [ ] `/leases` - Liste baux
-  - [ ] `/leases/:id` - Détail bail
+  - [x] `/leases` - Liste baux
+  - [x] `/leases/:id` - Détail bail
   - [x] `/documents` - Gestion documents
   - [ ] `/settings` - Paramètres
 - [ ] Créer navigation guards
@@ -92,7 +93,7 @@
 - [ ] Créer store principal (`useAppStore`)
 - [x] Store propriétés (`propertiesStore`)
 - [x] Store locataires (`tenantsStore`)
-- [ ] Store baux (`leasesStore`)
+- [x] Store baux (`leasesStore`)
 - [x] Store loyers (`rentsStore`)
 - [x] Store documents (`documentsStore`)
 - [ ] Store settings (`settingsStore`)
@@ -137,7 +138,8 @@
 - [x] `SearchBox.vue`
 - [x] `PropertyFormModal.vue` (formulaire création/édition bien)
 - [x] `TenantFormModal.vue` (formulaire création/édition locataire)
-- [ ] `LeaseCard.vue`
+- [x] `LeaseCard.vue`
+- [x] `LeaseFormModal.vue`
 
 ### Tests Composants
 - [ ] Tests pour composants de base
@@ -169,10 +171,10 @@
 - [x] Upload drag-and-drop
 - [x] Download/delete documents
 
-### Leases (À venir)
-- [ ] Page liste baux
-- [ ] Page détail bail
-- [ ] Page création/édition bail
+### Leases
+- [x] Page liste baux (LeasesView)
+- [x] Page détail bail (LeaseDetailView)
+- [x] Page création/édition bail (LeaseFormModal)
 
 ### Settings
 - [ ] Page paramètres généraux
