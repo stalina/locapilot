@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#4f46e5" rx="96"/>
+  
+  <!-- House Icon -->
+  <path d="M256 128l-144 120v136c0 17.6 14.4 32 32 32h64v-96c0-17.6 14.4-32 32-32h32c17.6 0 32 14.4 32 32v96h64c17.6 0 32-14.4 32-32V248l-144-120z" fill="white"/>
+  
+  <!-- Key Icon (overlay) -->
+  <circle cx="368" cy="368" r="48" fill="#fbbf24"/>
+  <rect x="320" y="360" width="64" height="16" fill="#fbbf24" transform="rotate(-45 352 368)"/>
+  <circle cx="368" cy="368" r="12" fill="#4f46e5"/>
+</svg>

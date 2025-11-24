@@ -1,9 +1,11 @@
 <template>
   <AppLayout />
+  <PWAUpdatePrompt />
 </template>
 
 <script setup lang="ts">
 import AppLayout from '@core/layouts/AppLayout.vue';
+import PWAUpdatePrompt from '@/shared/components/PWAUpdatePrompt.vue';
 </script>
 
 <style>
