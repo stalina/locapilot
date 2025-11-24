@@ -119,9 +119,9 @@
 ### Composants de Base
 - [x] `Button.vue`
 - [x] `Input.vue`
+- [x] `Modal.vue` (avec transitions, sizes, footer slot)
 - [ ] `BaseSelect.vue`
 - [x] `StatCard.vue`
-- [ ] `BaseModal.vue` (Modal inline créée dans certaines vues)
 - [ ] `BaseTable.vue`
 - [ ] `BasePagination.vue`
 - [ ] `BaseSpinner.vue` (Loading states inline)
@@ -135,6 +135,8 @@
 - [x] `UploadZone.vue` (DocumentUpload)
 - [x] `Calendar.vue`
 - [x] `SearchBox.vue`
+- [x] `PropertyFormModal.vue` (formulaire création/édition bien)
+- [x] `TenantFormModal.vue` (formulaire création/édition locataire)
 - [ ] `LeaseCard.vue`
 
 ### Tests Composants
@@ -151,12 +153,12 @@
 ### Properties
 - [x] Page liste propriétés (PropertiesView)
 - [x] Page détail propriété (PropertyDetailView)
-- [ ] Page création/édition propriété (formulaire modal)
+- [x] Page création/édition propriété (PropertyFormModal)
 
 ### Tenants
 - [x] Page liste locataires (TenantsView)
 - [x] Page détail locataire (TenantDetailView)
-- [ ] Page création/édition locataire (formulaire modal)
+- [x] Page création/édition locataire (TenantFormModal)
 
 ### Rents
 - [x] Page calendrier loyers (RentsCalendarView)
