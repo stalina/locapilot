@@ -2,7 +2,7 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 100/195 tâches (51%)
+**Progression**: 110/195 tâches (56%)
 
 ## Phase 1: Configuration de Base ✅
 
@@ -15,13 +15,13 @@
 - [x] Configurer path aliases (@/, @components/, etc.)
 - [ ] Ajouter .editorconfig
 
-### PWA Configuration
-- [ ] Installer @vite-plugin/pwa
-- [ ] Configurer workbox pour offline-first
-- [ ] Créer manifest.json (icônes, nom, couleurs)
-- [ ] Configurer service worker
-- [ ] Ajouter gestion des mises à jour PWA
-- [ ] Tester installation desktop
+### PWA Configuration ✅
+- [x] Installer @vite-plugin/pwa
+- [x] Configurer workbox pour offline-first
+- [x] Créer manifest.json (icônes, nom, couleurs)
+- [x] Configurer service worker
+- [x] Ajouter gestion des mises à jour PWA
+- [x] Tester installation desktop (prompt d'installation)
 
 ### Dépendances NPM
 - [x] Installer Vue Router
@@ -183,10 +183,11 @@
 - [x] Afficher historique des baux dans TenantDetailView
 - [x] Navigation croisée entre entités liées
 
-### Settings
-- [ ] Page paramètres généraux
-- [ ] Export/Import données (placeholder)
-- [ ] Gestion thème
+### Settings ✅
+- [x] Page paramètres généraux
+- [x] Export/Import données
+- [x] Gestion PWA (statut installation, prompt)
+- [x] Clear all data avec confirmation
 
 ## Phase 7: Utilitaires & Composables
 
