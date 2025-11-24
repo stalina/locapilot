@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 interface Props {
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info'
+  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info' | 'default'
   icon?: string
   rounded?: boolean
 }
@@ -67,5 +67,10 @@ const classes = computed(() => [
 .badge-info {
   background: var(--accent-100);
   color: var(--accent-700);
+}
+
+.badge-default {
+  background: var(--neutral-100);
+  color: var(--neutral-700);
 }
 </style>

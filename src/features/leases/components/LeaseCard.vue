@@ -48,7 +48,7 @@ const formattedEndDate = computed(() => {
 });
 
 const totalMonthlyAmount = computed(() => {
-  return props.lease.rent + props.lease.charges;
+  return (props.lease.rent || 0) + (props.lease.charges || 0);
 });
 
 const daysUntilExpiration = computed(() => {
@@ -107,11 +107,11 @@ const handleClick = () => {
       <div class="lease-amounts">
         <div class="amount-item">
           <span class="amount-label">Loyer</span>
-          <span class="amount-value">{{ lease.rent.toLocaleString('fr-FR') }} €</span>
+          <span class="amount-value">{{ (lease.rent || 0).toLocaleString('fr-FR') }} €</span>
         </div>
         <div class="amount-item">
           <span class="amount-label">Charges</span>
-          <span class="amount-value">{{ lease.charges.toLocaleString('fr-FR') }} €</span>
+          <span class="amount-value">{{ (lease.charges || 0).toLocaleString('fr-FR') }} €</span>
         </div>
         <div class="amount-item total">
           <span class="amount-label">Total</span>
@@ -122,7 +122,7 @@ const handleClick = () => {
       <div class="lease-details">
         <div class="detail-item">
           <span class="detail-label">Dépôt de garantie</span>
-          <span class="detail-value">{{ lease.deposit.toLocaleString('fr-FR') }} €</span>
+          <span class="detail-value">{{ (lease.deposit || 0).toLocaleString('fr-FR') }} €</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Paiement le</span>

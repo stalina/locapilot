@@ -67,24 +67,6 @@ const availableTenants = computed(() =>
   tenantsStore.tenants.filter(t => t.status === 'active')
 );
 
-watch(() => props.lease, (newLease) => {
-  if (newLease) {
-    formData.value = {
-      propertyId: newLease.propertyId,
-      tenantIds: [...newLease.tenantIds],
-      startDate: new Date(newLease.startDate).toISOString().split('T')[0],
-      endDate: newLease.endDate ? new Date(newLease.endDate).toISOString().split('T')[0] : '',
-      rent: newLease.rent,
-      charges: newLease.charges,
-      deposit: newLease.deposit,
-      paymentDay: newLease.paymentDay,
-      status: newLease.status,
-    };
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
-
 const resetForm = () => {
   formData.value = {
     propertyId: 0,
@@ -107,6 +89,24 @@ const resetForm = () => {
     paymentDay: '',
   };
 };
+
+watch(() => props.lease, (newLease) => {
+  if (newLease) {
+    formData.value = {
+      propertyId: newLease.propertyId,
+      tenantIds: [...newLease.tenantIds],
+      startDate: new Date(newLease.startDate).toISOString().split('T')[0],
+      endDate: newLease.endDate ? new Date(newLease.endDate).toISOString().split('T')[0] : '',
+      rent: newLease.rent,
+      charges: newLease.charges,
+      deposit: newLease.deposit,
+      paymentDay: newLease.paymentDay,
+      status: newLease.status,
+    };
+  } else {
+    resetForm();
+  }
+}, { immediate: true });
 
 const validateForm = (): boolean => {
   let isValid = true;

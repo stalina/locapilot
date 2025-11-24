@@ -80,6 +80,10 @@ const getPropertyName = (propertyId: number) => {
 };
 
 const getTenantNames = (tenantIds: number[]) => {
+  if (!tenantIds || !Array.isArray(tenantIds)) {
+    return [];
+  }
+  
   return tenantIds
     .map(id => {
       const tenant = tenantsStore.tenants.find(t => t.id === id);

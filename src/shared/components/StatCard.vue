@@ -6,7 +6,7 @@ interface Props {
   value: string | number
   icon?: string
   trend?: { value: number; direction: 'up' | 'down' }
-  iconColor?: 'primary' | 'success' | 'warning' | 'accent'
+  iconColor?: 'primary' | 'success' | 'warning' | 'accent' | 'error'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -89,6 +89,11 @@ const iconBgClass = computed(() => `stat-icon-${props.iconColor}`)
 .stat-icon-accent {
   background: var(--accent-100);
   color: var(--accent-700);
+}
+
+.stat-icon-error {
+  background: var(--error-50);
+  color: var(--error-700);
 }
 
 .stat-value {

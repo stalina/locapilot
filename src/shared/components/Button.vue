@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'error'
+  variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'error' | 'text' | 'ghost' | 'default' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -108,13 +108,32 @@ const classes = computed(() => [
   background: var(--warning-600);
 }
 
-.btn-error {
+.btn-error, .btn-danger {
   background: var(--error-500);
   color: white;
 }
 
-.btn-error:hover:not(:disabled) {
+.btn-error:hover:not(:disabled), .btn-danger:hover:not(:disabled) {
   background: var(--error-600);
+}
+
+.btn-text, .btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.btn-text:hover:not(:disabled), .btn-ghost:hover:not(:disabled) {
+  background: var(--neutral-100);
+}
+
+.btn-default {
+  background: var(--neutral-200);
+  color: var(--text-primary);
+}
+
+.btn-default:hover:not(:disabled) {
+  background: var(--neutral-300);
 }
 
 /* Sizes */
