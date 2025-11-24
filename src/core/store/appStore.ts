@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { seedDatabase } from '@db/seed';
+import { seedDatabase } from '@/db/seed';
 
 export const useAppStore = defineStore('app', () => {
   // State
