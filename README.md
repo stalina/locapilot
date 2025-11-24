@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.2-646CFF?logo=vite)](https://vitejs.dev/)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
-[![Tests](https://img.shields.io/badge/Tests-125%20passing-success)](./package.json)
+[![Tests](https://img.shields.io/badge/Tests-173%20passing-success)](./package.json)
 
 ---
 
@@ -82,9 +82,10 @@ src/
 
 ## ✅ Tests
 
-**125 tests** : 103 unitaires (Vitest) + 22 E2E (Playwright)
+**173 tests** : 151 unitaires (Vitest) + 22 E2E (Playwright)
 
-- **Stores** : 58% couverture
+- **Couverture globale** : 84% statements
+- **Stores** : 70-100% couverture
 - **Composants** : 92% couverture
 - **appStore** : 92% couverture
 
