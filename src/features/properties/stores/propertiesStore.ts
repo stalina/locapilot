@@ -12,11 +12,11 @@ export const usePropertiesStore = defineStore('properties', () => {
 
   // Getters
   const occupiedProperties = computed(() =>
-    properties.value.filter(p => p.status === 'occupied')
+    properties.value.filter(p => p.status === 'rented')
   );
 
   const vacantProperties = computed(() =>
-    properties.value.filter(p => p.status === 'vacant')
+    properties.value.filter(p => p.status === 'available')
   );
 
   const maintenanceProperties = computed(() =>
@@ -24,7 +24,7 @@ export const usePropertiesStore = defineStore('properties', () => {
   );
 
   const totalRevenue = computed(() =>
-    occupiedProperties.value.reduce((sum, p) => sum + p.rentAmount, 0)
+    occupiedProperties.value.reduce((sum, p) => sum + (p.rent || 0), 0)
   );
 
   const occupancyRate = computed(() => {
@@ -57,7 +57,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     }
   }
 
-  async function fetchPropertyById(id: string) {
+  async function fetchPropertyById(id: number) {
     isLoading.value = true;
     error.value = null;
     try {
@@ -93,7 +93,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     }
   }
 
-  async function updateProperty(id: string, data: Partial<Omit<Property, 'id' | 'createdAt'>>) {
+  async function updateProperty(id: number, data: Partial<Omit<Property, 'id' | 'createdAt'>>) {
     isLoading.value = true;
     error.value = null;
     try {
@@ -116,7 +116,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     }
   }
 
-  async function deleteProperty(id: string) {
+  async function deleteProperty(id: number) {
     isLoading.value = true;
     error.value = null;
     try {

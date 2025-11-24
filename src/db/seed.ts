@@ -23,9 +23,9 @@ export async function seedDatabase(): Promise<void> {
         type: 'apartment',
         surface: 85,
         rooms: 4,
-        rentAmount: 1250,
+        rent: 1250,
         charges: 150,
-        status: 'occupied',
+        status: 'rented',
         description: 'Bel appartement lumineux avec balcon, proche des commerces',
       },
       {
@@ -34,9 +34,9 @@ export async function seedDatabase(): Promise<void> {
         type: 'apartment',
         surface: 120,
         rooms: 5,
-        rentAmount: 2100,
+        rent: 2100,
         charges: 200,
-        status: 'occupied',
+        status: 'rented',
         description: 'Grand appartement familial avec vue dégagée',
       },
       {
@@ -45,9 +45,9 @@ export async function seedDatabase(): Promise<void> {
         type: 'apartment',
         surface: 65,
         rooms: 3,
-        rentAmount: 1500,
+        rent: 1500,
         charges: 100,
-        status: 'vacant',
+        status: 'available',
         description: 'Studio moderne entièrement rénové',
       },
       {
@@ -56,9 +56,9 @@ export async function seedDatabase(): Promise<void> {
         type: 'house',
         surface: 150,
         rooms: 6,
-        rentAmount: 2800,
+        rent: 2800,
         charges: 250,
-        status: 'vacant',
+        status: 'available',
         description: 'Maison avec jardin et garage',
       },
       {
@@ -67,21 +67,21 @@ export async function seedDatabase(): Promise<void> {
         type: 'apartment',
         surface: 75,
         rooms: 3,
-        rentAmount: 1350,
+        rent: 1350,
         charges: 120,
-        status: 'occupied',
+        status: 'rented',
         description: 'Appartement calme dans résidence sécurisée',
       },
     ];
 
-    const propertyIds: string[] = [];
+    const propertyIds: number[] = [];
     for (const property of properties) {
       const id = await db.properties.add({
         ...property,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      propertyIds.push(id);
+      propertyIds.push(id as number);
     }
     console.log(`✅ Created ${propertyIds.length} properties`);
 
@@ -113,62 +113,62 @@ export async function seedDatabase(): Promise<void> {
       },
     ];
 
-    const tenantIds: string[] = [];
+    const tenantIds: number[] = [];
     for (const tenant of tenants) {
       const id = await db.tenants.add({
         ...tenant,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      tenantIds.push(id);
+      tenantIds.push(id as number);
     }
     console.log(`✅ Created ${tenantIds.length} tenants`);
 
-    // Seed leases (only for occupied properties)
+    // Seed leases (only for rented properties)
     const leases: Omit<Lease, 'id' | 'createdAt' | 'updatedAt'>[] = [
       {
-        propertyId: propertyIds[0], // 123 Rue de la Paix
-        tenantId: tenantIds[0], // Jean Dupont
+        propertyId: propertyIds[0]!, // 123 Rue de la Paix
+        tenantIds: [tenantIds[0]!], // Jean Dupont
         startDate: new Date('2023-01-01'),
         endDate: new Date('2024-12-31'),
-        rentAmount: 1250,
+        rent: 1250,
         charges: 150,
         deposit: 2500,
+        paymentDay: 1,
         status: 'active',
-        type: 'residential',
       },
       {
-        propertyId: propertyIds[1], // 45 Avenue Mozart
-        tenantId: tenantIds[1], // Marie Martin
+        propertyId: propertyIds[1]!, // 45 Avenue Mozart
+        tenantIds: [tenantIds[1]!], // Marie Martin
         startDate: new Date('2023-06-01'),
         endDate: new Date('2026-05-31'),
-        rentAmount: 2100,
+        rent: 2100,
         charges: 200,
         deposit: 4200,
+        paymentDay: 1,
         status: 'active',
-        type: 'residential',
       },
       {
-        propertyId: propertyIds[4], // 89 Avenue de la République
-        tenantId: tenantIds[2], // Sophie Bernard
+        propertyId: propertyIds[4]!, // 89 Avenue de la République
+        tenantIds: [tenantIds[2]!], // Sophie Bernard
         startDate: new Date('2023-09-01'),
         endDate: new Date('2024-08-31'),
-        rentAmount: 1350,
+        rent: 1350,
         charges: 120,
         deposit: 2700,
+        paymentDay: 1,
         status: 'active',
-        type: 'residential',
       },
     ];
 
-    const leaseIds: string[] = [];
+    const leaseIds: number[] = [];
     for (const lease of leases) {
       const id = await db.leases.add({
         ...lease,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      leaseIds.push(id);
+      leaseIds.push(id as number);
     }
     console.log(`✅ Created ${leaseIds.length} leases`);
 
@@ -186,10 +186,10 @@ export async function seedDatabase(): Promise<void> {
       const adjustedMonth = month < 0 ? 12 + month : month;
 
       for (let i = 0; i < leases.length; i++) {
-        const lease = leases[i];
-        const dueDate = new Date(year, adjustedMonth, 5); // Due on 5th of each month
+        const lease = leases[i]!;
+        const dueDate = new Date(year, adjustedMonth, lease.paymentDay || 5); // Due on paymentDay
 
-        let status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+        let status: 'pending' | 'paid' | 'late' | 'partial';
         let paidDate: Date | undefined;
 
         if (monthOffset === 0) {
@@ -200,7 +200,7 @@ export async function seedDatabase(): Promise<void> {
           } else if (i === 1) {
             status = 'pending';
           } else {
-            status = 'overdue';
+            status = 'late';
           }
         } else {
           // Previous months - all paid
@@ -209,14 +209,13 @@ export async function seedDatabase(): Promise<void> {
         }
 
         rents.push({
-          leaseId: leaseIds[i],
-          propertyId: lease.propertyId,
-          tenantId: lease.tenantId,
+          leaseId: leaseIds[i]!,
           dueDate,
-          amount: lease.rentAmount + lease.charges,
+          amount: lease.rent + lease.charges,
+          charges: lease.charges,
           status,
           paidDate,
-          paidAmount: status === 'paid' ? lease.rentAmount + lease.charges : undefined,
+          paidAmount: status === 'paid' ? lease.rent + lease.charges : undefined,
         });
       }
     }
@@ -251,8 +250,8 @@ export async function clearDatabase(): Promise<void> {
       db.rents.clear(),
       db.documents.clear(),
       db.inventories.clear(),
-      db.payments.clear(),
-      db.activities.clear(),
+      db.communications.clear(),
+      db.settings.clear(),
     ]);
     
     console.log('✅ Database cleared successfully!');

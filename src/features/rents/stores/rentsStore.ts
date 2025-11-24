@@ -25,46 +25,42 @@ export const useRentsStore = defineStore('rents', {
     pendingRents: (state) => state.rents.filter(r => r.status === 'pending'),
 
     // Loyers en retard
-    overdueRents: (state) => state.rents.filter(r => r.status === 'overdue'),
+    overdueRents: (state) => state.rents.filter((r: Rent) => r.status === 'late'),
 
     // Total des loyers payés
     totalPaidAmount: (state) =>
       state.rents
-        .filter(r => r.status === 'paid')
-        .reduce((sum, r) => sum + r.amount, 0),
+        .filter((r: Rent) => r.status === 'paid')
+        .reduce((sum: number, r: Rent) => sum + r.amount, 0),
 
     // Total des loyers en attente
     totalPendingAmount: (state) =>
       state.rents
-        .filter(r => r.status === 'pending')
-        .reduce((sum, r) => sum + r.amount, 0),
+        .filter((r: Rent) => r.status === 'pending')
+        .reduce((sum: number, r: Rent) => sum + r.amount, 0),
 
     // Total des loyers en retard
     totalOverdueAmount: (state) =>
       state.rents
-        .filter(r => r.status === 'overdue')
-        .reduce((sum, r) => sum + r.amount, 0),
+        .filter((r: Rent) => r.status === 'late')
+        .reduce((sum: number, r: Rent) => sum + r.amount, 0),
 
     // Loyers par mois/année
     rentsByMonth: (state) => (month: number, year: number) =>
-      state.rents.filter(r => {
+      state.rents.filter((r: Rent) => {
         const date = new Date(r.dueDate);
         return date.getMonth() === month && date.getFullYear() === year;
       }),
 
-    // Loyers groupés par propriété
-    rentsByProperty: (state) => (propertyId: string) =>
-      state.rents.filter(r => r.propertyId === propertyId),
-
-    // Loyers groupés par locataire
-    rentsByTenant: (state) => (tenantId: string) =>
-      state.rents.filter(r => r.tenantId === tenantId),
+    // Loyers groupés par bail
+    rentsByLease: (state) => (leaseId: number) =>
+      state.rents.filter((r: Rent) => r.leaseId === leaseId),
 
     // Taux de paiement (% loyers payés)
     paymentRate: (state) => {
       const total = state.rents.length;
       if (total === 0) return 0;
-      const paid = state.rents.filter(r => r.status === 'paid').length;
+      const paid = state.rents.filter((r: Rent) => r.status === 'paid').length;
       return Math.round((paid / total) * 100);
     },
   },
@@ -129,18 +125,18 @@ export const useRentsStore = defineStore('rents', {
       }
     },
 
-    async updateRent(id: string, updates: Partial<Omit<Rent, 'id' | 'createdAt'>>) {
+    async updateRent(id: number, updates: Partial<Omit<Rent, 'id' | 'createdAt'>>) {
       this.isLoading = true;
       this.error = null;
       try {
         const updatedRent = {
           ...updates,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(),
         };
 
         await db.rents.update(id, updatedRent);
         
-        const index = this.rents.findIndex(r => r.id === id);
+        const index = this.rents.findIndex((r: Rent) => r.id === id);
         if (index !== -1) {
           this.rents[index] = { ...this.rents[index], ...updatedRent };
         }
@@ -157,12 +153,12 @@ export const useRentsStore = defineStore('rents', {
       }
     },
 
-    async deleteRent(id: string) {
+    async deleteRent(id: number) {
       this.isLoading = true;
       this.error = null;
       try {
         await db.rents.delete(id);
-        this.rents = this.rents.filter(r => r.id !== id);
+        this.rents = this.rents.filter((r: Rent) => r.id !== id);
         if (this.currentRent?.id === id) {
           this.currentRent = null;
         }
@@ -175,10 +171,10 @@ export const useRentsStore = defineStore('rents', {
       }
     },
 
-    async payRent(id: string, paymentDate?: string) {
+    async payRent(id: number, paymentDate?: Date) {
       await this.updateRent(id, {
         status: 'paid',
-        paymentDate: paymentDate || new Date().toISOString(),
+        paidDate: paymentDate || new Date(),
       });
     },
 
@@ -187,13 +183,13 @@ export const useRentsStore = defineStore('rents', {
       today.setHours(0, 0, 0, 0);
 
       const updates = this.rents
-        .filter(r => {
+        .filter((r: Rent) => {
           if (r.status === 'paid') return false;
           const dueDate = new Date(r.dueDate);
           dueDate.setHours(0, 0, 0, 0);
           return dueDate < today;
         })
-        .map(r => this.updateRent(r.id, { status: 'overdue' }));
+        .map((r: Rent) => r.id && this.updateRent(r.id, { status: 'late' }));
 
       await Promise.all(updates);
     },

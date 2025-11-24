@@ -19,10 +19,6 @@ export const useTenantsStore = defineStore('tenants', () => {
     tenants.value.filter(t => t.status === 'former')
   );
 
-  const candidateTenants = computed(() =>
-    tenants.value.filter(t => t.status === 'candidate')
-  );
-
   const tenantsCount = computed(() => tenants.value.length);
 
   // Actions
@@ -39,7 +35,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     }
   }
 
-  async function fetchTenantById(id: string) {
+  async function fetchTenantById(id: number) {
     isLoading.value = true;
     error.value = null;
     try {
@@ -75,7 +71,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     }
   }
 
-  async function updateTenant(id: string, data: Partial<Omit<Tenant, 'id' | 'createdAt'>>) {
+  async function updateTenant(id: number, data: Partial<Omit<Tenant, 'id' | 'createdAt'>>) {
     isLoading.value = true;
     error.value = null;
     try {
@@ -97,7 +93,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     }
   }
 
-  async function deleteTenant(id: string) {
+  async function deleteTenant(id: number) {
     isLoading.value = true;
     error.value = null;
     try {
@@ -129,7 +125,6 @@ export const useTenantsStore = defineStore('tenants', () => {
     // Getters
     activeTenants,
     formerTenants,
-    candidateTenants,
     tenantsCount,
     // Actions
     fetchTenants,

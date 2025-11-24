@@ -25,9 +25,9 @@ export const useDocumentsStore = defineStore('documents', {
       state.documents.filter(d => d.type === type),
 
     // Documents par entité (property, tenant, lease)
-    documentsByEntity: (state) => (entityType: string, entityId: string) =>
+    documentsByEntity: (state) => (entityType: string, entityId: number) =>
       state.documents.filter(
-        d => d.entityType === entityType && d.entityId === entityId
+        d => d.relatedEntityType === entityType && d.relatedEntityId === entityId
       ),
 
     // Documents récents (30 derniers jours)
@@ -73,7 +73,7 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async fetchDocumentById(id: string) {
+    async fetchDocumentById(id: number) {
       this.isLoading = true;
       this.error = null;
       try {
@@ -93,7 +93,7 @@ export const useDocumentsStore = defineStore('documents', {
 
     async uploadDocument(
       file: File,
-      metadata: Omit<Document, 'id' | 'name' | 'mimeType' | 'size' | 'fileData' | 'createdAt' | 'updatedAt'>
+      metadata: Omit<Document, 'id' | 'name' | 'mimeType' | 'size' | 'data' | 'createdAt' | 'updatedAt'>
     ) {
       this.isLoading = true;
       this.error = null;
@@ -107,31 +107,32 @@ export const useDocumentsStore = defineStore('documents', {
           }
         }, 100);
 
-        // Lire le fichier en ArrayBuffer
-        const fileData = await file.arrayBuffer();
+        // Lire le fichier en Blob (File est déjà un Blob)
+        const data = file.slice(); // Create a copy as Blob
 
         clearInterval(progressInterval);
         this.uploadProgress = 100;
 
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
+        const now = new Date();
 
-        const newDocument: Document = {
+        const newDocument: Omit<Document, 'id'> = {
           ...metadata,
-          id,
           name: file.name,
           mimeType: file.type,
           size: file.size,
-          fileData,
+          data,
           createdAt: now,
           updatedAt: now,
         };
 
-        await db.documents.add(newDocument);
-        this.documents.push(newDocument);
+        const id = await db.documents.add(newDocument as Document);
+        const addedDocument = await db.documents.get(id);
+        if (addedDocument) {
+          this.documents.push(addedDocument);
+        }
         this.uploadProgress = 0;
 
-        return newDocument;
+        return addedDocument;
       } catch (error) {
         this.error = 'Échec du téléversement du document';
         console.error('Failed to upload document:', error);
@@ -142,24 +143,22 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async updateDocument(id: string, updates: Partial<Omit<Document, 'id' | 'createdAt' | 'fileData'>>) {
+    async updateDocument(id: number, updates: Partial<Omit<Document, 'id' | 'createdAt' | 'data'>>) {
       this.isLoading = true;
       this.error = null;
       try {
-        const updatedDocument = {
+        await db.documents.update(id, {
           ...updates,
-          updatedAt: new Date().toISOString(),
-        };
+          updatedAt: new Date(),
+        });
 
-        await db.documents.update(id, updatedDocument);
-
-        const index = this.documents.findIndex(d => d.id === id);
+        const index = this.documents.findIndex((d: Document) => d.id === id);
         if (index !== -1) {
-          this.documents[index] = { ...this.documents[index], ...updatedDocument };
+          this.documents[index] = { ...this.documents[index], ...updates, updatedAt: new Date() };
         }
 
         if (this.currentDocument?.id === id) {
-          this.currentDocument = { ...this.currentDocument, ...updatedDocument };
+          this.currentDocument = { ...this.currentDocument, ...updates, updatedAt: new Date() };
         }
       } catch (error) {
         this.error = 'Échec de la mise à jour du document';
@@ -170,12 +169,12 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async deleteDocument(id: string) {
+    async deleteDocument(id: number) {
       this.isLoading = true;
       this.error = null;
       try {
         await db.documents.delete(id);
-        this.documents = this.documents.filter(d => d.id !== id);
+        this.documents = this.documents.filter((d: Document) => d.id !== id);
         if (this.currentDocument?.id === id) {
           this.currentDocument = null;
         }
@@ -188,7 +187,7 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async downloadDocument(id: string) {
+    async downloadDocument(id: number) {
       try {
         const document = await db.documents.get(id);
         if (!document) {
