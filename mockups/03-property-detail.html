@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détail Propriété - Locapilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-600: #4f46e5;
+      --primary-100: #e0e9ff;
+      --success-500: #22c55e;
+      --success-50: #f0fdf4;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-600: #525252;
+      --neutral-900: #171717;
+      --text-primary: var(--neutral-900);
+      --text-secondary: var(--neutral-600);
+      --bg-secondary: var(--neutral-50);
+      --border-color: var(--neutral-200);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-2xl: 1.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: var(--space-8);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+      font-size: 0.938rem;
+      color: var(--text-secondary);
+    }
+    
+    .breadcrumb a {
+      color: var(--primary-600);
+      text-decoration: none;
+    }
+    
+    .page-header {
+      background: white;
+      border-radius: var(--radius-2xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-md);
+      margin-bottom: var(--space-6);
+    }
+    
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-6);
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: var(--space-3);
+    }
+    
+    .address {
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: 1.063rem;
+    }
+    
+    .badge {
+      padding: 6px 16px;
+      border-radius: var(--radius-lg);
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .badge-success {
+      background: var(--success-50);
+      color: #15803d;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--primary-600);
+      color: white;
+    }
+    
+    .header-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-6);
+    }
+    
+    .stat-box {
+      padding: var(--space-4);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+    
+    .stat-label {
+      font-size: 0.813rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-6);
+    }
+    
+    .section {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+    
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .info-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .info-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .tenant-card {
+      padding: var(--space-4);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+    }
+    
+    .tenant-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-3);
+    }
+    
+    .tenant-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-600), #764ba2);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    
+    .tenant-name {
+      font-weight: 600;
+      font-size: 1.063rem;
+    }
+    
+    .tenant-info {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .timeline {
+      position: relative;
+      padding-left: var(--space-6);
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border-color);
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: var(--space-6);
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -22px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--primary-600);
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px var(--primary-600);
+    }
+    
+    .timeline-date {
+      font-size: 0.813rem;
+      color: var(--primary-600);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .timeline-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .timeline-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+    }
+    
+    .btn-outline {
+      background: white;
+      border: 2px solid var(--primary-600);
+      color: var(--primary-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="#">
+        <i class="mdi mdi-home"></i>
+        Dashboard
+      </a>
+      <i class="mdi mdi-chevron-right"></i>
+      <a href="#">Propriétés</a>
+      <i class="mdi mdi-chevron-right"></i>
+      <span>123 Rue de la Paix</span>
+    </div>
+    
+    <div class="page-header">
+      <div class="header-top">
+        <div>
+          <h1>Appartement T3 Centre-ville</h1>
+          <div class="address">
+            <i class="mdi mdi-map-marker"></i>
+            123 Rue de la Paix, 75008 Paris
+          </div>
+        </div>
+        <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+          <span class="badge badge-success">
+            <i class="mdi mdi-check-circle"></i>
+            Loué
+          </span>
+          <button class="btn btn-primary">
+            <i class="mdi mdi-pencil"></i>
+            Modifier
+          </button>
+        </div>
+      </div>
+      
+      <div class="header-stats">
+        <div class="stat-box">
+          <div class="stat-label">Loyer mensuel</div>
+          <div class="stat-value">1 250 €</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Charges</div>
+          <div class="stat-value">150 €</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Surface</div>
+          <div class="stat-value">65 m²</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Début de bail</div>
+          <div class="stat-value">01/01/2024</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-grid">
+      <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+        <!-- Caractéristiques -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="mdi mdi-information"></i>
+            Caractéristiques
+          </h2>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Type de bien</span>
+              <span class="info-value">Appartement</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Nombre de pièces</span>
+              <span class="info-value">3 pièces</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Chambres</span>
+              <span class="info-value">2</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Salles de bain</span>
+              <span class="info-value">1</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Étage</span>
+              <span class="info-value">2ème</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Ascenseur</span>
+              <span class="info-value">Oui</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Parking</span>
+              <span class="info-value">1 place</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Cave</span>
+              <span class="info-value">Oui</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Chauffage</span>
+              <span class="info-value">Collectif gaz</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">DPE</span>
+              <span class="info-value">C (120 kWh/m²)</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Informations financières -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="mdi mdi-currency-eur"></i>
+            Informations financières
+          </h2>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Loyer hors charges</span>
+              <span class="info-value">1 250 €</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Charges mensuelles</span>
+              <span class="info-value">150 €</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Dépôt de garantie</span>
+              <span class="info-value">2 500 €</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Taxe foncière annuelle</span>
+              <span class="info-value">1 800 €</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Charges copropriété/mois</span>
+              <span class="info-value">180 €</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Rentabilité brute</span>
+              <span class="info-value">4.2%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+        <!-- Locataire actuel -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="mdi mdi-account"></i>
+            Locataire actuel
+          </h2>
+          
+          <div class="tenant-card">
+            <div class="tenant-header">
+              <div class="tenant-avatar">JD</div>
+              <div style="flex: 1;">
+                <div class="tenant-name">Jean Dupont</div>
+                <div class="tenant-info">Depuis le 01/01/2024</div>
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);">
+              <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">jean.dupont@email.fr</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Téléphone</span>
+                <span class="info-value">06 12 34 56 78</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Statut des paiements</span>
+                <span class="badge badge-success" style="align-self: flex-start; margin-top: 4px;">
+                  <i class="mdi mdi-check"></i>
+                  À jour
+                </span>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-outline" style="flex: 1;">
+                <i class="mdi mdi-message"></i>
+                Contacter
+              </button>
+              <button class="btn btn-outline" style="flex: 1;">
+                <i class="mdi mdi-eye"></i>
+                Voir profil
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Historique -->
+        <div class="section">
+          <h2 class="section-title">
+            <i class="mdi mdi-history"></i>
+            Historique
+          </h2>
+          
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-date">24 Nov 2025</div>
+              <div class="timeline-title">Paiement reçu</div>
+              <div class="timeline-description">Loyer novembre 2025 - 1 400 €</div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-date">01 Oct 2025</div>
+              <div class="timeline-title">Régularisation charges</div>
+              <div class="timeline-description">Charges 2024 - Trop-perçu: 120 €</div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-date">15 Juil 2024</div>
+              <div class="timeline-title">Intervention maintenance</div>
+              <div class="timeline-description">Réparation chauffe-eau - 380 €</div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-date">01 Jan 2024</div>
+              <div class="timeline-title">Début de bail</div>
+              <div class="timeline-description">Signature bail - Jean Dupont</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

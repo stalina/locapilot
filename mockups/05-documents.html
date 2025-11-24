@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documents - Locapilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-600: #4f46e5;
+      --primary-100: #e0e9ff;
+      --accent-500: #14b8a6;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-600: #525252;
+      --neutral-900: #171717;
+      --text-primary: var(--neutral-900);
+      --text-secondary: var(--neutral-600);
+      --bg-secondary: var(--neutral-50);
+      --border-color: var(--neutral-200);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: var(--space-8);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .page-header {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-md);
+      margin-bottom: var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--primary-600);
+      color: white;
+    }
+    
+    .content-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--space-6);
+    }
+    
+    .sidebar {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+      height: fit-content;
+      position: sticky;
+      top: var(--space-8);
+    }
+    
+    .sidebar-section {
+      margin-bottom: var(--space-8);
+    }
+    
+    .sidebar-title {
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+    
+    .folder-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .folder-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.938rem;
+    }
+    
+    .folder-item:hover {
+      background: var(--primary-100);
+    }
+    
+    .folder-item.active {
+      background: var(--primary-100);
+      color: var(--primary-600);
+      font-weight: 600;
+    }
+    
+    .folder-item i {
+      font-size: 1.25rem;
+    }
+    
+    .folder-count {
+      margin-left: auto;
+      font-size: 0.75rem;
+      background: var(--neutral-100);
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .main-content {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    .search-box {
+      flex: 1;
+      max-width: 400px;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4) var(--space-3) 48px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+    }
+    
+    .search-box i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--neutral-100);
+      padding: 4px;
+      border-radius: var(--radius-lg);
+    }
+    
+    .view-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .view-btn.active {
+      background: white;
+      box-shadow: var(--shadow-md);
+    }
+    
+    .documents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+    
+    .document-card {
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    
+    .document-card:hover {
+      border-color: var(--primary-600);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+    }
+    
+    .document-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto var(--space-4);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+    
+    .doc-icon.pdf {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+      color: white;
+    }
+    
+    .doc-icon.image {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+    }
+    
+    .doc-icon.word {
+      background: linear-gradient(135deg, #2e5090, #1e3a6e);
+      color: white;
+    }
+    
+    .doc-icon.excel {
+      background: linear-gradient(135deg, #217346, #185c37);
+      color: white;
+    }
+    
+    .document-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: var(--space-3);
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .document-meta {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .document-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: var(--space-3);
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .document-card:hover .document-actions {
+      opacity: 1;
+    }
+    
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--neutral-100);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      background: var(--primary-600);
+      color: white;
+      transform: scale(1.1);
+    }
+    
+    .upload-zone {
+      border: 3px dashed var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      text-align: center;
+      margin-bottom: var(--space-6);
+      background: var(--bg-secondary);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .upload-zone:hover {
+      border-color: var(--primary-600);
+      background: var(--primary-100);
+    }
+    
+    .upload-icon {
+      font-size: 4rem;
+      color: var(--primary-600);
+      margin-bottom: var(--space-4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <i class="mdi mdi-folder-multiple"></i>
+        Documents
+      </h1>
+      <button class="btn btn-primary">
+        <i class="mdi mdi-upload"></i>
+        Uploader un document
+      </button>
+    </div>
+    
+    <div class="content-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Dossiers</div>
+          <div class="folder-tree">
+            <div class="folder-item active">
+              <i class="mdi mdi-folder"></i>
+              <span>Tous les documents</span>
+              <span class="folder-count">47</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-file-document"></i>
+              <span>Baux</span>
+              <span class="folder-count">12</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-clipboard-check"></i>
+              <span>États des lieux</span>
+              <span class="folder-count">18</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-receipt"></i>
+              <span>Quittances</span>
+              <span class="folder-count">8</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-account-card"></i>
+              <span>Pièces d'identité</span>
+              <span class="folder-count">6</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-image-multiple"></i>
+              <span>Photos</span>
+              <span class="folder-count">3</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sidebar-section">
+          <div class="sidebar-title">Type de fichier</div>
+          <div class="folder-tree">
+            <div class="folder-item">
+              <i class="mdi mdi-file-pdf-box"></i>
+              <span>PDF</span>
+              <span class="folder-count">32</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-file-word"></i>
+              <span>Word</span>
+              <span class="folder-count">8</span>
+            </div>
+            <div class="folder-item">
+              <i class="mdi mdi-file-image"></i>
+              <span>Images</span>
+              <span class="folder-count">7</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="toolbar">
+          <div class="search-box">
+            <i class="mdi mdi-magnify"></i>
+            <input type="text" placeholder="Rechercher un document...">
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active">
+              <i class="mdi mdi-view-grid"></i>
+            </button>
+            <button class="view-btn">
+              <i class="mdi mdi-view-list"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Upload Zone -->
+        <div class="upload-zone">
+          <div class="upload-icon">
+            <i class="mdi mdi-cloud-upload"></i>
+          </div>
+          <div style="font-weight: 600; margin-bottom: 8px;">
+            Glissez-déposez vos fichiers ici
+          </div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary);">
+            ou cliquez pour parcourir (PDF, Word, Excel, Images)
+          </div>
+        </div>
+        
+        <!-- Documents Grid -->
+        <div class="documents-grid">
+          <!-- PDF Document -->
+          <div class="document-card">
+            <div class="document-icon doc-icon pdf">
+              <i class="mdi mdi-file-pdf-box"></i>
+            </div>
+            <div class="document-name" title="Bail_Dupont_2024.pdf">
+              Bail_Dupont_2024.pdf
+            </div>
+            <div class="document-meta">
+              <span>2.3 MB</span>
+              <span>15/01/2024</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn" title="Télécharger">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn" title="Partager">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn" title="Supprimer">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Word Document -->
+          <div class="document-card">
+            <div class="document-icon doc-icon word">
+              <i class="mdi mdi-file-word"></i>
+            </div>
+            <div class="document-name" title="Modele_quittance.docx">
+              Modele_quittance.docx
+            </div>
+            <div class="document-meta">
+              <span>156 KB</span>
+              <span>10/11/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Image -->
+          <div class="document-card">
+            <div class="document-icon doc-icon image">
+              <i class="mdi mdi-image"></i>
+            </div>
+            <div class="document-name" title="EDL_Cuisine.jpg">
+              EDL_Cuisine.jpg
+            </div>
+            <div class="document-meta">
+              <span>4.8 MB</span>
+              <span>20/11/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Excel -->
+          <div class="document-card">
+            <div class="document-icon doc-icon excel">
+              <i class="mdi mdi-file-excel"></i>
+            </div>
+            <div class="document-name" title="Charges_2024.xlsx">
+              Charges_2024.xlsx
+            </div>
+            <div class="document-meta">
+              <span>89 KB</span>
+              <span>05/11/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- More PDFs -->
+          <div class="document-card">
+            <div class="document-icon doc-icon pdf">
+              <i class="mdi mdi-file-pdf-box"></i>
+            </div>
+            <div class="document-name" title="Etat_des_lieux_entree_Mozart.pdf">
+              EDL_Mozart.pdf
+            </div>
+            <div class="document-meta">
+              <span>1.8 MB</span>
+              <span>12/10/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="document-card">
+            <div class="document-icon doc-icon pdf">
+              <i class="mdi mdi-file-pdf-box"></i>
+            </div>
+            <div class="document-name" title="Quittance_Nov_2025.pdf">
+              Quittance_Nov_2025.pdf
+            </div>
+            <div class="document-meta">
+              <span>245 KB</span>
+              <span>01/11/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="document-card">
+            <div class="document-icon doc-icon image">
+              <i class="mdi mdi-image"></i>
+            </div>
+            <div class="document-name" title="Photo_facade.jpg">
+              Photo_facade.jpg
+            </div>
+            <div class="document-meta">
+              <span>3.2 MB</span>
+              <span>18/09/2025</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="document-card">
+            <div class="document-icon doc-icon pdf">
+              <i class="mdi mdi-file-pdf-box"></i>
+            </div>
+            <div class="document-name" title="Assurance_habitation.pdf">
+              Assurance_hab.pdf
+            </div>
+            <div class="document-meta">
+              <span>567 KB</span>
+              <span>03/01/2024</span>
+            </div>
+            <div class="document-actions">
+              <button class="action-btn">
+                <i class="mdi mdi-download"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-share-variant"></i>
+              </button>
+              <button class="action-btn">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

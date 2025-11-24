@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propriétés - Locapilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-600: #4f46e5;
+      --primary-700: #4338ca;
+      --primary-100: #e0e9ff;
+      --success-50: #f0fdf4;
+      --success-700: #15803d;
+      --warning-50: #fffbeb;
+      --warning-700: #b45309;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-600: #525252;
+      --neutral-800: #262626;
+      --neutral-900: #171717;
+      --text-primary: var(--neutral-900);
+      --text-secondary: var(--neutral-600);
+      --bg-secondary: var(--neutral-50);
+      --border-color: var(--neutral-200);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: var(--space-8);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-6);
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+    }
+    
+    .filters {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+      flex-wrap: wrap;
+    }
+    
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4) var(--space-3) 48px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-size: 0.938rem;
+    }
+    
+    .search-box i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+    }
+    
+    select {
+      padding: var(--space-3) var(--space-4);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .properties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--space-6);
+    }
+    
+    .property-card {
+      background: white;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .property-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-600);
+    }
+    
+    .property-image {
+      width: 100%;
+      height: 220px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 4rem;
+    }
+    
+    .property-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 12px;
+      border-radius: var(--radius-lg);
+      font-size: 0.813rem;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+    
+    .badge-success {
+      background: rgba(34, 197, 94, 0.9);
+      color: white;
+    }
+    
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.9);
+      color: white;
+    }
+    
+    .property-content {
+      padding: var(--space-6);
+    }
+    
+    .property-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: var(--space-3);
+      color: var(--text-primary);
+    }
+    
+    .property-address {
+      color: var(--text-secondary);
+      font-size: 0.938rem;
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .property-details {
+      display: flex;
+      gap: var(--space-6);
+      margin-bottom: var(--space-4);
+      padding: var(--space-4);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+    
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .detail-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .property-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .rent-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-600);
+    }
+    
+    .rent-label {
+      font-size: 0.813rem;
+      color: var(--text-secondary);
+    }
+    
+    .property-actions {
+      display: flex;
+      gap: var(--space-3);
+    }
+    
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--neutral-100);
+      color: var(--text-secondary);
+    }
+    
+    .btn-icon:hover {
+      background: var(--primary-100);
+      color: var(--primary-600);
+      transform: scale(1.1);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: var(--space-8);
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 4rem;
+      color: var(--neutral-200);
+      margin-bottom: var(--space-4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <i class="mdi mdi-home-city"></i>
+        Mes Propriétés
+      </h1>
+      <button class="btn btn-primary">
+        <i class="mdi mdi-plus"></i>
+        Nouvelle propriété
+      </button>
+    </div>
+    
+    <div class="filters">
+      <div class="search-box">
+        <i class="mdi mdi-magnify"></i>
+        <input type="text" placeholder="Rechercher une propriété...">
+      </div>
+      <select>
+        <option>Tous les statuts</option>
+        <option>Loué</option>
+        <option>Vacant</option>
+        <option>En travaux</option>
+      </select>
+      <select>
+        <option>Tous les types</option>
+        <option>Appartement</option>
+        <option>Maison</option>
+        <option>Studio</option>
+      </select>
+    </div>
+    
+    <div class="properties-grid">
+      <!-- Property Card 1 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <i class="mdi mdi-home-city-outline"></i>
+          <span class="property-badge badge-success">
+            <i class="mdi mdi-check-circle"></i> Loué
+          </span>
+        </div>
+        <div class="property-content">
+          <h3 class="property-title">Appartement T3 Centre-ville</h3>
+          <div class="property-address">
+            <i class="mdi mdi-map-marker"></i>
+            123 Rue de la Paix, 75008 Paris
+          </div>
+          
+          <div class="property-details">
+            <div class="detail-item">
+              <span class="detail-label">Surface</span>
+              <span class="detail-value">65 m²</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Pièces</span>
+              <span class="detail-value">3</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Étage</span>
+              <span class="detail-value">2ème</span>
+            </div>
+          </div>
+          
+          <div class="property-footer">
+            <div>
+              <div class="rent-price">1 250 €</div>
+              <div class="rent-label">/ mois hors charges</div>
+            </div>
+            <div class="property-actions">
+              <button class="btn-icon" title="Modifier">
+                <i class="mdi mdi-pencil"></i>
+              </button>
+              <button class="btn-icon" title="Voir détails">
+                <i class="mdi mdi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Property Card 2 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <i class="mdi mdi-home-outline"></i>
+          <span class="property-badge badge-warning">
+            <i class="mdi mdi-home-search"></i> Vacant
+          </span>
+        </div>
+        <div class="property-content">
+          <h3 class="property-title">Maison 4 pièces avec jardin</h3>
+          <div class="property-address">
+            <i class="mdi mdi-map-marker"></i>
+            45 Avenue Mozart, 92100 Boulogne
+          </div>
+          
+          <div class="property-details">
+            <div class="detail-item">
+              <span class="detail-label">Surface</span>
+              <span class="detail-value">120 m²</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Pièces</span>
+              <span class="detail-value">4</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Jardin</span>
+              <span class="detail-value">50 m²</span>
+            </div>
+          </div>
+          
+          <div class="property-footer">
+            <div>
+              <div class="rent-price">2 100 €</div>
+              <div class="rent-label">/ mois hors charges</div>
+            </div>
+            <div class="property-actions">
+              <button class="btn-icon">
+                <i class="mdi mdi-pencil"></i>
+              </button>
+              <button class="btn-icon">
+                <i class="mdi mdi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Property Card 3 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <i class="mdi mdi-office-building"></i>
+          <span class="property-badge badge-success">
+            <i class="mdi mdi-check-circle"></i> Loué
+          </span>
+        </div>
+        <div class="property-content">
+          <h3 class="property-title">Studio étudiant meublé</h3>
+          <div class="property-address">
+            <i class="mdi mdi-map-marker"></i>
+            78 Boulevard Haussmann, 75009 Paris
+          </div>
+          
+          <div class="property-details">
+            <div class="detail-item">
+              <span class="detail-label">Surface</span>
+              <span class="detail-value">25 m²</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Pièces</span>
+              <span class="detail-value">1</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Étage</span>
+              <span class="detail-value">5ème</span>
+            </div>
+          </div>
+          
+          <div class="property-footer">
+            <div>
+              <div class="rent-price">750 €</div>
+              <div class="rent-label">/ mois charges comprises</div>
+            </div>
+            <div class="property-actions">
+              <button class="btn-icon">
+                <i class="mdi mdi-pencil"></i>
+              </button>
+              <button class="btn-icon">
+                <i class="mdi mdi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Property Card 4 -->
+      <div class="property-card">
+        <div class="property-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <i class="mdi mdi-home-modern"></i>
+          <span class="property-badge badge-success">
+            <i class="mdi mdi-check-circle"></i> Loué
+          </span>
+        </div>
+        <div class="property-content">
+          <h3 class="property-title">Duplex moderne standing</h3>
+          <div class="property-address">
+            <i class="mdi mdi-map-marker"></i>
+            12 Rue Victor Hugo, 69002 Lyon
+          </div>
+          
+          <div class="property-details">
+            <div class="detail-item">
+              <span class="detail-label">Surface</span>
+              <span class="detail-value">95 m²</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Pièces</span>
+              <span class="detail-value">4</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Étages</span>
+              <span class="detail-value">5-6ème</span>
+            </div>
+          </div>
+          
+          <div class="property-footer">
+            <div>
+              <div class="rent-price">1 650 €</div>
+              <div class="rent-label">/ mois hors charges</div>
+            </div>
+            <div class="property-actions">
+              <button class="btn-icon">
+                <i class="mdi mdi-pencil"></i>
+              </button>
+              <button class="btn-icon">
+                <i class="mdi mdi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

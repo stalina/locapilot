@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locapilot - Index des Maquettes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-600: #4f46e5;
+      --primary-700: #4338ca;
+      --primary-100: #e0e9ff;
+      --accent-500: #14b8a6;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-600: #525252;
+      --neutral-900: #171717;
+      --text-primary: var(--neutral-900);
+      --text-secondary: var(--neutral-600);
+      --bg-secondary: var(--neutral-50);
+      --border-color: var(--neutral-200);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-2xl: 1.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-12: 3rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: var(--space-8);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .hero {
+      text-align: center;
+      color: white;
+      margin-bottom: var(--space-12);
+    }
+    
+    .logo {
+      font-size: 4rem;
+      margin-bottom: var(--space-4);
+    }
+    
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: var(--space-4);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .mockups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+    
+    .mockup-card {
+      background: white;
+      border-radius: var(--radius-2xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-xl);
+      transition: all 0.3s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .mockup-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary-600), var(--accent-500));
+    }
+    
+    .mockup-card:hover {
+      transform: translateY(-12px);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    }
+    
+    .card-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin-bottom: var(--space-6);
+    }
+    
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: var(--space-3);
+      color: var(--text-primary);
+    }
+    
+    .card-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--space-6);
+    }
+    
+    .card-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: var(--space-6);
+    }
+    
+    .feature-tag {
+      padding: 6px 12px;
+      background: var(--primary-100);
+      color: var(--primary-600);
+      border-radius: var(--radius-lg);
+      font-size: 0.813rem;
+      font-weight: 600;
+    }
+    
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--space-4);
+      border-top: 2px solid var(--border-color);
+    }
+    
+    .view-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-600);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    
+    .page-count {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .info-section {
+      background: white;
+      border-radius: var(--radius-2xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-xl);
+      margin-top: var(--space-12);
+    }
+    
+    .info-section h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-6);
+    }
+    
+    .info-card {
+      padding: var(--space-6);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      border-left: 4px solid var(--primary-600);
+    }
+    
+    .info-card h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .info-card ul {
+      list-style: none;
+      color: var(--text-secondary);
+    }
+    
+    .info-card li {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .info-card li i {
+      color: var(--primary-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="logo">
+        <i class="mdi mdi-home-city"></i>
+      </div>
+      <h1>Locapilot Maquettes</h1>
+      <p class="subtitle">
+        Design system moderne et maquettes statiques pour l'application de gestion locative
+      </p>
+    </div>
+    
+    <div class="mockups-grid">
+      <!-- Design System -->
+      <a href="design-system.html" class="mockup-card">
+        <div class="card-icon">
+          <i class="mdi mdi-palette"></i>
+        </div>
+        <h2 class="card-title">Design System</h2>
+        <p class="card-description">
+          Palette de couleurs complète, typographie, composants UI réutilisables, et guidelines de design.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Couleurs</span>
+          <span class="feature-tag">Typographie</span>
+          <span class="feature-tag">Composants</span>
+          <span class="feature-tag">Icônes</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir le design system
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+        </div>
+      </a>
+      
+      <!-- Dashboard -->
+      <a href="01-dashboard.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+          <i class="mdi mdi-view-dashboard"></i>
+        </div>
+        <h2 class="card-title">Dashboard</h2>
+        <p class="card-description">
+          Tableau de bord avec KPIs, activité récente, événements à venir et actions rapides.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Stats</span>
+          <span class="feature-tag">Timeline</span>
+          <span class="feature-tag">Calendrier</span>
+          <span class="feature-tag">Quick Actions</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Vue principale
+          </span>
+        </div>
+      </a>
+      
+      <!-- Properties List -->
+      <a href="02-properties.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+          <i class="mdi mdi-home-city"></i>
+        </div>
+        <h2 class="card-title">Propriétés</h2>
+        <p class="card-description">
+          Liste des propriétés avec filtres, recherche et cards interactives affichant les informations clés.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Grid</span>
+          <span class="feature-tag">Filtres</span>
+          <span class="feature-tag">Search</span>
+          <span class="feature-tag">Cards</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Liste
+          </span>
+        </div>
+      </a>
+      
+      <!-- Property Detail -->
+      <a href="03-property-detail.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+          <i class="mdi mdi-home-outline"></i>
+        </div>
+        <h2 class="card-title">Détail Propriété</h2>
+        <p class="card-description">
+          Vue détaillée d'une propriété avec caractéristiques, infos financières, locataire et historique.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Breadcrumb</span>
+          <span class="feature-tag">Stats</span>
+          <span class="feature-tag">Timeline</span>
+          <span class="feature-tag">2 colonnes</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Détail
+          </span>
+        </div>
+      </a>
+      
+      <!-- Rents Calendar -->
+      <a href="04-rents-calendar.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #fa709a, #fee140);">
+          <i class="mdi mdi-currency-eur"></i>
+        </div>
+        <h2 class="card-title">Gestion des Loyers</h2>
+        <p class="card-description">
+          Calendrier de paiements avec vue mensuelle, summary cards et liste détaillée des loyers.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Calendrier</span>
+          <span class="feature-tag">Summary</span>
+          <span class="feature-tag">Liste</span>
+          <span class="feature-tag">Actions</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Calendrier
+          </span>
+        </div>
+      </a>
+      
+      <!-- Documents -->
+      <a href="05-documents.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+          <i class="mdi mdi-folder-multiple"></i>
+        </div>
+        <h2 class="card-title">Documents</h2>
+        <p class="card-description">
+          Bibliothèque documentaire avec sidebar de navigation, upload zone et grid de documents.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Sidebar</span>
+          <span class="feature-tag">Upload</span>
+          <span class="feature-tag">Grid/List</span>
+          <span class="feature-tag">Actions</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Bibliothèque
+          </span>
+        </div>
+      </a>
+      
+      <!-- Tenants -->
+      <a href="06-tenants.html" class="mockup-card">
+        <div class="card-icon" style="background: linear-gradient(135deg, #89f7fe, #66a6ff);">
+          <i class="mdi mdi-account-group"></i>
+        </div>
+        <h2 class="card-title">Locataires</h2>
+        <p class="card-description">
+          Liste des locataires avec filtres, cards détaillées incluant stats et actions de contact.
+        </p>
+        <div class="card-features">
+          <span class="feature-tag">Filtres</span>
+          <span class="feature-tag">Stats</span>
+          <span class="feature-tag">Contact</span>
+          <span class="feature-tag">Badges</span>
+        </div>
+        <div class="card-footer">
+          <span class="view-btn">
+            Voir la maquette
+            <i class="mdi mdi-arrow-right"></i>
+          </span>
+          <span class="page-count">
+            <i class="mdi mdi-eye"></i> Liste
+          </span>
+        </div>
+      </a>
+    </div>
+    
+    <!-- Info Section -->
+    <div class="info-section">
+      <h2>
+        <i class="mdi mdi-information"></i>
+        À propos de ces maquettes
+      </h2>
+      
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>
+            <i class="mdi mdi-palette-swatch"></i>
+            Design moderne
+          </h3>
+          <ul>
+            <li><i class="mdi mdi-check"></i> Dégradés subtils</li>
+            <li><i class="mdi mdi-check"></i> Ombres douces</li>
+            <li><i class="mdi mdi-check"></i> Animations fluides</li>
+            <li><i class="mdi mdi-check"></i> Typographie Inter</li>
+          </ul>
+        </div>
+        
+        <div class="info-card">
+          <h3>
+            <i class="mdi mdi-responsive"></i>
+            Responsive
+          </h3>
+          <ul>
+            <li><i class="mdi mdi-check"></i> CSS Grid flexible</li>
+            <li><i class="mdi mdi-check"></i> Auto-fit columns</li>
+            <li><i class="mdi mdi-check"></i> Mobile-friendly</li>
+            <li><i class="mdi mdi-check"></i> Breakpoints adaptés</li>
+          </ul>
+        </div>
+        
+        <div class="info-card">
+          <h3>
+            <i class="mdi mdi-eye"></i>
+            Accessible
+          </h3>
+          <ul>
+            <li><i class="mdi mdi-check"></i> Contrastes WCAG AA</li>
+            <li><i class="mdi mdi-check"></i> Icônes + texte</li>
+            <li><i class="mdi mdi-check"></i> Focus states</li>
+            <li><i class="mdi mdi-check"></i> Sémantique HTML</li>
+          </ul>
+        </div>
+        
+        <div class="info-card">
+          <h3>
+            <i class="mdi mdi-code-tags"></i>
+            Intégration
+          </h3>
+          <ul>
+            <li><i class="mdi mdi-check"></i> CSS Variables</li>
+            <li><i class="mdi mdi-check"></i> Vue.js ready</li>
+            <li><i class="mdi mdi-check"></i> PrimeVue compatible</li>
+            <li><i class="mdi mdi-check"></i> Documentation README</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div style="margin-top: var(--space-8); padding: var(--space-6); background: linear-gradient(135deg, var(--primary-100), #e0f2fe); border-radius: var(--radius-xl); text-align: center;">
+        <h3 style="font-size: 1.25rem; margin-bottom: var(--space-3);">
+          <i class="mdi mdi-file-document"></i>
+          Documentation complète
+        </h3>
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
+          Consultez le README.md pour les détails d'implémentation, conventions et guides d'intégration.
+        </p>
+        <a href="README.md" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: var(--primary-600); color: white; border-radius: var(--radius-lg); text-decoration: none; font-weight: 600;">
+          <i class="mdi mdi-book-open"></i>
+          Lire la documentation
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

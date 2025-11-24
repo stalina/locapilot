@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locataires - Locapilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-600: #4f46e5;
+      --primary-100: #e0e9ff;
+      --success-50: #f0fdf4;
+      --success-700: #15803d;
+      --warning-50: #fffbeb;
+      --warning-700: #b45309;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-600: #525252;
+      --neutral-900: #171717;
+      --text-primary: var(--neutral-900);
+      --text-secondary: var(--neutral-600);
+      --bg-secondary: var(--neutral-50);
+      --border-color: var(--neutral-200);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: var(--space-8);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-6);
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--primary-600);
+      color: white;
+    }
+    
+    .filters {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .search-box {
+      flex: 1;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4) var(--space-3) 48px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+    }
+    
+    .search-box i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    
+    select {
+      padding: var(--space-3) var(--space-4);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      background: white;
+    }
+    
+    .tenants-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: var(--space-6);
+    }
+    
+    .tenant-card {
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tenant-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-600), #764ba2);
+    }
+    
+    .tenant-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-600);
+    }
+    
+    .tenant-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .tenant-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-600), #764ba2);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    
+    .tenant-info {
+      flex: 1;
+    }
+    
+    .tenant-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .tenant-property {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .badge {
+      padding: 6px 12px;
+      border-radius: var(--radius-lg);
+      font-size: 0.813rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .badge-success {
+      background: var(--success-50);
+      color: var(--success-700);
+    }
+    
+    .badge-warning {
+      background: var(--warning-50);
+      color: var(--warning-700);
+    }
+    
+    .tenant-details {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-3);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+    
+    .detail-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .tenant-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: var(--space-3);
+      border: 2px solid var(--border-color);
+      background: white;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      background: var(--primary-100);
+      border-color: var(--primary-600);
+      color: var(--primary-600);
+    }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+    
+    .stat-box {
+      text-align: center;
+      padding: var(--space-3);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-600);
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <i class="mdi mdi-account-group"></i>
+        Mes Locataires
+      </h1>
+      <button class="btn btn-primary">
+        <i class="mdi mdi-account-plus"></i>
+        Nouveau locataire
+      </button>
+    </div>
+    
+    <div class="filters">
+      <div class="search-box">
+        <i class="mdi mdi-magnify"></i>
+        <input type="text" placeholder="Rechercher un locataire...">
+      </div>
+      <select>
+        <option>Tous les statuts</option>
+        <option>À jour</option>
+        <option>Retard de paiement</option>
+        <option>Préavis donné</option>
+      </select>
+      <select>
+        <option>Toutes les propriétés</option>
+        <option>123 Rue de la Paix</option>
+        <option>45 Avenue Mozart</option>
+        <option>12 Rue Victor Hugo</option>
+      </select>
+    </div>
+    
+    <div class="tenants-grid">
+      <!-- Tenant Card 1 -->
+      <div class="tenant-card">
+        <div class="tenant-header">
+          <div class="tenant-avatar">JD</div>
+          <div class="tenant-info">
+            <div class="tenant-name">Jean Dupont</div>
+            <div class="tenant-property">
+              <i class="mdi mdi-home"></i>
+              123 Rue de la Paix
+            </div>
+          </div>
+          <span class="badge badge-success">
+            <i class="mdi mdi-check"></i>
+            À jour
+          </span>
+        </div>
+        
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">22</div>
+            <div class="stat-label">Mois</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">1 250€</div>
+            <div class="stat-label">Loyer</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Taux</div>
+          </div>
+        </div>
+        
+        <div class="tenant-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-email"></i>
+              Email
+            </span>
+            <span class="detail-value">jean.dupont@email.fr</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-phone"></i>
+              Téléphone
+            </span>
+            <span class="detail-value">06 12 34 56 78</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-calendar"></i>
+              Début bail
+            </span>
+            <span class="detail-value">01/01/2024</span>
+          </div>
+        </div>
+        
+        <div class="tenant-actions">
+          <button class="action-btn">
+            <i class="mdi mdi-message"></i>
+            Contacter
+          </button>
+          <button class="action-btn">
+            <i class="mdi mdi-eye"></i>
+            Voir profil
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tenant Card 2 -->
+      <div class="tenant-card">
+        <div class="tenant-header">
+          <div class="tenant-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c);">MM</div>
+          <div class="tenant-info">
+            <div class="tenant-name">Marie Martin</div>
+            <div class="tenant-property">
+              <i class="mdi mdi-home"></i>
+              45 Avenue Mozart
+            </div>
+          </div>
+          <span class="badge badge-success">
+            <i class="mdi mdi-check"></i>
+            À jour
+          </span>
+        </div>
+        
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">2</div>
+            <div class="stat-label">Mois</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">2 100€</div>
+            <div class="stat-label">Loyer</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Taux</div>
+          </div>
+        </div>
+        
+        <div class="tenant-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-email"></i>
+              Email
+            </span>
+            <span class="detail-value">m.martin@email.fr</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-phone"></i>
+              Téléphone
+            </span>
+            <span class="detail-value">06 98 76 54 32</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-calendar"></i>
+              Début bail
+            </span>
+            <span class="detail-value">01/10/2025</span>
+          </div>
+        </div>
+        
+        <div class="tenant-actions">
+          <button class="action-btn">
+            <i class="mdi mdi-message"></i>
+            Contacter
+          </button>
+          <button class="action-btn">
+            <i class="mdi mdi-eye"></i>
+            Voir profil
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tenant Card 3 -->
+      <div class="tenant-card">
+        <div class="tenant-header">
+          <div class="tenant-avatar" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">SL</div>
+          <div class="tenant-info">
+            <div class="tenant-name">Sophie Laurent</div>
+            <div class="tenant-property">
+              <i class="mdi mdi-home"></i>
+              78 Boulevard Haussmann
+            </div>
+          </div>
+          <span class="badge badge-success">
+            <i class="mdi mdi-check"></i>
+            À jour
+          </span>
+        </div>
+        
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">8</div>
+            <div class="stat-label">Mois</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">750€</div>
+            <div class="stat-label">Loyer</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Taux</div>
+          </div>
+        </div>
+        
+        <div class="tenant-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-email"></i>
+              Email
+            </span>
+            <span class="detail-value">sophie.l@email.fr</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-phone"></i>
+              Téléphone
+            </span>
+            <span class="detail-value">07 11 22 33 44</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-calendar"></i>
+              Début bail
+            </span>
+            <span class="detail-value">01/04/2025</span>
+          </div>
+        </div>
+        
+        <div class="tenant-actions">
+          <button class="action-btn">
+            <i class="mdi mdi-message"></i>
+            Contacter
+          </button>
+          <button class="action-btn">
+            <i class="mdi mdi-eye"></i>
+            Voir profil
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tenant Card 4 with warning -->
+      <div class="tenant-card">
+        <div class="tenant-header">
+          <div class="tenant-avatar" style="background: linear-gradient(135deg, #fa709a, #fee140);">PD</div>
+          <div class="tenant-info">
+            <div class="tenant-name">Pierre Dubois</div>
+            <div class="tenant-property">
+              <i class="mdi mdi-home"></i>
+              12 Rue Victor Hugo
+            </div>
+          </div>
+          <span class="badge badge-warning">
+            <i class="mdi mdi-clock-alert"></i>
+            Retard 5j
+          </span>
+        </div>
+        
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">15</div>
+            <div class="stat-label">Mois</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">1 650€</div>
+            <div class="stat-label">Loyer</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">93%</div>
+            <div class="stat-label">Taux</div>
+          </div>
+        </div>
+        
+        <div class="tenant-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-email"></i>
+              Email
+            </span>
+            <span class="detail-value">p.dubois@email.fr</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-phone"></i>
+              Téléphone
+            </span>
+            <span class="detail-value">06 55 66 77 88</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="mdi mdi-calendar"></i>
+              Début bail
+            </span>
+            <span class="detail-value">01/09/2024</span>
+          </div>
+        </div>
+        
+        <div class="tenant-actions">
+          <button class="action-btn">
+            <i class="mdi mdi-email-alert"></i>
+            Relancer
+          </button>
+          <button class="action-btn">
+            <i class="mdi mdi-eye"></i>
+            Voir profil
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

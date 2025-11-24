@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Locapilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Layout spécifique au dashboard */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+      background: var(--bg-secondary);
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      background: linear-gradient(180deg, var(--primary-900) 0%, var(--primary-800) 100%);
+      color: white;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .logo i {
+      font-size: 2rem;
+      color: var(--accent-400);
+    }
+    
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .nav-item i {
+      font-size: 1.25rem;
+    }
+    
+    /* Main Content */
+    .main-content {
+      padding: var(--space-8);
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-8);
+    }
+    
+    .header-title h1 {
+      font-size: 2rem;
+      margin-bottom: var(--space-2);
+    }
+    
+    .header-meta {
+      color: var(--text-secondary);
+      font-size: 0.938rem;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+    
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+      border-left: 4px solid var(--primary-500);
+      transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+    }
+    
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    
+    .stat-icon.primary {
+      background: var(--primary-100);
+      color: var(--primary-600);
+    }
+    
+    .stat-icon.success {
+      background: var(--success-50);
+      color: var(--success-700);
+    }
+    
+    .stat-icon.warning {
+      background: var(--warning-50);
+      color: var(--warning-700);
+    }
+    
+    .stat-icon.accent {
+      background: var(--accent-100);
+      color: var(--accent-700);
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.938rem;
+    }
+    
+    .stat-trend {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+      font-size: 0.875rem;
+    }
+    
+    .trend-up {
+      color: var(--success-700);
+      font-weight: 600;
+    }
+    
+    .trend-down {
+      color: var(--error-700);
+      font-weight: 600;
+    }
+    
+    /* Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-6);
+    }
+    
+    .section-card {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    /* Recent Activity */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    
+    .activity-item {
+      display: flex;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+      transition: background 0.2s;
+    }
+    
+    .activity-item:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .activity-content {
+      flex: 1;
+    }
+    
+    .activity-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+    
+    .activity-meta {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .activity-time {
+      font-size: 0.813rem;
+      color: var(--text-tertiary);
+    }
+    
+    /* Upcoming Events */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    
+    .event-item {
+      padding: var(--space-4);
+      border-left: 3px solid var(--primary-500);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+    
+    .event-date {
+      font-size: 0.813rem;
+      color: var(--primary-600);
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+    }
+    
+    .event-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+    
+    .event-description {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+    }
+    
+    .quick-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      background: var(--primary-50);
+      border: 2px solid var(--primary-200);
+      border-radius: var(--radius-lg);
+      color: var(--primary-700);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .quick-action:hover {
+      background: var(--primary-100);
+      border-color: var(--primary-400);
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <i class="mdi mdi-home-city"></i>
+        <span>Locapilot</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active">
+          <i class="mdi mdi-view-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-home-city"></i>
+          <span>Propriétés</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-account-group"></i>
+          <span>Locataires</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-file-document"></i>
+          <span>Baux</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-currency-eur"></i>
+          <span>Loyers</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-folder-multiple"></i>
+          <span>Documents</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-clipboard-check"></i>
+          <span>États des lieux</span>
+        </a>
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-message-text"></i>
+          <span>Communications</span>
+        </a>
+      </nav>
+      
+      <div style="margin-top: auto;">
+        <a href="#" class="nav-item">
+          <i class="mdi mdi-cog"></i>
+          <span>Paramètres</span>
+        </a>
+        <div style="margin-top: var(--space-4); padding: var(--space-3); background: rgba(255,255,255,0.1); border-radius: var(--radius-lg); font-size: 0.813rem;">
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+            <i class="mdi mdi-wifi" style="color: var(--success-400);"></i>
+            <span>En ligne</span>
+          </div>
+          <div style="opacity: 0.7;">Version 1.0.0</div>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-title">
+          <h1>Tableau de bord</h1>
+          <div class="header-meta">
+            <i class="mdi mdi-calendar"></i>
+            Lundi 24 novembre 2025
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline">
+            <i class="mdi mdi-bell"></i>
+            3 notifications
+          </button>
+          <div class="user-avatar">AD</div>
+        </div>
+      </header>
+      
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div>
+              <div class="stat-label">Total des propriétés</div>
+              <div class="stat-value">12</div>
+            </div>
+            <div class="stat-icon primary">
+              <i class="mdi mdi-home-city"></i>
+            </div>
+          </div>
+          <div class="stat-trend">
+            <span class="trend-up">
+              <i class="mdi mdi-arrow-up"></i>
+              +2
+            </span>
+            <span style="color: var(--text-tertiary);">ce mois</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div>
+              <div class="stat-label">Taux d'occupation</div>
+              <div class="stat-value">91.7%</div>
+            </div>
+            <div class="stat-icon success">
+              <i class="mdi mdi-check-circle"></i>
+            </div>
+          </div>
+          <div class="stat-trend">
+            <span class="trend-up">
+              <i class="mdi mdi-arrow-up"></i>
+              +5.2%
+            </span>
+            <span style="color: var(--text-tertiary);">vs mois dernier</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div>
+              <div class="stat-label">Revenus mensuels</div>
+              <div class="stat-value">18 450 €</div>
+            </div>
+            <div class="stat-icon accent">
+              <i class="mdi mdi-currency-eur"></i>
+            </div>
+          </div>
+          <div class="stat-trend">
+            <span class="trend-up">
+              <i class="mdi mdi-arrow-up"></i>
+              +1 250 €
+            </span>
+            <span style="color: var(--text-tertiary);">ce mois</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div>
+              <div class="stat-label">Loyers en attente</div>
+              <div class="stat-value">2</div>
+            </div>
+            <div class="stat-icon warning">
+              <i class="mdi mdi-clock-alert"></i>
+            </div>
+          </div>
+          <div class="stat-trend">
+            <span class="trend-down">
+              <i class="mdi mdi-arrow-down"></i>
+              -3
+            </span>
+            <span style="color: var(--text-tertiary);">vs mois dernier</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <!-- Recent Activity -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title">
+              <i class="mdi mdi-history"></i>
+              Activité récente
+            </h2>
+            <a href="#" style="color: var(--primary-600); text-decoration: none; font-weight: 600; font-size: 0.938rem;">
+              Voir tout
+              <i class="mdi mdi-arrow-right"></i>
+            </a>
+          </div>
+          
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon" style="background: var(--success-50); color: var(--success-700);">
+                <i class="mdi mdi-currency-eur"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Paiement reçu</div>
+                <div class="activity-meta">Loyer novembre - 123 Rue de la Paix - Jean Dupont</div>
+                <div class="activity-time">Il y a 2 heures</div>
+              </div>
+              <span class="badge badge-success">1 250 €</span>
+            </div>
+            
+            <div class="activity-item">
+              <div class="activity-icon" style="background: var(--primary-100); color: var(--primary-600);">
+                <i class="mdi mdi-file-document"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Nouveau bail signé</div>
+                <div class="activity-meta">45 Avenue Mozart - Marie Martin</div>
+                <div class="activity-time">Hier à 14:30</div>
+              </div>
+              <span class="badge badge-primary">Nouveau</span>
+            </div>
+            
+            <div class="activity-item">
+              <div class="activity-icon" style="background: var(--accent-100); color: var(--accent-700);">
+                <i class="mdi mdi-clipboard-check"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">État des lieux complété</div>
+                <div class="activity-meta">78 Boulevard Haussmann - État d'entrée</div>
+                <div class="activity-time">Il y a 2 jours</div>
+              </div>
+            </div>
+            
+            <div class="activity-item">
+              <div class="activity-icon" style="background: var(--warning-50); color: var(--warning-700);">
+                <i class="mdi mdi-message-alert"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Message reçu</div>
+                <div class="activity-meta">Pierre Dubois - Demande de réparation</div>
+                <div class="activity-time">Il y a 3 jours</div>
+              </div>
+              <span class="badge badge-warning">À traiter</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Upcoming Events -->
+        <div>
+          <div class="section-card">
+            <div class="section-header">
+              <h2 class="section-title">
+                <i class="mdi mdi-calendar-clock"></i>
+                À venir
+              </h2>
+            </div>
+            
+            <div class="event-list">
+              <div class="event-item">
+                <div class="event-date">25 NOV - 10:00</div>
+                <div class="event-title">Visite appartement</div>
+                <div class="event-description">12 Rue Victor Hugo - 3 candidats</div>
+              </div>
+              
+              <div class="event-item">
+                <div class="event-date">28 NOV - 14:30</div>
+                <div class="event-title">État des lieux sortie</div>
+                <div class="event-description">89 Avenue de la République</div>
+              </div>
+              
+              <div class="event-item">
+                <div class="event-date">30 NOV</div>
+                <div class="event-title">Échéance loyer</div>
+                <div class="event-description">8 propriétés - Envoi des quittances</div>
+              </div>
+              
+              <div class="event-item">
+                <div class="event-date">05 DÉC - 09:00</div>
+                <div class="event-title">Signature de bail</div>
+                <div class="event-description">23 Place de la Mairie - Sophie Laurent</div>
+              </div>
+            </div>
+            
+            <div class="quick-actions">
+              <button class="quick-action">
+                <i class="mdi mdi-plus"></i>
+                Nouvelle propriété
+              </button>
+              <button class="quick-action">
+                <i class="mdi mdi-account-plus"></i>
+                Nouveau locataire
+              </button>
+              <button class="quick-action">
+                <i class="mdi mdi-file-plus"></i>
+                Nouveau bail
+              </button>
+              <button class="quick-action">
+                <i class="mdi mdi-receipt"></i>
+                Générer quittance
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
