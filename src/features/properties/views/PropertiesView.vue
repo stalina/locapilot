@@ -6,9 +6,13 @@ import PropertyCard from '@shared/components/PropertyCard.vue';
 import SearchBox from '@shared/components/SearchBox.vue';
 import Button from '@shared/components/Button.vue';
 import StatCard from '@shared/components/StatCard.vue';
+import PropertyFormModal from '../components/PropertyFormModal.vue';
 
 const router = useRouter();
 const propertiesStore = usePropertiesStore();
+
+// Modals
+const showPropertyForm = ref(false);
 
 // Filters
 const searchQuery = ref('');
@@ -67,8 +71,11 @@ function handlePropertyClick(id: string) {
 }
 
 function handleNewProperty() {
-  // TODO: Open modal to create new property
-  console.log('Create new property');
+  showPropertyForm.value = true;
+}
+
+function handleFormSuccess() {
+  propertiesStore.fetchProperties();
 }
 
 // Lifecycle
@@ -406,3 +413,9 @@ onMounted(async () => {
   }
 }
 </style>
+
+<!-- Property Form Modal -->
+<PropertyFormModal
+  v-model="showPropertyForm"
+  @success="handleFormSuccess"
+/>

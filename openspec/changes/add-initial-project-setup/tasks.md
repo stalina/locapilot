@@ -3,15 +3,15 @@
 **Change ID**: `add-initial-project-setup`  
 **Status**: Proposition
 
-## Phase 1: Configuration de Base
+## Phase 1: Configuration de Base ✅
 
 ### Infrastructure Projet
-- [ ] Initialiser projet Vite + Vue 3 + TypeScript
-- [ ] Configurer TypeScript (tsconfig.json strict mode)
-- [ ] Installer et configurer ESLint + Prettier
+- [x] Initialiser projet Vite + Vue 3 + TypeScript
+- [x] Configurer TypeScript (tsconfig.json strict mode)
+- [x] Installer et configurer ESLint + Prettier
 - [ ] Configurer Git hooks (husky + lint-staged)
-- [ ] Créer structure de dossiers du projet
-- [ ] Configurer path aliases (@/, @components/, etc.)
+- [x] Créer structure de dossiers du projet
+- [x] Configurer path aliases (@/, @components/, etc.)
 - [ ] Ajouter .editorconfig
 
 ### PWA Configuration
@@ -23,37 +23,37 @@
 - [ ] Tester installation desktop
 
 ### Dépendances NPM
-- [ ] Installer Vue Router
-- [ ] Installer Pinia
-- [ ] Installer Dexie.js
+- [x] Installer Vue Router
+- [x] Installer Pinia
+- [x] Installer Dexie.js
 - [ ] Installer day.js (date handling)
-- [ ] Installer framework UI (décision: PrimeVue recommandé)
+- [ ] Installer framework UI (décision: Custom design system créé)
 - [ ] Installer Vitest + @vue/test-utils
 - [ ] Installer Playwright
 - [ ] Installer utilitaires (zod pour validation, etc.)
 
-## Phase 2: Database Layer
+## Phase 2: Database Layer ✅
 
 ### Dexie.js Setup
-- [ ] Créer fichier de schéma database (`src/db/schema.ts`)
-- [ ] Définir version 1 du schéma avec toutes les tables
-- [ ] Créer indexes pour queries fréquentes
+- [x] Créer fichier de schéma database (`src/db/schema.ts`)
+- [x] Définir version 1 du schéma avec toutes les tables
+- [x] Créer indexes pour queries fréquentes
 - [ ] Implémenter système de migrations
-- [ ] Créer wrapper/composable pour accès DB (`useDatabase.ts`)
-- [ ] Ajouter error handling et logging
+- [x] Créer wrapper/composable pour accès DB (`database.ts`)
+- [x] Ajouter error handling et logging
 
 ### Tables Initiales
-- [ ] Table `properties` (propriétés)
-- [ ] Table `tenants` (locataires)
-- [ ] Table `applicants` (candidats)
-- [ ] Table `leases` (baux)
-- [ ] Table `rents` (loyers)
-- [ ] Table `expenses` (charges)
-- [ ] Table `documents` (documents)
-- [ ] Table `inventories` (états des lieux)
-- [ ] Table `communications` (échanges)
-- [ ] Table `visits` (visites)
-- [ ] Table `settings` (paramètres app)
+- [x] Table `properties` (propriétés)
+- [x] Table `tenants` (locataires)
+- [ ] Table `applicants` (candidats) - Merged avec tenants (status='candidate')
+- [x] Table `leases` (baux)
+- [x] Table `rents` (loyers)
+- [ ] Table `expenses` (charges) - À venir
+- [x] Table `documents` (documents)
+- [ ] Table `inventories` (états des lieux) - À venir
+- [ ] Table `communications` (échanges) - À venir
+- [ ] Table `visits` (visites) - À venir
+- [ ] Table `settings` (paramètres app) - À venir
 
 ### Tests Database
 - [ ] Tests unitaires pour schéma
@@ -61,99 +61,116 @@
 - [ ] Tests CRUD pour chaque table
 - [ ] Tests de relations entre tables
 
-## Phase 3: Routing & Navigation
+## Phase 3: Routing & Navigation ✅
 
 ### Router Setup
-- [ ] Configurer Vue Router avec TypeScript
-- [ ] Créer routes principales
-  - [ ] `/` - Dashboard
-  - [ ] `/properties` - Liste propriétés
-  - [ ] `/properties/:id` - Détail propriété
-  - [ ] `/tenants` - Liste locataires
-  - [ ] `/tenants/:id` - Détail locataire
+- [x] Configurer Vue Router avec TypeScript
+- [x] Créer routes principales
+  - [x] `/` - Dashboard
+  - [x] `/properties` - Liste propriétés
+  - [x] `/properties/:id` - Détail propriété
+  - [x] `/tenants` - Liste locataires
+  - [x] `/tenants/:id` - Détail locataire
+  - [x] `/rents` - Calendrier loyers
   - [ ] `/leases` - Liste baux
   - [ ] `/leases/:id` - Détail bail
-  - [ ] `/documents` - Gestion documents
+  - [x] `/documents` - Gestion documents
   - [ ] `/settings` - Paramètres
 - [ ] Créer navigation guards
 - [ ] Gérer 404 et erreurs routing
 
 ### Layout Principal
-- [ ] Créer composant Layout principal
-- [ ] Sidebar/menu navigation
-- [ ] Header avec titre et actions
+- [x] Créer composant Layout principal
+- [x] Sidebar/menu navigation
+- [x] Header avec titre et actions
 - [ ] Footer (optionnel)
-- [ ] Mobile responsive design
+- [x] Mobile responsive design
 
-## Phase 4: State Management
+## Phase 4: State Management ✅
 
 ### Pinia Stores
 - [ ] Créer store principal (`useAppStore`)
-- [ ] Store propriétés (`usePropertyStore`)
-- [ ] Store locataires (`useTenantStore`)
-- [ ] Store baux (`useLeaseStore`)
-- [ ] Store loyers (`useRentStore`)
-- [ ] Store documents (`useDocumentStore`)
-- [ ] Store settings (`useSettingsStore`)
+- [x] Store propriétés (`propertiesStore`)
+- [x] Store locataires (`tenantsStore`)
+- [ ] Store baux (`leasesStore`)
+- [x] Store loyers (`rentsStore`)
+- [x] Store documents (`documentsStore`)
+- [ ] Store settings (`settingsStore`)
 
 ### Store Features
-- [ ] Actions CRUD pour chaque store
-- [ ] Getters computed
+- [x] Actions CRUD pour chaque store
+- [x] Getters computed
 - [ ] Persistance sélective (settings)
-- [ ] Intégration avec Dexie.js
+- [x] Intégration avec Dexie.js
 
 ### Tests Stores
 - [ ] Tests unitaires pour chaque store
 - [ ] Tests des actions
 - [ ] Tests des getters
 
-## Phase 5: UI Foundation
+## Phase 5: UI Foundation ✅
 
 ### Design System
-- [ ] Configurer thème (couleurs, typography)
-- [ ] Créer variables CSS/SCSS globales
-- [ ] Design tokens (spacing, breakpoints, etc.)
+- [x] Configurer thème (couleurs, typography)
+- [x] Créer variables CSS/SCSS globales
+- [x] Design tokens (spacing, breakpoints, etc.)
 - [ ] Mode sombre (optionnel pour phase 1)
 
 ### Composants de Base
-- [ ] `BaseButton.vue`
-- [ ] `BaseInput.vue`
+- [x] `Button.vue`
+- [x] `Input.vue`
 - [ ] `BaseSelect.vue`
-- [ ] `BaseCard.vue`
-- [ ] `BaseModal.vue`
+- [x] `StatCard.vue`
+- [ ] `BaseModal.vue` (Modal inline créée dans certaines vues)
 - [ ] `BaseTable.vue`
 - [ ] `BasePagination.vue`
-- [ ] `BaseSpinner.vue`
+- [ ] `BaseSpinner.vue` (Loading states inline)
 - [ ] `BaseAlert.vue`
-- [ ] `EmptyState.vue`
+- [ ] `EmptyState.vue` (Empty states inline)
 
-### Composants Métier (Placeholder)
-- [ ] `PropertyCard.vue`
-- [ ] `TenantCard.vue`
+### Composants Métier
+- [x] `PropertyCard.vue`
+- [x] `TenantCard.vue`
+- [x] `DocumentCard.vue`
+- [x] `UploadZone.vue` (DocumentUpload)
+- [x] `Calendar.vue`
+- [x] `SearchBox.vue`
 - [ ] `LeaseCard.vue`
-- [ ] `DocumentUpload.vue`
-- [ ] `DatePicker.vue` (wrapper framework UI)
 
 ### Tests Composants
 - [ ] Tests pour composants de base
 - [ ] Tests accessibilité (a11y)
 
-## Phase 6: Pages Principales (Structure)
+## Phase 6: Pages Principales (Structure) ✅
 
 ### Dashboard
-- [ ] Page Dashboard avec layout
-- [ ] Sections placeholder pour widgets
-- [ ] Navigation vers autres sections
+- [x] Page Dashboard avec layout
+- [x] Sections avec KPI cards et activité récente
+- [x] Navigation vers autres sections
 
 ### Properties
-- [ ] Page liste propriétés
-- [ ] Page création propriété (formulaire vide)
-- [ ] Page détail propriété
+- [x] Page liste propriétés (PropertiesView)
+- [x] Page détail propriété (PropertyDetailView)
+- [ ] Page création/édition propriété (formulaire modal)
 
 ### Tenants
-- [ ] Page liste locataires
-- [ ] Page création locataire (formulaire vide)
-- [ ] Page détail locataire
+- [x] Page liste locataires (TenantsView)
+- [x] Page détail locataire (TenantDetailView)
+- [ ] Page création/édition locataire (formulaire modal)
+
+### Rents
+- [x] Page calendrier loyers (RentsCalendarView)
+- [x] Modal paiement loyer
+
+### Documents
+- [x] Page gestion documents (DocumentsView)
+- [x] Upload drag-and-drop
+- [x] Download/delete documents
+
+### Leases (À venir)
+- [ ] Page liste baux
+- [ ] Page détail bail
+- [ ] Page création/édition bail
 
 ### Settings
 - [ ] Page paramètres généraux

@@ -6,9 +6,13 @@ import TenantCard from '@shared/components/TenantCard.vue';
 import SearchBox from '@shared/components/SearchBox.vue';
 import Button from '@shared/components/Button.vue';
 import StatCard from '@shared/components/StatCard.vue';
+import TenantFormModal from '../components/TenantFormModal.vue';
 
 const router = useRouter();
 const tenantsStore = useTenantsStore();
+
+// Modals
+const showTenantForm = ref(false);
 
 // Filters
 const searchQuery = ref('');
@@ -60,7 +64,11 @@ function handleTenantClick(id: string) {
 }
 
 function handleNewTenant() {
-  console.log('Create new tenant');
+  showTenantForm.value = true;
+}
+
+function handleFormSuccess() {
+  tenantsStore.fetchTenants();
 }
 
 // Lifecycle
@@ -370,3 +378,9 @@ onMounted(async () => {
   }
 }
 </style>
+
+<!-- Tenant Form Modal -->
+<TenantFormModal
+  v-model="showTenantForm"
+  @success="handleFormSuccess"
+/>
