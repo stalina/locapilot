@@ -108,7 +108,7 @@ describe('documentsStore', () => {
       const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
       const metadata = {
         type: 'lease' as const,
-        relatedEntityType: 'property',
+        relatedEntityType: 'property' as const,
         relatedEntityId: 1,
       };
 
@@ -174,6 +174,100 @@ describe('documentsStore', () => {
       expect(db.documents.delete).toHaveBeenCalledWith(1);
       expect(store.documents.length).toBe(1);
       expect(store.documents[0]!.id).toBe(2);
+    });
+
+    it('should handle fetch error', async () => {
+      vi.mocked(db.documents.toArray).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useDocumentsStore();
+      await store.fetchDocuments();
+      
+      expect(store.error).toBe('Échec du chargement des documents');
+    });
+
+    it('should handle upload error', async () => {
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+      const metadata = {
+        type: 'lease' as const,
+        relatedEntityType: 'property' as const,
+        relatedEntityId: 1,
+      };
+
+      vi.mocked(db.documents.add).mockRejectedValue(new Error('Upload failed'));
+
+      const store = useDocumentsStore();
+      
+      await expect(store.uploadDocument(file, metadata)).rejects.toThrow('Upload failed');
+      expect(store.error).toBe('Échec du téléversement du document');
+    });
+
+    it('should handle update error', async () => {
+      vi.mocked(db.documents.update).mockRejectedValue(new Error('Update failed'));
+
+      const store = useDocumentsStore();
+      
+      await expect(store.updateDocument(1, { name: 'New' })).rejects.toThrow('Update failed');
+      expect(store.error).toBe('Échec de la mise à jour du document');
+    });
+
+    it('should handle delete error', async () => {
+      vi.mocked(db.documents.delete).mockRejectedValue(new Error('Delete failed'));
+
+      const store = useDocumentsStore();
+      
+      await expect(store.deleteDocument(1)).rejects.toThrow('Delete failed');
+      expect(store.error).toBe('Échec de la suppression du document');
+    });
+
+    it('should fetch document by id successfully', async () => {
+      const mockDocument: Document = {
+        id: 1,
+        name: 'Test.pdf',
+        type: 'lease',
+        relatedEntityType: 'property',
+        relatedEntityId: 1,
+        mimeType: 'application/pdf',
+        size: 1024,
+        data: new Blob(['test']),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.documents.get).mockResolvedValue(mockDocument);
+
+      const store = useDocumentsStore();
+      await store.fetchDocumentById(1);
+
+      expect(store.currentDocument).toEqual(mockDocument);
+      expect(store.error).toBeNull();
+    });
+
+    it('should handle document not found', async () => {
+      vi.mocked(db.documents.get).mockResolvedValue(undefined);
+
+      const store = useDocumentsStore();
+      await store.fetchDocumentById(999);
+
+      expect(store.currentDocument).toBeNull();
+      expect(store.error).toBe('Document non trouvé');
+    });
+
+    it('should handle fetch by id error', async () => {
+      vi.mocked(db.documents.get).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useDocumentsStore();
+      await store.fetchDocumentById(1);
+
+      expect(store.error).toBe('Échec du chargement du document');
+    });
+
+    it('should clear error', () => {
+      const store = useDocumentsStore();
+      store.error = 'Test error';
+
+      store.clearError();
+
+      expect(store.error).toBeNull();
     });
   });
 });

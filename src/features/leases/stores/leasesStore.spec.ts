@@ -178,5 +178,105 @@ describe('leasesStore', () => {
       expect(store.leases).toHaveLength(1);
       expect(store.leases[0]!.id).toBe(2);
     });
+
+    it('should handle fetch error', async () => {
+      vi.mocked(db.leases.toArray).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useLeasesStore();
+      await store.fetchLeases();
+      
+      expect(store.error).toBe('Échec du chargement des baux');
+      expect(store.leases).toEqual([]);
+    });
+
+    it('should handle create error', async () => {
+      const newLease = {
+        propertyId: 1,
+        tenantIds: [1],
+        startDate: new Date(),
+        rent: 1200,
+        charges: 150,
+        deposit: 2400,
+        paymentDay: 5,
+        status: 'active' as const,
+      };
+
+      vi.mocked(db.leases.add).mockRejectedValue(new Error('Create failed'));
+
+      const store = useLeasesStore();
+      
+      await expect(store.createLease(newLease)).rejects.toThrow('Create failed');
+      expect(store.error).toBe('Échec de la création du bail');
+    });
+
+    it('should handle update error', async () => {
+      vi.mocked(db.leases.update).mockRejectedValue(new Error('Update failed'));
+
+      const store = useLeasesStore();
+      
+      await expect(store.updateLease(1, { rent: 1100 })).rejects.toThrow('Update failed');
+      expect(store.error).toBe('Échec de la mise à jour du bail');
+    });
+
+    it('should handle delete error', async () => {
+      vi.mocked(db.leases.delete).mockRejectedValue(new Error('Delete failed'));
+
+      const store = useLeasesStore();
+      
+      await expect(store.deleteLease(1)).rejects.toThrow('Delete failed');
+      expect(store.error).toBe('Échec de la suppression du bail');
+    });
+
+    it('should fetch lease by id successfully', async () => {
+      const mockLease: Lease = {
+        id: 1,
+        propertyId: 1,
+        tenantIds: [1],
+        startDate: new Date(),
+        rent: 1000,
+        charges: 100,
+        deposit: 2000,
+        paymentDay: 1,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.leases.get).mockResolvedValue(mockLease);
+
+      const store = useLeasesStore();
+      await store.fetchLeaseById(1);
+
+      expect(store.currentLease).toEqual(mockLease);
+      expect(store.error).toBeNull();
+    });
+
+    it('should handle lease not found', async () => {
+      vi.mocked(db.leases.get).mockResolvedValue(undefined);
+
+      const store = useLeasesStore();
+      await store.fetchLeaseById(999);
+
+      expect(store.currentLease).toBeNull();
+      expect(store.error).toBe('Bail non trouvé');
+    });
+
+    it('should handle fetch by id error', async () => {
+      vi.mocked(db.leases.get).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useLeasesStore();
+      await store.fetchLeaseById(1);
+
+      expect(store.error).toBe('Échec du chargement du bail');
+    });
+
+    it('should clear error', () => {
+      const store = useLeasesStore();
+      store.error = 'Test error';
+
+      store.clearError();
+
+      expect(store.error).toBeNull();
+    });
   });
 });

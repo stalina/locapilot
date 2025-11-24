@@ -189,5 +189,103 @@ describe('rentsStore', () => {
         paidDate: paymentDate,
       }));
     });
+
+    it('should handle fetch error', async () => {
+      vi.mocked(db.rents.toArray).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useRentsStore();
+      await store.fetchRents();
+      
+      expect(store.error).toBe('Échec du chargement des loyers');
+    });
+
+    it('should handle create error', async () => {
+      const newRent = {
+        leaseId: 1,
+        dueDate: new Date('2024-01-01'),
+        amount: 1000,
+        charges: 100,
+        status: 'pending' as const,
+      };
+
+      vi.mocked(db.rents.add).mockRejectedValue(new Error('Create failed'));
+
+      const store = useRentsStore();
+      
+      await expect(store.createRent(newRent)).rejects.toThrow('Create failed');
+      expect(store.error).toBe('Échec de la création du loyer');
+    });
+
+    it('should handle update error', async () => {
+      vi.mocked(db.rents.update).mockRejectedValue(new Error('Update failed'));
+
+      const store = useRentsStore();
+      
+      await expect(store.updateRent(1, { status: 'paid' })).rejects.toThrow('Update failed');
+      expect(store.error).toBe('Échec de la mise à jour du loyer');
+    });
+
+    it('should handle delete error', async () => {
+      vi.mocked(db.rents.delete).mockRejectedValue(new Error('Delete failed'));
+
+      const store = useRentsStore();
+      
+      await expect(store.deleteRent(1)).rejects.toThrow('Delete failed');
+      expect(store.error).toBe('Échec de la suppression du loyer');
+    });
+
+    it('should fetch rent by id successfully', async () => {
+      const mockRent: Rent = {
+        id: 1,
+        leaseId: 1,
+        dueDate: new Date(),
+        amount: 1000,
+        charges: 100,
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.rents.get).mockResolvedValue(mockRent);
+
+      const store = useRentsStore();
+      await store.fetchRentById(1);
+
+      expect(store.currentRent).toEqual(mockRent);
+      expect(store.error).toBeNull();
+    });
+
+    it('should handle rent not found', async () => {
+      vi.mocked(db.rents.get).mockResolvedValue(undefined);
+
+      const store = useRentsStore();
+      await store.fetchRentById(999);
+
+      expect(store.currentRent).toBeNull();
+      expect(store.error).toBe('Loyer non trouvé');
+    });
+
+    it('should handle fetch by id error', async () => {
+      vi.mocked(db.rents.get).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useRentsStore();
+      await store.fetchRentById(1);
+
+      expect(store.error).toBe('Échec du chargement du loyer');
+    });
+
+    it('should clear error', () => {
+      const store = useRentsStore();
+      store.error = 'Test error';
+
+      store.clearError();
+
+      expect(store.error).toBeNull();
+    });
+
+    it('should calculate payment rate as 0 when no rents', () => {
+      const store = useRentsStore();
+      expect(store.paymentRate).toBe(0);
+    });
   });
 });

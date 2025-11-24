@@ -213,5 +213,192 @@ describe('propertiesStore', () => {
       expect(store.properties).toHaveLength(1);
       expect(store.properties[0]!.id).toBe(2);
     });
+
+    it('should handle create error', async () => {
+      const newProperty = {
+        name: 'New Property',
+        address: '456 New St, Lyon 69001',
+        type: 'apartment' as const,
+        surface: 60,
+        rooms: 3,
+        rent: 1200,
+        charges: 100,
+        status: 'available' as const,
+        features: [],
+      };
+
+      vi.mocked(db.properties.add).mockRejectedValue(new Error('Create failed'));
+
+      const store = usePropertiesStore();
+      
+      await expect(store.createProperty(newProperty)).rejects.toThrow('Create failed');
+      expect(store.error).toBe('Create failed');
+    });
+
+    it('should handle update error', async () => {
+      vi.mocked(db.properties.update).mockRejectedValue(new Error('Update failed'));
+
+      const store = usePropertiesStore();
+      
+      await expect(store.updateProperty(1, { name: 'New Name' })).rejects.toThrow('Update failed');
+      expect(store.error).toBe('Update failed');
+    });
+
+    it('should handle delete error', async () => {
+      vi.mocked(db.properties.delete).mockRejectedValue(new Error('Delete failed'));
+
+      const store = usePropertiesStore();
+      
+      await expect(store.deleteProperty(1)).rejects.toThrow('Delete failed');
+      expect(store.error).toBe('Delete failed');
+    });
+
+    it('should fetch property by id successfully', async () => {
+      const mockProperty: Property = {
+        id: 1,
+        name: 'Test Property',
+        address: '123 Test St, Paris 75001',
+        type: 'apartment',
+        surface: 50,
+        rooms: 2,
+        rent: 1000,
+        charges: 100,
+        status: 'available',
+        features: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.properties.get).mockResolvedValue(mockProperty);
+
+      const store = usePropertiesStore();
+      await store.fetchPropertyById(1);
+
+      expect(store.currentProperty).toEqual(mockProperty);
+      expect(store.error).toBeNull();
+    });
+
+    it('should handle property not found', async () => {
+      vi.mocked(db.properties.get).mockResolvedValue(undefined);
+
+      const store = usePropertiesStore();
+      await store.fetchPropertyById(999);
+
+      expect(store.currentProperty).toBeNull();
+      expect(store.error).toBe('Property not found');
+    });
+
+    it('should handle fetch by id error', async () => {
+      vi.mocked(db.properties.get).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = usePropertiesStore();
+      await store.fetchPropertyById(1);
+
+      expect(store.error).toBe('Fetch failed');
+    });
+
+    it('should update currentProperty when updating the current property', async () => {
+      const mockProperty: Property = {
+        id: 1,
+        name: 'Original',
+        address: '123 Test St, Paris 75001',
+        type: 'apartment',
+        surface: 50,
+        rooms: 2,
+        rent: 1000,
+        charges: 100,
+        status: 'available',
+        features: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updatedProperty = { ...mockProperty, name: 'Updated' };
+
+      const store = usePropertiesStore();
+      store.currentProperty = mockProperty;
+
+      vi.mocked(db.properties.update).mockResolvedValue(1);
+      vi.mocked(db.properties.toArray).mockResolvedValue([updatedProperty]);
+      vi.mocked(db.properties.get).mockResolvedValue(updatedProperty);
+
+      await store.updateProperty(1, { name: 'Updated' });
+
+      expect(store.currentProperty?.name).toBe('Updated');
+    });
+
+    it('should clear currentProperty when deleting it', async () => {
+      const mockProperty: Property = {
+        id: 1,
+        name: 'To Delete',
+        address: '123 Test St, Paris 75001',
+        type: 'apartment',
+        surface: 50,
+        rooms: 2,
+        rent: 1000,
+        charges: 100,
+        status: 'available',
+        features: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const store = usePropertiesStore();
+      store.currentProperty = mockProperty;
+
+      vi.mocked(db.properties.delete).mockResolvedValue(undefined);
+      vi.mocked(db.properties.toArray).mockResolvedValue([]);
+
+      await store.deleteProperty(1);
+
+      expect(store.currentProperty).toBeNull();
+    });
+
+    it('should clear error', () => {
+      const store = usePropertiesStore();
+      store.error = 'Test error';
+
+      store.clearError();
+
+      expect(store.error).toBeNull();
+    });
+  });
+
+  describe('Getters - Edge Cases', () => {
+    it('should calculate occupancy rate as 0 when no properties', () => {
+      const store = usePropertiesStore();
+      expect(store.occupancyRate).toBe(0);
+    });
+
+    it('should calculate occupancy rate correctly', () => {
+      const store = usePropertiesStore();
+      store.properties = [
+        { id: 1, status: 'rented' } as Property,
+        { id: 2, status: 'rented' } as Property,
+        { id: 3, status: 'available' } as Property,
+        { id: 4, status: 'available' } as Property,
+      ];
+      expect(store.occupancyRate).toBe(50);
+    });
+
+    it('should filter maintenance properties', () => {
+      const store = usePropertiesStore();
+      store.properties = [
+        { id: 1, status: 'maintenance' } as Property,
+        { id: 2, status: 'available' } as Property,
+        { id: 3, status: 'maintenance' } as Property,
+      ];
+      expect(store.maintenanceProperties).toHaveLength(2);
+    });
+
+    it('should handle properties with no rent in total revenue', () => {
+      const store = usePropertiesStore();
+      store.properties = [
+        { id: 1, rent: 1000, status: 'rented' } as Property,
+        { id: 2, status: 'rented' } as Property, // no rent property
+        { id: 3, rent: 500, status: 'rented' } as Property,
+      ];
+      expect(store.totalRevenue).toBe(1500);
+    });
   });
 });

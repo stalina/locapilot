@@ -165,5 +165,148 @@ describe('tenantsStore', () => {
       expect(store.tenants).toHaveLength(1);
       expect(store.tenants[0]!.id).toBe(2);
     });
+
+    it('should handle fetch error', async () => {
+      vi.mocked(db.tenants.toArray).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useTenantsStore();
+      await store.fetchTenants();
+      
+      expect(store.error).toBe('Fetch failed');
+      expect(store.tenants).toEqual([]);
+    });
+
+    it('should handle create error', async () => {
+      const newTenant = {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane@example.com',
+        phone: '0987654321',
+        status: 'active' as const,
+      };
+
+      vi.mocked(db.tenants.add).mockRejectedValue(new Error('Create failed'));
+
+      const store = useTenantsStore();
+      
+      await expect(store.createTenant(newTenant)).rejects.toThrow('Create failed');
+      expect(store.error).toBe('Create failed');
+    });
+
+    it('should handle update error', async () => {
+      vi.mocked(db.tenants.update).mockRejectedValue(new Error('Update failed'));
+
+      const store = useTenantsStore();
+      
+      await expect(store.updateTenant(1, { firstName: 'New' })).rejects.toThrow('Update failed');
+      expect(store.error).toBe('Update failed');
+    });
+
+    it('should handle delete error', async () => {
+      vi.mocked(db.tenants.delete).mockRejectedValue(new Error('Delete failed'));
+
+      const store = useTenantsStore();
+      
+      await expect(store.deleteTenant(1)).rejects.toThrow('Delete failed');
+      expect(store.error).toBe('Delete failed');
+    });
+
+    it('should fetch tenant by id successfully', async () => {
+      const mockTenant: Tenant = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        phone: '0123456789',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.tenants.get).mockResolvedValue(mockTenant);
+
+      const store = useTenantsStore();
+      await store.fetchTenantById(1);
+
+      expect(store.currentTenant).toEqual(mockTenant);
+      expect(store.error).toBeNull();
+    });
+
+    it('should handle tenant not found', async () => {
+      vi.mocked(db.tenants.get).mockResolvedValue(undefined);
+
+      const store = useTenantsStore();
+      await store.fetchTenantById(999);
+
+      expect(store.currentTenant).toBeNull();
+      expect(store.error).toBe('Tenant not found');
+    });
+
+    it('should handle fetch by id error', async () => {
+      vi.mocked(db.tenants.get).mockRejectedValue(new Error('Fetch failed'));
+
+      const store = useTenantsStore();
+      await store.fetchTenantById(1);
+
+      expect(store.error).toBe('Fetch failed');
+    });
+
+    it('should update currentTenant when updating the current tenant', async () => {
+      const mockTenant: Tenant = {
+        id: 1,
+        firstName: 'Original',
+        lastName: 'Name',
+        email: 'original@example.com',
+        phone: '0123456789',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updatedTenant = { ...mockTenant, firstName: 'Updated' };
+
+      const store = useTenantsStore();
+      store.currentTenant = mockTenant;
+
+      vi.mocked(db.tenants.update).mockResolvedValue(1);
+      vi.mocked(db.tenants.toArray).mockResolvedValue([updatedTenant]);
+      vi.mocked(db.tenants.get).mockResolvedValue(updatedTenant);
+
+      await store.updateTenant(1, { firstName: 'Updated' });
+
+      expect(store.currentTenant?.firstName).toBe('Updated');
+    });
+
+    it('should clear currentTenant when deleting it', async () => {
+      const mockTenant: Tenant = {
+        id: 1,
+        firstName: 'To Delete',
+        lastName: 'Name',
+        email: 'delete@example.com',
+        phone: '0123456789',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const store = useTenantsStore();
+      store.currentTenant = mockTenant;
+
+      vi.mocked(db.tenants.delete).mockResolvedValue(undefined);
+      vi.mocked(db.tenants.toArray).mockResolvedValue([]);
+
+      await store.deleteTenant(1);
+
+      expect(store.currentTenant).toBeNull();
+    });
+
+    it('should clear error', () => {
+      const store = useTenantsStore();
+      store.error = 'Test error';
+
+      store.clearError();
+
+      expect(store.error).toBeNull();
+    });
   });
 });
