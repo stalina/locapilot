@@ -25,3 +25,9 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+# Tests
+coverage
+playwright-report
+test-results
+.nyc_output
