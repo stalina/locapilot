@@ -2,7 +2,7 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 95/190 tâches (50%)
+**Progression**: 100/195 tâches (51%)
 
 ## Phase 1: Configuration de Base ✅
 
@@ -175,6 +175,13 @@
 - [x] Page liste baux (LeasesView)
 - [x] Page détail bail (LeaseDetailView)
 - [x] Page création/édition bail (LeaseFormModal)
+
+### Relations entre entités
+- [x] Afficher locataires actuels dans PropertyDetailView
+- [x] Afficher historique des baux dans PropertyDetailView
+- [x] Afficher propriété actuelle dans TenantDetailView
+- [x] Afficher historique des baux dans TenantDetailView
+- [x] Navigation croisée entre entités liées
 
 ### Settings
 - [ ] Page paramètres généraux
