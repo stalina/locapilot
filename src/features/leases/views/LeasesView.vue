@@ -4,6 +4,7 @@ import { useLeasesStore } from '../stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import LeaseCard from '../components/LeaseCard.vue';
+import LeaseFormModal from '../components/LeaseFormModal.vue';
 import Button from '@/shared/components/Button.vue';
 import SearchBox from '@/shared/components/SearchBox.vue';
 
@@ -13,6 +14,7 @@ const tenantsStore = useTenantsStore();
 
 const searchQuery = ref('');
 const statusFilter = ref<'all' | 'active' | 'pending' | 'ended'>('all');
+const showLeaseForm = ref(false);
 
 onMounted(async () => {
   await Promise.all([
@@ -87,8 +89,11 @@ const getTenantNames = (tenantIds: number[]) => {
 };
 
 const handleNewLease = () => {
-  // TODO: Open LeaseFormModal
-  console.log('Open lease form modal');
+  showLeaseForm.value = true;
+};
+
+const handleFormSuccess = async () => {
+  await leasesStore.fetchLeases();
 };
 </script>
 
@@ -177,6 +182,12 @@ const handleNewLease = () => {
         />
       </div>
     </div>
+
+    <!-- Lease Form Modal -->
+    <LeaseFormModal
+      v-model="showLeaseForm"
+      @success="handleFormSuccess"
+    />
   </div>
 </template>
 
