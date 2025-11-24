@@ -2,13 +2,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
+import { useLeasesStore } from '@/features/leases/stores/leasesStore';
+import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import Button from '@shared/components/Button.vue';
 
 const route = useRoute();
 const router = useRouter();
 const tenantsStore = useTenantsStore();
+const leasesStore = useLeasesStore();
+const propertiesStore = usePropertiesStore();
 
-const tenantId = computed(() => route.params.id as string);
+const tenantId = computed(() => Number(route.params.id));
 const tenant = computed(() => tenantsStore.currentTenant);
 
 const age = computed(() => {
@@ -36,6 +40,30 @@ const statusConfig = computed(() => {
   }
 });
 
+// Baux liés à ce locataire
+const tenantLeases = computed(() => {
+  return leasesStore.leasesByTenant(tenantId.value);
+});
+
+// Bail actif
+const activeLease = computed(() => {
+  return tenantLeases.value.find(l => l.status === 'active');
+});
+
+// Propriété actuelle
+const currentProperty = computed(() => {
+  if (!activeLease.value) return null;
+  return propertiesStore.properties.find(p => p.id === activeLease.value.propertyId);
+});
+
+const goToLease = (leaseId: number) => {
+  router.push(`/leases/${leaseId}`);
+};
+
+const goToProperty = (propertyId: number) => {
+  router.push(`/properties/${propertyId}`);
+};
+
 function handleBack() {
   router.push('/tenants');
 }
@@ -55,7 +83,11 @@ async function handleDelete() {
 }
 
 onMounted(async () => {
-  await tenantsStore.fetchTenantById(tenantId.value);
+  await Promise.all([
+    tenantsStore.fetchTenantById(tenantId.value),
+    leasesStore.fetchLeases(),
+    propertiesStore.fetchProperties(),
+  ]);
 });
 </script>
 
@@ -176,14 +208,70 @@ onMounted(async () => {
         <!-- Right Column -->
         <div class="right-column">
           <!-- Current Property Card -->
-          <div class="card">
+          <div class="card" v-if="activeLease && currentProperty">
             <h2 class="card-title">
               <i class="mdi mdi-home"></i>
               Bien occupé
             </h2>
-            <div class="empty-placeholder">
-              <i class="mdi mdi-home-search"></i>
-              <p>Aucun bien associé</p>
+            <div 
+              class="property-item clickable"
+              @click="currentProperty.id && goToProperty(currentProperty.id)"
+            >
+              <i class="mdi mdi-home-city"></i>
+              <div class="property-info">
+                <strong>{{ currentProperty.name }}</strong>
+                <span>{{ currentProperty.address }}</span>
+              </div>
+              <i class="mdi mdi-chevron-right"></i>
+            </div>
+            <div class="lease-summary">
+              <div class="summary-item">
+                <span class="label">Loyer mensuel</span>
+                <span class="value">{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Début</span>
+                <span class="value">{{ new Date(activeLease.startDate).toLocaleDateString('fr-FR') }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Échéance</span>
+                <span class="value">{{ activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString('fr-FR') : 'Indéterminée' }}</span>
+              </div>
+              <Button 
+                variant="default" 
+                size="sm"
+                @click="activeLease.id && goToLease(activeLease.id)"
+                class="view-lease-btn"
+              >
+                <i class="mdi mdi-file-document"></i>
+                Voir le bail
+              </Button>
+            </div>
+          </div>
+
+          <!-- Leases History -->
+          <div class="card" v-if="tenantLeases.length > 0">
+            <h2 class="card-title">
+              <i class="mdi mdi-file-document-multiple"></i>
+              Historique des baux
+              <span class="badge">{{ tenantLeases.length }}</span>
+            </h2>
+            <div class="leases-list">
+              <div 
+                v-for="lease in tenantLeases" 
+                :key="lease.id"
+                :class="['lease-item clickable', lease.status]"
+                @click="lease.id && goToLease(lease.id)"
+              >
+                <div class="lease-header">
+                  <span :class="['status-badge', lease.status]">
+                    {{ lease.status === 'active' ? 'Actif' : lease.status === 'pending' ? 'En attente' : 'Terminé' }}
+                  </span>
+                  <span class="lease-date">{{ new Date(lease.startDate).toLocaleDateString('fr-FR') }}</span>
+                </div>
+                <div class="lease-amount">{{ lease.rent.toLocaleString('fr-FR') }} € / mois</div>
+                <i class="mdi mdi-chevron-right"></i>
+              </div>
             </div>
           </div>
 
@@ -416,6 +504,156 @@ onMounted(async () => {
   line-height: 1.6;
   color: var(--text-secondary, #64748b);
   white-space: pre-wrap;
+}
+
+/* Property Item */
+.property-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  transition: all 0.2s ease;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.property-item.clickable:hover {
+  border-color: var(--primary-400, #818cf8);
+  background: var(--primary-50, #eef2ff);
+  cursor: pointer;
+  transform: translateX(4px);
+}
+
+.property-item > i:first-child {
+  font-size: 2rem;
+  color: var(--primary-600, #4f46e5);
+}
+
+.property-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.property-info strong {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+}
+
+.property-info span {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.property-item > i:last-child {
+  color: var(--text-tertiary, #94a3b8);
+}
+
+/* Lease Summary */
+.lease-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  padding-top: var(--space-3, 0.75rem);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-item .label {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.summary-item .value {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+}
+
+.view-lease-btn {
+  width: 100%;
+  margin-top: var(--space-2, 0.5rem);
+}
+
+/* Leases List */
+.leases-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.lease-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  transition: all 0.2s ease;
+}
+
+.lease-item.clickable:hover {
+  border-color: var(--primary-400, #818cf8);
+  background: var(--primary-50, #eef2ff);
+  cursor: pointer;
+  transform: translateX(4px);
+}
+
+.lease-item > i:last-child {
+  position: absolute;
+  right: var(--space-3, 0.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.lease-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.status-badge {
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.active {
+  background: var(--success-100, #dcfce7);
+  color: var(--success-700, #15803d);
+}
+
+.status-badge.pending {
+  background: var(--warning-100, #fef3c7);
+  color: var(--warning-700, #a16207);
+}
+
+.status-badge.ended {
+  background: var(--gray-100, #f1f5f9);
+  color: var(--gray-700, #334155);
+}
+
+.lease-date {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.lease-amount {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--primary-600, #4f46e5);
+  padding-right: var(--space-8, 2rem);
 }
 
 /* Quick Actions */

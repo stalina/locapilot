@@ -2,6 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePropertiesStore } from '../stores/propertiesStore';
+import { useLeasesStore } from '@/features/leases/stores/leasesStore';
+import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@shared/components/Button.vue';
 import Badge from '@shared/components/Badge.vue';
 import Card from '@shared/components/Card.vue';
@@ -9,8 +11,10 @@ import Card from '@shared/components/Card.vue';
 const route = useRoute();
 const router = useRouter();
 const propertiesStore = usePropertiesStore();
+const leasesStore = useLeasesStore();
+const tenantsStore = useTenantsStore();
 
-const propertyId = computed(() => route.params.id as string);
+const propertyId = computed(() => Number(route.params.id));
 
 const typeLabels = {
   apartment: 'Appartement',
@@ -47,8 +51,38 @@ function handleDelete() {
   }
 }
 
+// Leases liés à cette propriété
+const propertyLeases = computed(() => {
+  return leasesStore.leasesByProperty(propertyId.value);
+});
+
+// Bail actif (si occupé)
+const activeLease = computed(() => {
+  return propertyLeases.value.find(l => l.status === 'active');
+});
+
+// Locataires actuels
+const currentTenants = computed(() => {
+  if (!activeLease.value) return [];
+  return activeLease.value.tenantIds
+    .map(id => tenantsStore.tenants.find(t => t.id === id))
+    .filter(Boolean);
+});
+
+const goToLease = (leaseId: number) => {
+  router.push(`/leases/${leaseId}`);
+};
+
+const goToTenant = (tenantId: number) => {
+  router.push(`/tenants/${tenantId}`);
+};
+
 onMounted(async () => {
-  await propertiesStore.fetchPropertyById(propertyId.value);
+  await Promise.all([
+    propertiesStore.fetchPropertyById(propertyId.value),
+    leasesStore.fetchLeases(),
+    tenantsStore.fetchTenants(),
+  ]);
 });
 </script>
 
@@ -184,20 +218,77 @@ onMounted(async () => {
 
         <!-- Right Column: Related Data -->
         <div class="right-column">
-          <!-- Tenant Info (if occupied) -->
-          <Card v-if="propertiesStore.currentProperty.status === 'occupied'">
+          <!-- Current Tenant (if occupied) -->
+          <Card v-if="activeLease && currentTenants.length > 0">
             <div class="card-header">
               <h2>
                 <i class="mdi mdi-account"></i>
-                Locataire actuel
+                Locataire{{ currentTenants.length > 1 ? 's' : '' }} actuel{{ currentTenants.length > 1 ? 's' : '' }}
               </h2>
             </div>
-            <div class="tenant-placeholder">
-              <i class="mdi mdi-account-circle"></i>
-              <p>Fonctionnalité à venir</p>
-              <Button variant="outline" size="sm" icon="link">
-                Voir le locataire
+            <div class="tenants-list">
+              <div 
+                v-for="tenant in currentTenants" 
+                :key="tenant.id"
+                class="tenant-item clickable"
+                @click="tenant.id && goToTenant(tenant.id)"
+              >
+                <i class="mdi mdi-account-circle"></i>
+                <div class="tenant-info">
+                  <strong>{{ tenant.firstName }} {{ tenant.lastName }}</strong>
+                  <span>{{ tenant.email }}</span>
+                </div>
+                <i class="mdi mdi-chevron-right"></i>
+              </div>
+            </div>
+            <div class="lease-summary" v-if="activeLease">
+              <div class="summary-item">
+                <span class="label">Loyer mensuel</span>
+                <span class="value">{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Échéance</span>
+                <span class="value">{{ activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString('fr-FR') : 'Indéterminée' }}</span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                icon="file-document"
+                @click="activeLease.id && goToLease(activeLease.id)"
+                class="view-lease-btn"
+              >
+                Voir le bail
               </Button>
+            </div>
+          </Card>
+
+          <!-- Leases History -->
+          <Card v-if="propertyLeases.length > 0">
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-file-document-multiple"></i>
+                Historique des baux
+              </h2>
+              <Badge variant="info">{{ propertyLeases.length }}</Badge>
+            </div>
+            <div class="leases-list">
+              <div 
+                v-for="lease in propertyLeases" 
+                :key="lease.id"
+                :class="['lease-item clickable', lease.status]"
+                @click="lease.id && goToLease(lease.id)"
+              >
+                <div class="lease-header">
+                  <Badge 
+                    :variant="lease.status === 'active' ? 'success' : lease.status === 'pending' ? 'warning' : 'default'"
+                  >
+                    {{ lease.status === 'active' ? 'Actif' : lease.status === 'pending' ? 'En attente' : 'Terminé' }}
+                  </Badge>
+                  <span class="lease-date">{{ new Date(lease.startDate).toLocaleDateString('fr-FR') }}</span>
+                </div>
+                <div class="lease-amount">{{ lease.rent.toLocaleString('fr-FR') }} € / mois</div>
+                <i class="mdi mdi-chevron-right"></i>
+              </div>
             </div>
           </Card>
 
@@ -393,6 +484,114 @@ onMounted(async () => {
   margin: 0;
   line-height: 1.7;
   color: var(--text-secondary, #64748b);
+}
+
+.tenants-list,
+.leases-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.tenant-item,
+.lease-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  transition: all 0.2s ease;
+}
+
+.tenant-item.clickable:hover,
+.lease-item.clickable:hover {
+  border-color: var(--primary-400, #818cf8);
+  background: var(--primary-50, #eef2ff);
+  cursor: pointer;
+  transform: translateX(4px);
+}
+
+.tenant-item > i:first-child {
+  font-size: 2rem;
+  color: var(--primary-600, #4f46e5);
+}
+
+.tenant-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.tenant-info strong {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+}
+
+.tenant-info span {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.lease-summary {
+  margin-top: var(--space-4, 1rem);
+  padding-top: var(--space-4, 1rem);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-item .label {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.summary-item .value {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+}
+
+.view-lease-btn {
+  width: 100%;
+}
+
+.lease-item {
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+}
+
+.lease-item > i:last-child {
+  position: absolute;
+  right: var(--space-3, 0.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.lease-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.lease-date {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.lease-amount {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--primary-600, #4f46e5);
 }
 
 .tenant-placeholder,
