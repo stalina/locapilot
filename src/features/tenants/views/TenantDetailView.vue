@@ -5,6 +5,7 @@ import { useTenantsStore } from '../stores/tenantsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import Button from '@shared/components/Button.vue';
+import TenantFormModal from '../components/TenantFormModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -14,6 +15,7 @@ const propertiesStore = usePropertiesStore();
 
 const tenantId = computed(() => Number(route.params.id));
 const tenant = computed(() => tenantsStore.currentTenant);
+const showEditModal = ref(false);
 
 const age = computed(() => {
   if (!tenant.value?.birthDate) return null;
@@ -70,6 +72,13 @@ function handleBack() {
 
 function handleEdit() {
   console.log('Edit tenant:', tenantId.value);
+  showEditModal.value = true;
+}
+
+function handleEditSuccess() {
+  showEditModal.value = false;
+  // Rafraîchir les données du locataire
+  tenantsStore.fetchTenantById(tenantId.value);
 }
 
 async function handleDelete() {
@@ -321,6 +330,14 @@ onMounted(async () => {
       <i class="mdi mdi-account-off"></i>
       Locataire non trouvé
     </div>
+
+    <!-- Edit Modal -->
+    <TenantFormModal
+      v-if="tenant"
+      v-model="showEditModal"
+      :tenant="tenant"
+      @success="handleEditSuccess"
+    />
   </div>
 </template>
 

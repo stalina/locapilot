@@ -208,6 +208,12 @@ onMounted(async () => {
         @click="handleTenantClick"
       />
     </div>
+
+    <!-- Tenant Form Modal -->
+    <TenantFormModal
+      v-model="showTenantForm"
+      @success="handleFormSuccess"
+    />
   </div>
 </template>
 
@@ -380,9 +386,3 @@ onMounted(async () => {
   }
 }
 </style>
-
-<!-- Tenant Form Modal -->
-<TenantFormModal
-  v-model="showTenantForm"
-  @success="handleFormSuccess"
-/>
