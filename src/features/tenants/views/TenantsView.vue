@@ -59,12 +59,14 @@ function handleSearch(query: string) {
   searchQuery.value = query;
 }
 
-function handleTenantClick(id: string) {
+function handleTenantClick(id: number) {
   router.push(`/tenants/${id}`);
 }
 
 function handleNewTenant() {
+  console.log('[TenantsView] Opening tenant form modal');
   showTenantForm.value = true;
+  console.log('[TenantsView] showTenantForm.value =', showTenantForm.value);
 }
 
 function handleFormSuccess() {

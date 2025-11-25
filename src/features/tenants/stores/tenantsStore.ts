@@ -15,6 +15,10 @@ export const useTenantsStore = defineStore('tenants', () => {
     tenants.value.filter(t => t.status === 'active')
   );
 
+  const candidateTenants = computed(() =>
+    tenants.value.filter(t => t.status === 'candidate')
+  );
+
   const formerTenants = computed(() =>
     tenants.value.filter(t => t.status === 'former')
   );
@@ -124,6 +128,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     error,
     // Getters
     activeTenants,
+    candidateTenants,
     formerTenants,
     tenantsCount,
     // Actions

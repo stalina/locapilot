@@ -40,6 +40,7 @@ const modalTitle = computed(() => isEditMode.value ? 'Modifier le locataire' : '
 
 // Watch tenant changes to populate form
 watch(() => props.tenant, (newTenant) => {
+  console.log('[TenantFormModal] Tenant changed:', newTenant);
   if (newTenant) {
     formData.value = {
       firstName: newTenant.firstName,
@@ -52,6 +53,10 @@ watch(() => props.tenant, (newTenant) => {
   } else {
     resetForm();
   }
+}, { immediate: true });
+
+watch(() => props.modelValue, (newValue) => {
+  console.log('[TenantFormModal] modelValue changed:', newValue);
 }, { immediate: true });
 
 function resetForm() {

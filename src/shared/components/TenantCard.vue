@@ -51,7 +51,7 @@ const age = computed(() => {
 });
 
 function handleClick() {
-  if (props.clickable) {
+  if (props.clickable && props.tenant.id) {
     emit('click', props.tenant.id);
   }
 }

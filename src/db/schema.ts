@@ -32,7 +32,7 @@ export interface Tenant {
   occupation?: string;
   employer?: string;
   income?: number;
-  status: 'active' | 'former';
+  status: 'active' | 'candidate' | 'former';
   createdAt: Date;
   updatedAt: Date;
 }
