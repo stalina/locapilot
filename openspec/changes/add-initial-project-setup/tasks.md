@@ -2,7 +2,7 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 93/183 tâches (51%)  
+**Progression**: 96/183 tâches (52%)  
 **Dernière validation**: 25 novembre 2025 (test manuel via Playwright MCP)
 
 ## Phase 1: Configuration de Base ✅
@@ -156,12 +156,12 @@
 ### Properties
 - [x] Page liste propriétés (PropertiesView) ✅ VALIDÉ
 - [x] Page détail propriété (PropertyDetailView) ✅ VALIDÉ
-- [x] Page création/édition propriété (PropertyFormModal) ⚠️ CRÉATION OK, ÉDITION CASSÉE
+- [x] Page création/édition propriété (PropertyFormModal) ✅ VALIDÉ
 
 ### Tenants
-- [x] Page liste locataires (TenantsView) ⚠️ ERREUR RUNTIME
-- [x] Page détail locataire (TenantDetailView) ⚠️ Non testé (page liste cassée)
-- [x] Page création/édition locataire (TenantFormModal) ⚠️ Non testé (page liste cassée)
+- [x] Page liste locataires (TenantsView) ✅ VALIDÉ
+- [x] Page détail locataire (TenantDetailView) ✅ VALIDÉ
+- [x] Page création/édition locataire (TenantFormModal) ✅ VALIDÉ
 
 ### Rents
 - [ ] Page calendrier loyers (RentsCalendarView) ⚠️ Stub uniquement ("En construction")
@@ -304,31 +304,28 @@
 ## ⚠️ Problèmes Découverts (25 nov 2025)
 
 ### Bugs Critiques
-1. **TenantsView**: Erreur runtime `Cannot read properties of undefined (reading 'length')` - page complètement cassée
-2. **PropertyDetailView**: Bouton "Modifier" ne déclenche pas le modal d'édition (console.log visible mais modal ne s'ouvre pas)
+1. ~~**TenantsView**: Erreur runtime - page complètement cassée~~ ✅ **RÉSOLU**
+2. ~~**PropertyDetailView**: Bouton "Modifier" ne déclenche pas le modal~~ ✅ **RÉSOLU**
 3. **RentsCalendarView**: Seulement un stub "En construction", fonctionnalité non implémentée
 
 ### Problèmes de Données
-4. **Prix des propriétés**: Affichage "NaN €/mois" sur toutes les cartes de propriétés (problème de calcul ou de mapping)
-5. **Loyers des baux**: Tous les baux affichent "0 €" de loyer alors que les propriétés ont des loyers définis
+4. ~~**Prix des propriétés**: Affichage "NaN €/mois"~~ ✅ **RÉSOLU**
+5. **Loyers des baux**: Tous les baux affichent "0 €" de loyer
 
 ### Fonctionnalités Non Testées
-- Modal d'édition des propriétés (création fonctionne)
-- Détail et création/édition des locataires (page liste cassée)
+- ~~Modal d'édition des propriétés~~ ✅ **VALIDÉ**
+- ~~Détail et création/édition des locataires~~ ✅ **VALIDÉ**
 - Détail et création/édition des baux
 - Relations entre entités (pas de données visibles lors du test)
 - Upload/Download/Delete de documents (UI présente mais non testé fonctionnellement)
 
 ### Tests Réels Validés ✅
 - Dashboard: affiché correctement avec KPIs et activité
-- Liste propriétés: affichée avec filtres et recherche
-- Détail propriété: navigation et affichage OK
-- Modal création propriété: s'ouvre et affiche le formulaire
+- **Propriétés** : Liste, détail, création, édition, suppression ✅
+- **Locataires** : Liste, détail, création, édition, suppression ✅
 - Liste baux: affichée avec 3 baux
 - Documents: page vide affichée avec zone de drop
-- Settings: page complète avec export/import/PWA
-
-### Impact sur la Progression
+- Settings: page complète avec export/import/PWA### Impact sur la Progression
 - Progression réelle: **93/183 tâches (51%)** au lieu de 110/195 (56%)
 - 17 tâches marquées comme complètes mais non fonctionnelles ou non testables
 - Décompte ajusté après recomptage automatique (grep)
