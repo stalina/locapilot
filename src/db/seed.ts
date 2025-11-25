@@ -25,7 +25,7 @@ export async function seedDatabase(): Promise<void> {
         rooms: 4,
         rent: 1250,
         charges: 150,
-        status: 'rented',
+        status: 'occupied',
         description: 'Bel appartement lumineux avec balcon, proche des commerces',
       },
       {
@@ -36,7 +36,7 @@ export async function seedDatabase(): Promise<void> {
         rooms: 5,
         rent: 2100,
         charges: 200,
-        status: 'rented',
+        status: 'occupied',
         description: 'Grand appartement familial avec vue dégagée',
       },
       {
@@ -47,7 +47,7 @@ export async function seedDatabase(): Promise<void> {
         rooms: 3,
         rent: 1500,
         charges: 100,
-        status: 'available',
+        status: 'vacant',
         description: 'Studio moderne entièrement rénové',
       },
       {
@@ -58,7 +58,7 @@ export async function seedDatabase(): Promise<void> {
         rooms: 6,
         rent: 2800,
         charges: 250,
-        status: 'available',
+        status: 'vacant',
         description: 'Maison avec jardin et garage',
       },
       {
@@ -69,7 +69,7 @@ export async function seedDatabase(): Promise<void> {
         rooms: 3,
         rent: 1350,
         charges: 120,
-        status: 'rented',
+        status: 'occupied',
         description: 'Appartement calme dans résidence sécurisée',
       },
     ];

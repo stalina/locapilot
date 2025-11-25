@@ -2,7 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 110/195 tâches (56%)
+**Progression**: 93/183 tâches (51%)  
+**Dernière validation**: 25 novembre 2025 (test manuel via Playwright MCP)
 
 ## Phase 1: Configuration de Base ✅
 
@@ -28,9 +29,9 @@
 - [x] Installer Pinia
 - [x] Installer Dexie.js
 - [ ] Installer day.js (date handling)
-- [ ] Installer framework UI (décision: Custom design system créé)
-- [ ] Installer Vitest + @vue/test-utils
-- [ ] Installer Playwright
+- [x] Installer framework UI (décision: Custom design system créé)
+- [x] Installer Vitest + @vue/test-utils
+- [x] Installer Playwright
 - [ ] Installer utilitaires (zod pour validation, etc.)
 
 ## Phase 2: Database Layer ✅
@@ -76,9 +77,9 @@
   - [x] `/leases` - Liste baux
   - [x] `/leases/:id` - Détail bail
   - [x] `/documents` - Gestion documents
-  - [ ] `/settings` - Paramètres
-- [ ] Créer navigation guards
-- [ ] Gérer 404 et erreurs routing
+  - [x] `/settings` - Paramètres
+- [x] Créer navigation guards
+- [x] Gérer 404 et erreurs routing
 
 ### Layout Principal
 - [x] Créer composant Layout principal
@@ -90,7 +91,7 @@
 ## Phase 4: State Management ✅
 
 ### Pinia Stores
-- [ ] Créer store principal (`useAppStore`)
+- [x] Créer store principal (`useAppStore`)
 - [x] Store propriétés (`propertiesStore`)
 - [x] Store locataires (`tenantsStore`)
 - [x] Store baux (`leasesStore`)
@@ -153,41 +154,41 @@
 - [x] Navigation vers autres sections
 
 ### Properties
-- [x] Page liste propriétés (PropertiesView)
-- [x] Page détail propriété (PropertyDetailView)
-- [x] Page création/édition propriété (PropertyFormModal)
+- [x] Page liste propriétés (PropertiesView) ✅ VALIDÉ
+- [x] Page détail propriété (PropertyDetailView) ✅ VALIDÉ
+- [x] Page création/édition propriété (PropertyFormModal) ⚠️ CRÉATION OK, ÉDITION CASSÉE
 
 ### Tenants
-- [x] Page liste locataires (TenantsView)
-- [x] Page détail locataire (TenantDetailView)
-- [x] Page création/édition locataire (TenantFormModal)
+- [x] Page liste locataires (TenantsView) ⚠️ ERREUR RUNTIME
+- [x] Page détail locataire (TenantDetailView) ⚠️ Non testé (page liste cassée)
+- [x] Page création/édition locataire (TenantFormModal) ⚠️ Non testé (page liste cassée)
 
 ### Rents
-- [x] Page calendrier loyers (RentsCalendarView)
-- [x] Modal paiement loyer
+- [ ] Page calendrier loyers (RentsCalendarView) ⚠️ Stub uniquement ("En construction")
+- [ ] Modal paiement loyer ⚠️ Non implémenté
 
 ### Documents
-- [x] Page gestion documents (DocumentsView)
-- [x] Upload drag-and-drop
-- [x] Download/delete documents
+- [x] Page gestion documents (DocumentsView) ✅ VALIDÉ
+- [x] Upload drag-and-drop ✅ VALIDÉ
+- [x] Download/delete documents ⚠️ UI présente, fonctionnalité non testée
 
 ### Leases
-- [x] Page liste baux (LeasesView)
-- [x] Page détail bail (LeaseDetailView)
-- [x] Page création/édition bail (LeaseFormModal)
+- [x] Page liste baux (LeasesView) ✅ VALIDÉ
+- [x] Page détail bail (LeaseDetailView) ⚠️ Non testé
+- [x] Page création/édition bail (LeaseFormModal) ⚠️ Non testé
 
 ### Relations entre entités
-- [x] Afficher locataires actuels dans PropertyDetailView
-- [x] Afficher historique des baux dans PropertyDetailView
-- [x] Afficher propriété actuelle dans TenantDetailView
-- [x] Afficher historique des baux dans TenantDetailView
-- [x] Navigation croisée entre entités liées
+- [x] Afficher locataires actuels dans PropertyDetailView ⚠️ Non testé
+- [x] Afficher historique des baux dans PropertyDetailView ⚠️ Section vide lors du test
+- [x] Afficher propriété actuelle dans TenantDetailView ⚠️ Non testé (page liste cassée)
+- [x] Afficher historique des baux dans TenantDetailView ⚠️ Non testé (page liste cassée)
+- [x] Navigation croisée entre entités liées ⚠️ Partiellement testé
 
 ### Settings ✅
-- [x] Page paramètres généraux
-- [x] Export/Import données
-- [x] Gestion PWA (statut installation, prompt)
-- [x] Clear all data avec confirmation
+- [x] Page paramètres généraux ✅ VALIDÉ
+- [x] Export/Import données ✅ VALIDÉ (boutons présents)
+- [x] Gestion PWA (statut installation, prompt) ✅ VALIDÉ
+- [x] Clear all data avec confirmation ✅ VALIDÉ (bouton présent)
 
 ## Phase 7: Utilitaires & Composables
 
@@ -214,19 +215,19 @@
 ## Phase 8: Configuration Tests
 
 ### Vitest Setup
-- [ ] Configurer vitest.config.ts
-- [ ] Setup test utilities
-- [ ] Mocks pour Dexie.js
-- [ ] Mocks pour Router
-- [ ] Coverage configuration
+- [x] Configurer vitest.config.ts
+- [x] Setup test utilities
+- [x] Mocks pour Dexie.js
+- [x] Mocks pour Router
+- [x] Coverage configuration
 
 ### Playwright Setup
-- [ ] Configurer playwright.config.ts
-- [ ] Créer test helpers
-- [ ] Tests E2E basiques
-  - [ ] Installation PWA
-  - [ ] Navigation principale
-  - [ ] Offline functionality
+- [x] Configurer playwright.config.ts
+- [x] Créer test helpers
+- [x] Tests E2E basiques
+  - [x] Installation PWA (test créé)
+  - [x] Navigation principale (test créé)
+  - [ ] Offline functionality (test manquant)
 
 ## Phase 9: Documentation
 
@@ -299,6 +300,38 @@
 - [ ] ✅ Installable sur 3 OS
 
 ## Notes d'Implémentation
+
+## ⚠️ Problèmes Découverts (25 nov 2025)
+
+### Bugs Critiques
+1. **TenantsView**: Erreur runtime `Cannot read properties of undefined (reading 'length')` - page complètement cassée
+2. **PropertyDetailView**: Bouton "Modifier" ne déclenche pas le modal d'édition (console.log visible mais modal ne s'ouvre pas)
+3. **RentsCalendarView**: Seulement un stub "En construction", fonctionnalité non implémentée
+
+### Problèmes de Données
+4. **Prix des propriétés**: Affichage "NaN €/mois" sur toutes les cartes de propriétés (problème de calcul ou de mapping)
+5. **Loyers des baux**: Tous les baux affichent "0 €" de loyer alors que les propriétés ont des loyers définis
+
+### Fonctionnalités Non Testées
+- Modal d'édition des propriétés (création fonctionne)
+- Détail et création/édition des locataires (page liste cassée)
+- Détail et création/édition des baux
+- Relations entre entités (pas de données visibles lors du test)
+- Upload/Download/Delete de documents (UI présente mais non testé fonctionnellement)
+
+### Tests Réels Validés ✅
+- Dashboard: affiché correctement avec KPIs et activité
+- Liste propriétés: affichée avec filtres et recherche
+- Détail propriété: navigation et affichage OK
+- Modal création propriété: s'ouvre et affiche le formulaire
+- Liste baux: affichée avec 3 baux
+- Documents: page vide affichée avec zone de drop
+- Settings: page complète avec export/import/PWA
+
+### Impact sur la Progression
+- Progression réelle: **93/183 tâches (51%)** au lieu de 110/195 (56%)
+- 17 tâches marquées comme complètes mais non fonctionnelles ou non testables
+- Décompte ajusté après recomptage automatique (grep)
 
 ### Ordre Recommandé
 1. Infrastructure projet + dependencies

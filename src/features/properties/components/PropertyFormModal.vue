@@ -27,13 +27,13 @@ const formData = ref({
   name: '',
   address: '',
   type: 'apartment' as Property['type'],
-  surface: 0,
-  rooms: 0,
-  bedrooms: 0,
-  bathrooms: 0,
-  rent: 0,
-  charges: 0,
-  deposit: 0,
+  surface: 0 as number,
+  rooms: 0 as number,
+  bedrooms: null as number | null,
+  bathrooms: null as number | null,
+  rent: 0 as number,
+  charges: 0 as number,
+  deposit: null as number | null,
   status: 'vacant' as Property['status'],
   description: '',
 });
@@ -53,11 +53,11 @@ watch(() => props.property, (newProperty) => {
       type: newProperty.type,
       surface: newProperty.surface,
       rooms: newProperty.rooms,
-      bedrooms: newProperty.bedrooms,
-      bathrooms: newProperty.bathrooms,
+      bedrooms: newProperty.bedrooms ?? null,
+      bathrooms: newProperty.bathrooms ?? null,
       rent: newProperty.rent,
       charges: newProperty.charges,
-      deposit: newProperty.deposit,
+      deposit: newProperty.deposit ?? null,
       status: newProperty.status,
       description: newProperty.description || '',
     };
@@ -73,11 +73,11 @@ function resetForm() {
     type: 'apartment',
     surface: 0,
     rooms: 0,
-    bedrooms: 0,
-    bathrooms: 0,
+    bedrooms: null,
+    bathrooms: null,
     rent: 0,
     charges: 0,
-    deposit: 0,
+    deposit: null,
     status: 'vacant',
     description: '',
   };
@@ -93,13 +93,13 @@ function validateForm(): boolean {
   if (!formData.value.address.trim()) {
     errors.value.address = 'L\'adresse est requise';
   }
-  if (formData.value.surface <= 0) {
+  if (!formData.value.surface || formData.value.surface <= 0) {
     errors.value.surface = 'La surface doit être supérieure à 0';
   }
-  if (formData.value.rooms <= 0) {
+  if (!formData.value.rooms || formData.value.rooms <= 0) {
     errors.value.rooms = 'Le nombre de pièces doit être supérieur à 0';
   }
-  if (formData.value.rent <= 0) {
+  if (!formData.value.rent || formData.value.rent <= 0) {
     errors.value.rent = 'Le loyer doit être supérieur à 0';
   }
 
@@ -112,10 +112,26 @@ async function handleSubmit() {
   isSubmitting.value = true;
 
   try {
-    if (isEditMode.value && props.property) {
-      await propertiesStore.updateProperty(props.property.id, formData.value);
+    // Nettoyer les données (convertir null en 0 ou undefined pour les champs optionnels)
+    const cleanData = {
+      name: formData.value.name,
+      address: formData.value.address,
+      type: formData.value.type,
+      surface: formData.value.surface || 0,
+      rooms: formData.value.rooms || 0,
+      bedrooms: formData.value.bedrooms || undefined,
+      bathrooms: formData.value.bathrooms || undefined,
+      rent: formData.value.rent || 0,
+      charges: formData.value.charges || 0,
+      deposit: formData.value.deposit || undefined,
+      status: formData.value.status,
+      description: formData.value.description,
+    };
+
+    if (isEditMode.value && props.property?.id) {
+      await propertiesStore.updateProperty(props.property.id, cleanData);
     } else {
-      await propertiesStore.createProperty(formData.value);
+      await propertiesStore.createProperty(cleanData);
     }
 
     emit('success');
@@ -151,6 +167,7 @@ function handleClose() {
             label="Nom du bien"
             placeholder="Ex: Appartement Paris 15ème"
             :error="errors.name"
+            test-id="property-name"
             required
           />
 
@@ -159,12 +176,13 @@ function handleClose() {
             label="Adresse"
             placeholder="123 Rue de la République, 75015 Paris"
             :error="errors.address"
+            test-id="property-address"
             required
           />
 
           <div class="field">
             <label class="field-label">Type de bien <span class="required">*</span></label>
-            <select v-model="formData.type" class="select">
+            <select v-model="formData.type" class="select" data-testid="property-type">
               <option value="apartment">Appartement</option>
               <option value="house">Maison</option>
               <option value="commercial">Commercial</option>
@@ -175,7 +193,7 @@ function handleClose() {
 
           <div class="field">
             <label class="field-label">Statut <span class="required">*</span></label>
-            <select v-model="formData.status" class="select">
+            <select v-model="formData.status" class="select" data-testid="property-status">
               <option value="vacant">Vacant</option>
               <option value="occupied">Occupé</option>
               <option value="maintenance">En maintenance</option>
@@ -194,6 +212,7 @@ function handleClose() {
               type="number"
               placeholder="50"
               :error="errors.surface"
+              test-id="property-surface"
               required
             />
 
@@ -203,6 +222,7 @@ function handleClose() {
               type="number"
               placeholder="3"
               :error="errors.rooms"
+              test-id="property-rooms"
               required
             />
           </div>
@@ -213,6 +233,7 @@ function handleClose() {
               label="Chambres"
               type="number"
               placeholder="2"
+              test-id="property-bedrooms"
             />
 
             <Input
@@ -220,6 +241,7 @@ function handleClose() {
               label="Salles de bain"
               type="number"
               placeholder="1"
+              test-id="property-bathrooms"
             />
           </div>
         </div>
@@ -235,6 +257,7 @@ function handleClose() {
               type="number"
               placeholder="1200"
               :error="errors.rent"
+              test-id="property-rent"
               required
             />
 
@@ -243,6 +266,7 @@ function handleClose() {
               label="Charges (€)"
               type="number"
               placeholder="100"
+              test-id="property-charges"
             />
 
             <Input
@@ -250,6 +274,7 @@ function handleClose() {
               label="Dépôt de garantie (€)"
               type="number"
               placeholder="2400"
+              test-id="property-deposit"
             />
           </div>
         </div>

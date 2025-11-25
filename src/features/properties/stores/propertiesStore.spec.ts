@@ -47,9 +47,9 @@ describe('propertiesStore', () => {
     it('should filter occupied properties', () => {
       const store = usePropertiesStore();
       store.properties = [
-        { id: 1, status: 'rented' } as Property,
-        { id: 2, status: 'available' } as Property,
-        { id: 3, status: 'rented' } as Property,
+        { id: 1, status: 'occupied' } as Property,
+        { id: 2, status: 'vacant' } as Property,
+        { id: 3, status: 'occupied' } as Property,
       ];
       expect(store.occupiedProperties).toHaveLength(2);
     });
@@ -57,9 +57,9 @@ describe('propertiesStore', () => {
     it('should filter vacant properties', () => {
       const store = usePropertiesStore();
       store.properties = [
-        { id: 1, status: 'rented' } as Property,
-        { id: 2, status: 'available' } as Property,
-        { id: 3, status: 'available' } as Property,
+        { id: 1, status: 'occupied' } as Property,
+        { id: 2, status: 'vacant' } as Property,
+        { id: 3, status: 'vacant' } as Property,
       ];
       expect(store.vacantProperties).toHaveLength(2);
     });
@@ -67,9 +67,9 @@ describe('propertiesStore', () => {
     it('should calculate total revenue', () => {
       const store = usePropertiesStore();
       store.properties = [
-        { id: 1, rent: 1000, status: 'rented' } as Property,
-        { id: 2, rent: 1500, status: 'rented' } as Property,
-        { id: 3, rent: 800, status: 'available' } as Property,
+        { id: 1, rent: 1000, status: 'occupied' } as Property,
+        { id: 2, rent: 1500, status: 'occupied' } as Property,
+        { id: 3, rent: 800, status: 'vacant' } as Property,
       ];
       expect(store.totalRevenue).toBe(2500);
     });
@@ -100,7 +100,7 @@ describe('propertiesStore', () => {
           surface: 50,
           rooms: 2,
           rent: 1000,
-          status: 'available',
+          status: 'vacant',
           features: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -138,7 +138,7 @@ describe('propertiesStore', () => {
         rooms: 3,
         rent: 1200,
         charges: 100,
-        status: 'available' as const,
+        status: 'vacant' as const,
         features: [],
       };
 
@@ -164,7 +164,7 @@ describe('propertiesStore', () => {
       const existingProperty = {
         id: 1,
         name: 'Old Name',
-        status: 'available' as const,
+        status: 'vacant' as const,
         address: '123 Test St',
         city: 'Paris',
         postalCode: '75001',
@@ -223,7 +223,7 @@ describe('propertiesStore', () => {
         rooms: 3,
         rent: 1200,
         charges: 100,
-        status: 'available' as const,
+        status: 'vacant' as const,
         features: [],
       };
 
@@ -263,7 +263,7 @@ describe('propertiesStore', () => {
         rooms: 2,
         rent: 1000,
         charges: 100,
-        status: 'available',
+        status: 'vacant',
         features: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -307,7 +307,7 @@ describe('propertiesStore', () => {
         rooms: 2,
         rent: 1000,
         charges: 100,
-        status: 'available',
+        status: 'vacant',
         features: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -337,7 +337,7 @@ describe('propertiesStore', () => {
         rooms: 2,
         rent: 1000,
         charges: 100,
-        status: 'available',
+        status: 'vacant',
         features: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -373,10 +373,10 @@ describe('propertiesStore', () => {
     it('should calculate occupancy rate correctly', () => {
       const store = usePropertiesStore();
       store.properties = [
-        { id: 1, status: 'rented' } as Property,
-        { id: 2, status: 'rented' } as Property,
-        { id: 3, status: 'available' } as Property,
-        { id: 4, status: 'available' } as Property,
+        { id: 1, status: 'occupied' } as Property,
+        { id: 2, status: 'occupied' } as Property,
+        { id: 3, status: 'vacant' } as Property,
+        { id: 4, status: 'vacant' } as Property,
       ];
       expect(store.occupancyRate).toBe(50);
     });
@@ -385,7 +385,7 @@ describe('propertiesStore', () => {
       const store = usePropertiesStore();
       store.properties = [
         { id: 1, status: 'maintenance' } as Property,
-        { id: 2, status: 'available' } as Property,
+        { id: 2, status: 'vacant' } as Property,
         { id: 3, status: 'maintenance' } as Property,
       ];
       expect(store.maintenanceProperties).toHaveLength(2);
@@ -394,9 +394,9 @@ describe('propertiesStore', () => {
     it('should handle properties with no rent in total revenue', () => {
       const store = usePropertiesStore();
       store.properties = [
-        { id: 1, rent: 1000, status: 'rented' } as Property,
-        { id: 2, status: 'rented' } as Property, // no rent property
-        { id: 3, rent: 500, status: 'rented' } as Property,
+        { id: 1, rent: 1000, status: 'occupied' } as Property,
+        { id: 2, status: 'occupied' } as Property, // no rent property
+        { id: 3, rent: 500, status: 'occupied' } as Property,
       ];
       expect(store.totalRevenue).toBe(1500);
     });

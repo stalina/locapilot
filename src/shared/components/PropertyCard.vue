@@ -1,18 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Badge from './Badge.vue';
-
-interface Property {
-  id: string;
-  name: string;
-  address: string;
-  type: 'apartment' | 'house' | 'commercial' | 'parking';
-  surface: number;
-  rooms: number;
-  rentAmount: number;
-  charges?: number;
-  status: 'occupied' | 'vacant' | 'maintenance';
-}
+import type { Property } from '@/db/types';
 
 interface Props {
   property: Property;
@@ -24,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  click: [id: string];
+  click: [id: number];
 }>();
 
 const statusConfig = computed(() => {
@@ -37,32 +26,36 @@ const statusConfig = computed(() => {
 });
 
 const typeIcon = computed(() => {
-  const icons = {
+  const icons: Record<Property['type'], string> = {
     apartment: 'office-building',
     house: 'home',
+    studio: 'bed',
     commercial: 'store',
     parking: 'car',
+    other: 'home-outline',
   };
   return icons[props.property.type];
 });
 
 const typeLabel = computed(() => {
-  const labels = {
+  const labels: Record<Property['type'], string> = {
     apartment: 'Appartement',
     house: 'Maison',
+    studio: 'Studio',
     commercial: 'Commercial',
     parking: 'Parking',
+    other: 'Autre',
   };
   return labels[props.property.type];
 });
 
 const totalRent = computed(() => {
-  const total = props.property.rentAmount + (props.property.charges || 0);
+  const total = props.property.rent + (props.property.charges || 0);
   return total.toLocaleString('fr-FR');
 });
 
 function handleClick() {
-  if (props.clickable) {
+  if (props.clickable && props.property.id) {
     emit('click', props.property.id);
   }
 }
@@ -72,6 +65,7 @@ function handleClick() {
   <div 
     class="property-card" 
     :class="{ 'is-clickable': clickable }"
+    :data-property-id="property.id"
     @click="handleClick"
   >
     <!-- Image placeholder with gradient -->

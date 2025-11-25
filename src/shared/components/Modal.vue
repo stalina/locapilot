@@ -47,23 +47,23 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick">
-        <div class="modal" :class="`modal-${size}`" @click.stop>
+      <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick" data-testid="modal-overlay">
+        <div class="modal" :class="`modal-${size}`" @click.stop data-testid="modal">
           <!-- Header -->
           <div class="modal-header">
-            <h3 class="modal-title">{{ title }}</h3>
-            <button class="close-button" @click="handleClose" type="button">
+            <h3 class="modal-title" data-testid="modal-title">{{ title }}</h3>
+            <button class="close-button" @click="handleClose" type="button" data-testid="modal-close">
               <i class="mdi mdi-close"></i>
             </button>
           </div>
 
           <!-- Body -->
-          <div class="modal-body">
+          <div class="modal-body" data-testid="modal-body">
             <slot></slot>
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="modal-footer">
+          <div v-if="$slots.footer" class="modal-footer" data-testid="modal-footer">
             <slot name="footer"></slot>
           </div>
         </div>

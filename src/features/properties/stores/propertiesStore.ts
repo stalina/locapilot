@@ -12,11 +12,11 @@ export const usePropertiesStore = defineStore('properties', () => {
 
   // Getters
   const occupiedProperties = computed(() =>
-    properties.value.filter(p => p.status === 'rented')
+    properties.value.filter(p => p.status === 'occupied')
   );
 
   const vacantProperties = computed(() =>
-    properties.value.filter(p => p.status === 'available')
+    properties.value.filter(p => p.status === 'vacant')
   );
 
   const maintenanceProperties = computed(() =>

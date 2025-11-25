@@ -50,7 +50,7 @@ const filteredProperties = computed(() => {
       case 'name':
         return a.name.localeCompare(b.name);
       case 'price':
-        return b.rentAmount - a.rentAmount;
+        return b.rent - a.rent;
       case 'surface':
         return b.surface - a.surface;
       default:
@@ -66,7 +66,7 @@ function handleSearch(query: string) {
   searchQuery.value = query;
 }
 
-function handlePropertyClick(id: string) {
+function handlePropertyClick(id: number) {
   router.push(`/properties/${id}`);
 }
 
@@ -100,7 +100,7 @@ onMounted(async () => {
           placeholder="Rechercher une propriété..."
           @search="handleSearch"
         />
-        <Button variant="primary" icon="plus" @click="handleNewProperty">
+        <Button variant="primary" icon="plus" @click="handleNewProperty" data-testid="new-property-button">
           Nouvelle propriété
         </Button>
       </div>
@@ -227,7 +227,7 @@ onMounted(async () => {
         Essayez de modifier vos filtres de recherche
       </p>
       <p v-else>Commencez par ajouter votre première propriété</p>
-      <Button variant="primary" icon="plus" @click="handleNewProperty">
+      <Button variant="primary" icon="plus" @click="handleNewProperty" data-testid="new-property-button">
         Nouvelle propriété
       </Button>
     </div>
@@ -242,6 +242,12 @@ onMounted(async () => {
       />
     </div>
   </div>
+
+  <!-- Property Form Modal -->
+  <PropertyFormModal
+    v-model="showPropertyForm"
+    @success="handleFormSuccess"
+  />
 </template>
 
 <style scoped>
@@ -413,9 +419,3 @@ onMounted(async () => {
   }
 }
 </style>
-
-<!-- Property Form Modal -->
-<PropertyFormModal
-  v-model="showPropertyForm"
-  @success="handleFormSuccess"
-/>

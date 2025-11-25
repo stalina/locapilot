@@ -30,6 +30,10 @@ export default defineConfig({
     /* Base URL pour les tests */
     baseURL: 'http://localhost:5173',
     
+    /* Timeouts plus généreux pour les interactions */
+    actionTimeout: 10000,
+    navigationTimeout: 15000,
+    
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
     

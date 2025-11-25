@@ -6,14 +6,17 @@ export interface Property {
   id?: number;
   name: string;
   address: string;
-  type: 'apartment' | 'house' | 'studio';
+  type: 'apartment' | 'house' | 'studio' | 'commercial' | 'parking' | 'other';
   surface: number; // m²
   rooms: number;
+  bedrooms?: number;
+  bathrooms?: number;
   rent: number; // base rent amount
-  charges: number;
+  charges?: number;
+  deposit?: number;
   description?: string;
   features?: string[];
-  status: 'available' | 'rented' | 'maintenance';
+  status: 'vacant' | 'occupied' | 'maintenance';
   createdAt: Date;
   updatedAt: Date;
 }

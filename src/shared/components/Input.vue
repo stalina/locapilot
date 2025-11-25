@@ -11,6 +11,7 @@ interface Props {
   hint?: string;
   required?: boolean;
   icon?: string;
+  testId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +46,7 @@ function handleInput(event: Event) {
         :placeholder="placeholder"
         :disabled="disabled"
         :required="required"
+        :data-testid="testId"
         class="input-field"
         @input="handleInput"
       />

@@ -7,6 +7,8 @@ import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@shared/components/Button.vue';
 import Badge from '@shared/components/Badge.vue';
 import Card from '@shared/components/Card.vue';
+import PropertyFormModal from '../components/PropertyFormModal.vue';
+import type { Property } from '@/db/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -15,12 +17,15 @@ const leasesStore = useLeasesStore();
 const tenantsStore = useTenantsStore();
 
 const propertyId = computed(() => Number(route.params.id));
+const showEditModal = ref(false);
 
-const typeLabels = {
+const typeLabels: Record<Property['type'], string> = {
   apartment: 'Appartement',
   house: 'Maison',
+  studio: 'Studio',
   commercial: 'Commercial',
   parking: 'Parking',
+  other: 'Autre',
 };
 
 const statusConfig = computed(() => {
@@ -39,16 +44,19 @@ function handleBack() {
 }
 
 function handleEdit() {
-  // TODO: Open edit modal
-  console.log('Edit property', propertyId.value);
+  showEditModal.value = true;
 }
 
 function handleDelete() {
-  // TODO: Confirm dialog
   if (confirm('Êtes-vous sûr de vouloir supprimer cette propriété ?')) {
     propertiesStore.deleteProperty(propertyId.value);
     router.push('/properties');
   }
+}
+
+function handleEditSuccess() {
+  showEditModal.value = false;
+  propertiesStore.fetchPropertyById(propertyId.value);
 }
 
 // Leases liés à cette propriété
@@ -66,7 +74,7 @@ const currentTenants = computed(() => {
   if (!activeLease.value) return [];
   return activeLease.value.tenantIds
     .map(id => tenantsStore.tenants.find(t => t.id === id))
-    .filter(Boolean);
+    .filter((tenant): tenant is NonNullable<typeof tenant> => tenant !== undefined);
 });
 
 const goToLease = (leaseId: number) => {
@@ -174,7 +182,7 @@ onMounted(async () => {
               <div class="info-item">
                 <span class="info-label">Loyer mensuel</span>
                 <span class="info-value highlight">
-                  {{ propertiesStore.currentProperty.rentAmount.toLocaleString('fr-FR') }} €
+                  {{ propertiesStore.currentProperty.rent.toLocaleString('fr-FR') }} €
                 </span>
               </div>
               <div v-if="propertiesStore.currentProperty.charges" class="info-item">
@@ -332,6 +340,13 @@ onMounted(async () => {
         </div>
       </div>
     </template>
+
+    <!-- Edit Modal -->
+    <PropertyFormModal
+      v-model="showEditModal"
+      :property="propertiesStore.currentProperty"
+      @success="handleEditSuccess"
+    />
   </div>
 </template>
 
