@@ -7,6 +7,7 @@ import { useAppStore } from '@core/store/appStore';
 
 import './assets/styles/variables.css';
 import './assets/styles/global.css';
+import './assets/styles/views.css';
 import './style.css';
 import 'primeicons/primeicons.css';
 import '@mdi/font/css/materialdesignicons.css';

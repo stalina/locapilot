@@ -5,6 +5,7 @@ import { useLeasesStore } from '../stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
+import LeaseFormModal from '../components/LeaseFormModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -12,6 +13,7 @@ const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
 
+const showEditModal = ref(false);
 const leaseId = Number(route.params.id);
 
 onMounted(async () => {
@@ -80,8 +82,11 @@ const totalMonthlyAmount = computed(() => {
 });
 
 const handleEdit = () => {
-  // TODO: Open LeaseFormModal with current lease
-  console.log('Edit lease', lease.value);
+  showEditModal.value = true;
+};
+
+const handleEditSuccess = async () => {
+  await leasesStore.fetchLeaseById(leaseId);
 };
 
 const handleDelete = async () => {
@@ -125,7 +130,7 @@ const goToTenant = (tenantId: number) => {
 </script>
 
 <template>
-  <div class="lease-detail-view">
+  <div class="view-container lease-detail-view">
     <div v-if="leasesStore.isLoading" class="loading-state">
       Chargement du bail...
     </div>
@@ -285,27 +290,19 @@ const goToTenant = (tenantId: number) => {
         </section>
       </div>
     </div>
+
+    <!-- Edit Lease Modal -->
+    <LeaseFormModal
+      v-if="lease"
+      v-model="showEditModal"
+      :lease="lease"
+      @success="handleEditSuccess"
+    />
   </div>
 </template>
 
 <style scoped>
-.lease-detail-view {
-  padding: var(--spacing-6);
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.loading-state,
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  gap: var(--spacing-4);
-  font-size: var(--text-lg);
-  color: var(--color-text-secondary);
-}
+/* Styles spécifiques à la vue de détail d'un bail */
 
 .header-section {
   margin-bottom: var(--spacing-6);

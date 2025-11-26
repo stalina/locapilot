@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 96/183 tâches (52%)  
-**Dernière validation**: 25 novembre 2025 (test manuel via Playwright MCP)
+**Progression**: 99/183 tâches (54%)  
+**Dernière validation**: 25 novembre 2025 - Workflow candidat → locataire validé (Playwright MCP)
 
 ## Phase 1: Configuration de Base ✅
 
@@ -173,16 +173,18 @@
 - [x] Download/delete documents ⚠️ UI présente, fonctionnalité non testée
 
 ### Leases
-- [x] Page liste baux (LeasesView) ✅ VALIDÉ
-- [x] Page détail bail (LeaseDetailView) ⚠️ Non testé
-- [x] Page création/édition bail (LeaseFormModal) ⚠️ Non testé
+- [x] Page liste baux (LeasesView) ✅ VALIDÉ (style aligné sur PropertiesView/TenantsView - cartes avec header gradient)
+- [x] Page détail bail (LeaseDetailView) ✅ VALIDÉ (toutes infos affichées + édition fonctionnelle)
+- [x] Page création/édition bail (LeaseFormModal) ✅ VALIDÉ (création + édition testées, conversion candidat OK)
+- [x] Conversion automatique candidat → locataire actif ✅ VALIDÉ
+- [x] Affichage candidats et locataires actifs dans formulaire bail ✅ VALIDÉ
 
 ### Relations entre entités
-- [x] Afficher locataires actuels dans PropertyDetailView ⚠️ Non testé
-- [x] Afficher historique des baux dans PropertyDetailView ⚠️ Section vide lors du test
-- [x] Afficher propriété actuelle dans TenantDetailView ⚠️ Non testé (page liste cassée)
-- [x] Afficher historique des baux dans TenantDetailView ⚠️ Non testé (page liste cassée)
-- [x] Navigation croisée entre entités liées ⚠️ Partiellement testé
+- [x] Afficher locataires actuels dans PropertyDetailView ✅ VALIDÉ (Paul Durand affiché)
+- [x] Afficher historique des baux dans PropertyDetailView ✅ VALIDÉ (1 bail actif affiché)
+- [x] Afficher propriété actuelle dans TenantDetailView ✅ VALIDÉ (12 Rue Victor Hugo affiché)
+- [x] Afficher historique des baux dans TenantDetailView ✅ VALIDÉ (1 bail actif affiché)
+- [x] Navigation croisée entre entités liées ✅ VALIDÉ (bail→propriété, bail→locataire, tous cliquables)
 
 ### Settings ✅
 - [x] Page paramètres généraux ✅ VALIDÉ
@@ -301,6 +303,43 @@
 
 ## Notes d'Implémentation
 
+### Workflow Candidat → Locataire Actif ✅ VALIDÉ (25 nov 2025)
+
+**Fonctionnement**:
+1. **Création candidat**: Formulaire TenantFormModal avec statut par défaut "Candidat"
+   - Badge bleu "Candidat" affiché dans la liste
+   - Statistiques: compteur "Candidats" séparé des "Locataires actifs"
+   - Filtre "Candidats" permet de filtrer uniquement les candidats
+
+2. **Création bail pour candidat**: 
+   - Le formulaire LeaseFormModal affiche les locataires actifs ET les candidats
+   - Lors de la soumission, le code convertit automatiquement tous les candidats sélectionnés en locataires actifs
+   - Code dans `handleSubmit`:
+     ```typescript
+     for (const tenantId of formData.value.tenantIds) {
+       const tenant = tenantsStore.tenants.find(t => t.id === tenantId);
+       if (tenant && tenant.status === 'candidate') {
+         await tenantsStore.updateTenant(tenantId, {
+           ...tenant,
+           status: 'active',
+         });
+       }
+     }
+     ```
+
+3. **Résultat**:
+   - Le candidat devient locataire actif
+   - Badge passe de "Candidat" (bleu) à "Actif" (vert)
+   - Statistiques mises à jour automatiquement
+   - Le bail est créé avec l'association locataire ↔ propriété
+
+**Bugs résolus**:
+- ✅ Filter `availableProperties`: `'available'` → `'vacant'` (mauvais nom de statut)
+- ✅ DataCloneError IndexedDB: Conversion explicite `Number()` pour tous les champs numériques
+- ✅ tenantIds array: `.map(id => Number(id))` pour éviter problèmes de sérialisation
+
+**Test validé**: Création de Paul Durand (candidat) → Création bail 12 Rue Victor Hugo → Paul devient locataire actif
+
 ## ⚠️ Problèmes Découverts (25 nov 2025)
 
 ### Bugs Critiques
@@ -315,7 +354,8 @@
 ### Fonctionnalités Non Testées
 - ~~Modal d'édition des propriétés~~ ✅ **VALIDÉ**
 - ~~Détail et création/édition des locataires~~ ✅ **VALIDÉ**
-- Détail et création/édition des baux
+- ~~Création de baux~~ ✅ **VALIDÉ** (avec workflow candidat → locataire)
+- Détail et édition de baux existants
 - Relations entre entités (pas de données visibles lors du test)
 - Upload/Download/Delete de documents (UI présente mais non testé fonctionnellement)
 
@@ -323,12 +363,13 @@
 - Dashboard: affiché correctement avec KPIs et activité
 - **Propriétés** : Liste, détail, création, édition, suppression ✅
 - **Locataires** : Liste, détail, création, édition, suppression ✅
-- Liste baux: affichée avec 3 baux
+- **Candidats** : Création, filtrage, conversion automatique en locataire actif ✅
+- **Baux** : Liste (4 baux), création avec conversion candidat → locataire ✅
 - Documents: page vide affichée avec zone de drop
 - Settings: page complète avec export/import/PWA### Impact sur la Progression
-- Progression réelle: **93/183 tâches (51%)** au lieu de 110/195 (56%)
-- 17 tâches marquées comme complètes mais non fonctionnelles ou non testables
-- Décompte ajusté après recomptage automatique (grep)
+- Progression réelle: **99/183 tâches (54%)**
+- Nouvelles validations: workflow candidat → locataire, création de baux
+- Décompte ajusté après validation manuelle via Playwright MCP
 
 ### Ordre Recommandé
 1. Infrastructure projet + dependencies

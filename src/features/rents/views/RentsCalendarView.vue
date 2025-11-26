@@ -127,7 +127,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="rents-calendar-view">
+  <div class="view-container rents-calendar-view">
     <!-- Header -->
     <header class="view-header">
       <div>
@@ -173,7 +173,7 @@ onMounted(async () => {
     </div>
 
     <!-- Content Grid -->
-    <div class="content-grid">
+    <div class="content-grid sidebar-right">
       <!-- Calendar -->
       <div class="calendar-section">
         <Calendar
@@ -316,99 +316,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* Styles spécifiques au calendrier des loyers */
 .rents-calendar-view {
-  padding: var(--space-8, 2rem);
   max-width: 1600px;
-  margin: 0 auto;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-8, 2rem);
-}
-
-.view-header h1 {
-  margin-bottom: var(--space-2, 0.5rem);
-}
-
-.header-meta {
-  color: var(--text-secondary, #64748b);
-  font-size: var(--text-base, 1rem);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-6, 1.5rem);
-  margin-bottom: var(--space-8, 2rem);
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: var(--space-8, 2rem);
 }
 
 .calendar-section {
   min-height: 600px;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6, 1.5rem);
-}
-
-.card {
-  background: white;
-  border-radius: var(--radius-xl, 1rem);
-  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
-  padding: var(--space-6, 1.5rem);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3, 0.75rem);
-  font-size: var(--text-xl, 1.25rem);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--text-primary, #0f172a);
-  margin: 0 0 var(--space-6, 1.5rem);
-}
-
-.card-title i {
-  font-size: 1.5rem;
-  color: var(--primary-500, #6366f1);
-}
-
-.loading-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8, 2rem);
-  text-align: center;
-  gap: var(--space-2, 0.5rem);
-}
-
-.loading-state i,
-.empty-state i {
-  font-size: 3rem;
-  color: var(--text-tertiary, #94a3b8);
-}
-
-.empty-state p {
-  margin: 0;
-  color: var(--text-secondary, #64748b);
-}
-
-.upcoming-rents {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 1rem);
 }
 
 .rent-item {
@@ -461,6 +375,12 @@ onMounted(async () => {
   color: var(--primary-600, #4f46e5);
 }
 
+.upcoming-rents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+
 .legend-items {
   display: flex;
   flex-direction: column;
@@ -481,31 +401,16 @@ onMounted(async () => {
   border-radius: var(--radius-md, 0.5rem);
 }
 
-.badge,
-.rent-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1, 0.25rem);
-  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
-  font-size: var(--text-xs, 0.75rem);
-  font-weight: var(--font-weight-semibold, 600);
-  border-radius: var(--radius-full, 9999px);
-  line-height: 1;
-}
-
-.badge-success,
 .legend-badge.badge-success {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
   color: #065f46;
 }
 
-.badge-warning,
 .legend-badge.badge-warning {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
 }
 
-.badge-error,
 .legend-badge.badge-error {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #991b1b;
@@ -608,19 +513,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 1200px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
   .sidebar {
     order: -1;
-  }
-}
-
-@media (max-width: 768px) {
-  .view-header {
-    flex-direction: column;
-    align-items: stretch;
   }
 }
 </style>

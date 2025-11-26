@@ -7,6 +7,7 @@ import LeaseCard from '../components/LeaseCard.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import Button from '@/shared/components/Button.vue';
 import SearchBox from '@/shared/components/SearchBox.vue';
+import StatCard from '@/shared/components/StatCard.vue';
 
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
@@ -102,89 +103,127 @@ const handleFormSuccess = async () => {
 </script>
 
 <template>
-  <div class="leases-view">
-    <div class="view-header">
-      <div class="header-title">
+  <div class="view-container leases-view">
+    <!-- Header -->
+    <header class="view-header">
+      <div>
         <h1>Baux</h1>
-        <p class="subtitle">Gérez vos contrats de location</p>
+        <div class="header-meta">
+          {{ filteredLeases.length }} {{ filteredLeases.length > 1 ? 'baux' : 'bail' }}
+        </div>
       </div>
-      <Button @click="handleNewLease" variant="primary">
+      <div class="header-actions">
+        <SearchBox
+          v-model="searchQuery"
+          placeholder="Rechercher par propriété, locataire..."
+        />
+        <Button variant="primary" icon="plus" @click="handleNewLease">
+          Nouveau bail
+        </Button>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <StatCard
+        label="Total"
+        :value="stats.total"
+        icon="file-document"
+        icon-color="primary"
+      />
+      <StatCard
+        label="Actifs"
+        :value="stats.active"
+        icon="check-circle"
+        icon-color="success"
+      />
+      <StatCard
+        label="En attente"
+        :value="stats.pending"
+        icon="clock-outline"
+        icon-color="warning"
+      />
+      <StatCard
+        label="Terminés"
+        :value="stats.ended"
+        icon="close-circle"
+        icon-color="error"
+      />
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <label class="filter-label">Statut</label>
+        <div class="filter-buttons">
+          <button
+            class="filter-button"
+            :class="{ active: statusFilter === 'all' }"
+            @click="statusFilter = 'all'"
+          >
+            Tous
+          </button>
+          <button
+            class="filter-button"
+            :class="{ active: statusFilter === 'active' }"
+            @click="statusFilter = 'active'"
+          >
+            Actifs
+          </button>
+          <button
+            class="filter-button"
+            :class="{ active: statusFilter === 'pending' }"
+            @click="statusFilter = 'pending'"
+          >
+            En attente
+          </button>
+          <button
+            class="filter-button"
+            :class="{ active: statusFilter === 'ended' }"
+            @click="statusFilter = 'ended'"
+          >
+            Terminés
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="leasesStore.isLoading" class="loading-state">
+      <i class="mdi mdi-loading mdi-spin"></i>
+      Chargement des baux...
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="leasesStore.error" class="error-state">
+      <i class="mdi mdi-alert-circle"></i>
+      {{ leasesStore.error }}
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="filteredLeases.length === 0" class="empty-state">
+      <i class="mdi mdi-file-document-outline"></i>
+      <h3>Aucun bail trouvé</h3>
+      <p v-if="searchQuery || statusFilter !== 'all'">
+        Essayez de modifier vos filtres de recherche
+      </p>
+      <p v-else>
+        Commencez par créer votre premier bail
+      </p>
+      <Button variant="primary" icon="plus" @click="handleNewLease" v-if="!searchQuery && statusFilter === 'all'">
         Nouveau bail
       </Button>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.total }}</div>
-        <div class="stat-label">Total</div>
-      </div>
-      <div class="stat-card active">
-        <div class="stat-value">{{ stats.active }}</div>
-        <div class="stat-label">Actifs</div>
-      </div>
-      <div class="stat-card pending">
-        <div class="stat-value">{{ stats.pending }}</div>
-        <div class="stat-label">En attente</div>
-      </div>
-      <div class="stat-card ended">
-        <div class="stat-value">{{ stats.ended }}</div>
-        <div class="stat-label">Terminés</div>
-      </div>
-      <div class="stat-card expiring" v-if="stats.expiring > 0">
-        <div class="stat-value">{{ stats.expiring }}</div>
-        <div class="stat-label">Expirent bientôt</div>
-      </div>
-    </div>
-
-    <div class="filters-section">
-      <SearchBox
-        v-model="searchQuery"
-        placeholder="Rechercher par propriété, locataire..."
+    <!-- Leases Grid -->
+    <div v-else class="leases-grid">
+      <LeaseCard
+        v-for="lease in filteredLeases"
+        :key="lease.id"
+        :lease="lease"
+        :property-name="getPropertyName(lease.propertyId)"
+        :tenant-names="getTenantNames(lease.tenantIds)"
       />
-
-      <div class="filter-group">
-        <label>Statut</label>
-        <select v-model="statusFilter" class="filter-select">
-          <option value="all">Tous</option>
-          <option value="active">Actifs</option>
-          <option value="pending">En attente</option>
-          <option value="ended">Terminés</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="leases-content">
-      <div v-if="leasesStore.isLoading" class="loading-state">
-        Chargement des baux...
-      </div>
-
-      <div v-else-if="leasesStore.error" class="error-state">
-        {{ leasesStore.error }}
-      </div>
-
-      <div v-else-if="filteredLeases.length === 0" class="empty-state">
-        <div class="empty-icon">📄</div>
-        <h3>Aucun bail trouvé</h3>
-        <p v-if="searchQuery || statusFilter !== 'all'">
-          Essayez de modifier vos filtres
-        </p>
-        <p v-else>
-          Commencez par créer votre premier bail
-        </p>
-        <Button @click="handleNewLease" variant="primary" v-if="!searchQuery && statusFilter === 'all'">
-          Créer un bail
-        </Button>
-      </div>
-
-      <div v-else class="leases-grid">
-        <LeaseCard
-          v-for="lease in filteredLeases"
-          :key="lease.id"
-          :lease="lease"
-          :property-name="getPropertyName(lease.propertyId)"
-          :tenant-names="getTenantNames(lease.tenantIds)"
-        />
-      </div>
     </div>
 
     <!-- Lease Form Modal -->
@@ -196,19 +235,14 @@ const handleFormSuccess = async () => {
 </template>
 
 <style scoped>
-.leases-view {
-  padding: var(--spacing-6);
-  max-width: 1400px;
-  margin: 0 auto;
+/* Grille spécifique pour les baux */
+.leases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6, 1.5rem);
 }
 
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-6);
-}
-
+/* Styles spécifiques aux baux uniquement */
 .header-title h1 {
   font-size: var(--text-3xl);
   font-weight: 700;
@@ -222,59 +256,10 @@ const handleFormSuccess = async () => {
   margin: 0;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
-}
-
-.stat-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
-  text-align: center;
-}
-
-.stat-card.active {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.05);
-}
-
-.stat-card.pending {
-  border-color: rgba(251, 146, 60, 0.3);
-  background: rgba(251, 146, 60, 0.05);
-}
-
-.stat-card.ended {
-  border-color: rgba(156, 163, 175, 0.3);
-  background: rgba(156, 163, 175, 0.05);
-}
-
-.stat-card.expiring {
-  border-color: rgba(250, 204, 21, 0.3);
-  background: rgba(250, 204, 21, 0.05);
-}
-
-.stat-value {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: var(--spacing-1);
-}
-
-.stat-label {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .filters-section {
   display: flex;
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
+  gap: var(--space-4, 1rem);
+  margin-bottom: var(--space-8, 2rem);
   flex-wrap: wrap;
 }
 
@@ -283,103 +268,9 @@ const handleFormSuccess = async () => {
   min-width: 300px;
 }
 
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.filter-group label {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.filter-select {
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  background: var(--color-surface);
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.filter-select:hover {
-  border-color: var(--color-primary);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.leases-content {
-  min-height: 400px;
-}
-
-.loading-state,
-.error-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  font-size: var(--text-lg);
-  color: var(--color-text-secondary);
-}
-
-.error-state {
-  color: var(--color-error);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: var(--spacing-4);
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-2) 0;
-}
-
-.empty-state p {
-  font-size: var(--text-base);
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--spacing-4) 0;
-}
-
-.leases-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: var(--spacing-4);
-}
-
 @media (max-width: 768px) {
-  .leases-view {
-    padding: var(--spacing-4);
-  }
-
-  .view-header {
-    flex-direction: column;
-    gap: var(--spacing-4);
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .leases-grid {
+    grid-template-columns: 1fr;
   }
 
   .filters-section {
@@ -388,10 +279,6 @@ const handleFormSuccess = async () => {
 
   .filters-section :deep(.search-box) {
     min-width: 100%;
-  }
-
-  .leases-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

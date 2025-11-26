@@ -29,7 +29,7 @@ const formData = ref({
   email: '',
   phone: '',
   birthDate: '',
-  status: 'active' as Tenant['status'],
+  status: 'candidate' as Tenant['status'],
 });
 
 const errors = ref<Record<string, string>>({});
@@ -66,7 +66,7 @@ function resetForm() {
     email: '',
     phone: '',
     birthDate: '',
-    status: 'active',
+    status: 'candidate',
   };
   errors.value = {};
 }
@@ -194,6 +194,7 @@ function handleClose() {
           <div class="field">
             <label class="field-label">Statut <span class="required">*</span></label>
             <select v-model="formData.status" class="select">
+              <option value="candidate">Candidat</option>
               <option value="active">Locataire actif</option>
               <option value="former">Ancien locataire</option>
             </select>

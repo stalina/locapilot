@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import Badge from '@/shared/components/Badge.vue';
 import type { Lease } from '@/db/schema';
 
 interface Props {
@@ -12,38 +13,29 @@ interface Props {
 const props = defineProps<Props>();
 const router = useRouter();
 
-const statusLabel = computed(() => {
-  switch (props.lease.status) {
-    case 'active': return 'Actif';
-    case 'ended': return 'Terminé';
-    case 'pending': return 'En attente';
-    default: return props.lease.status;
-  }
-});
-
-const statusClass = computed(() => {
-  switch (props.lease.status) {
-    case 'active': return 'status-active';
-    case 'ended': return 'status-ended';
-    case 'pending': return 'status-pending';
-    default: return '';
-  }
+const statusConfig = computed(() => {
+  const configs = {
+    active: { variant: 'success' as const, label: 'Actif', icon: 'check-circle' },
+    ended: { variant: 'error' as const, label: 'Terminé', icon: 'calendar-remove' },
+    pending: { variant: 'warning' as const, label: 'En attente', icon: 'clock-outline' },
+  };
+  return configs[props.lease.status] || configs.pending;
 });
 
 const formattedStartDate = computed(() => {
   return new Date(props.lease.startDate).toLocaleDateString('fr-FR', {
-    year: 'numeric',
-    month: 'long',
     day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 });
 
 const formattedEndDate = computed(() => {
   if (!props.lease.endDate) return 'Indéterminée';
   return new Date(props.lease.endDate).toLocaleDateString('fr-FR', {
-    year: 'numeric',
-    month: 'long',
     day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 });
 
@@ -66,9 +58,9 @@ const expirationWarning = computed(() => {
   const days = daysUntilExpiration.value;
   if (days === null) return null;
   
-  if (days < 0) return 'expired';
-  if (days <= 30) return 'urgent';
-  if (days <= 90) return 'warning';
+  if (days < 0) return { severity: 'expired', text: '⚠️ Bail expiré', icon: 'alert-circle' };
+  if (days <= 30) return { severity: 'urgent', text: `Expire dans ${days} jour${days > 1 ? 's' : ''}`, icon: 'alarm' };
+  if (days <= 90) return { severity: 'warning', text: `Expire dans ${days} jours`, icon: 'calendar-alert' };
   return null;
 });
 
@@ -80,64 +72,65 @@ const handleClick = () => {
 </script>
 
 <template>
-  <div class="lease-card" @click="handleClick">
-    <div class="lease-card-header">
-      <div class="lease-info">
+  <div 
+    class="lease-card" 
+    @click="handleClick"
+  >
+    <!-- Header with gradient -->
+    <div class="lease-header">
+      <div class="header-overlay">
+        <i class="mdi mdi-file-document-outline header-icon"></i>
+      </div>
+      <Badge 
+        :variant="statusConfig.variant" 
+        :icon="statusConfig.icon"
+        class="status-badge"
+      >
+        {{ statusConfig.label }}
+      </Badge>
+    </div>
+
+    <!-- Content -->
+    <div class="lease-content">
+      <div class="lease-title">
         <h3 class="property-name">{{ propertyName || 'Propriété #' + lease.propertyId }}</h3>
-        <div class="tenant-names" v-if="tenantNames && tenantNames.length">
+        <div v-if="tenantNames && tenantNames.length" class="tenant-names">
+          <i class="mdi mdi-account"></i>
           {{ tenantNames.join(', ') }}
         </div>
       </div>
-      <span :class="['status-badge', statusClass]">{{ statusLabel }}</span>
-    </div>
 
-    <div class="lease-card-body">
       <div class="lease-dates">
-        <div class="date-item">
-          <span class="date-label">Début</span>
+        <div class="date-row">
+          <i class="mdi mdi-calendar-start"></i>
+          <span class="date-label">Début :</span>
           <span class="date-value">{{ formattedStartDate }}</span>
         </div>
-        <div class="date-separator">→</div>
-        <div class="date-item">
-          <span class="date-label">Fin</span>
+        <div class="date-row">
+          <i class="mdi mdi-calendar-end"></i>
+          <span class="date-label">Fin :</span>
           <span class="date-value">{{ formattedEndDate }}</span>
         </div>
       </div>
 
-      <div class="lease-amounts">
-        <div class="amount-item">
-          <span class="amount-label">Loyer</span>
-          <span class="amount-value">{{ (lease.rent || 0).toLocaleString('fr-FR') }} €</span>
+      <div class="lease-financials">
+        <div class="financial-item">
+          <i class="mdi mdi-currency-eur"></i>
+          <span>{{ (lease.rent || 0).toLocaleString('fr-FR') }} €</span>
         </div>
-        <div class="amount-item">
-          <span class="amount-label">Charges</span>
-          <span class="amount-value">{{ (lease.charges || 0).toLocaleString('fr-FR') }} €</span>
+        <div class="financial-item">
+          <i class="mdi mdi-home-city-outline"></i>
+          <span>{{ (lease.charges || 0).toLocaleString('fr-FR') }} €</span>
         </div>
-        <div class="amount-item total">
-          <span class="amount-label">Total</span>
-          <span class="amount-value">{{ totalMonthlyAmount.toLocaleString('fr-FR') }} €/mois</span>
-        </div>
-      </div>
-
-      <div class="lease-details">
-        <div class="detail-item">
-          <span class="detail-label">Dépôt de garantie</span>
-          <span class="detail-value">{{ (lease.deposit || 0).toLocaleString('fr-FR') }} €</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Paiement le</span>
-          <span class="detail-value">{{ lease.paymentDay }} du mois</span>
+        <div class="financial-item total">
+          <i class="mdi mdi-cash-multiple"></i>
+          <span>{{ totalMonthlyAmount.toLocaleString('fr-FR') }} €/mois</span>
         </div>
       </div>
 
-      <div v-if="expirationWarning" :class="['expiration-warning', expirationWarning]">
-        <span v-if="expirationWarning === 'expired'">⚠️ Bail expiré</span>
-        <span v-else-if="expirationWarning === 'urgent'">
-          ⏰ Expire dans {{ daysUntilExpiration }} jour{{ daysUntilExpiration! > 1 ? 's' : '' }}
-        </span>
-        <span v-else>
-          📅 Expire dans {{ daysUntilExpiration }} jours
-        </span>
+      <div v-if="expirationWarning" :class="['expiration-alert', `alert-${expirationWarning.severity}`]">
+        <i :class="`mdi mdi-${expirationWarning.icon}`"></i>
+        <span>{{ expirationWarning.text }}</span>
       </div>
     </div>
   </div>
@@ -145,217 +138,177 @@ const handleClick = () => {
 
 <style scoped>
 .lease-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-4);
+  background: white;
+  border-radius: var(--radius-xl, 1rem);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+  transition: all var(--transition-base, 0.2s ease);
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .lease-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.1));
 }
 
-.lease-card-header {
+.lease-header {
+  position: relative;
+  height: 120px;
+  background: linear-gradient(135deg, var(--primary-600, #4f46e5), var(--primary-700, #4338ca));
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-3);
-  padding-bottom: var(--spacing-3);
-  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+  justify-content: center;
 }
 
-.lease-info {
-  flex: 1;
+.header-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.property-name {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-1) 0;
-}
-
-.tenant-names {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+.header-icon {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .status-badge {
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  position: absolute;
+  top: var(--space-4, 1rem);
+  right: var(--space-4, 1rem);
 }
 
-.status-active {
-  background: rgba(34, 197, 94, 0.1);
-  color: rgb(22, 163, 74);
-}
-
-.status-ended {
-  background: rgba(156, 163, 175, 0.1);
-  color: rgb(107, 114, 128);
-}
-
-.status-pending {
-  background: rgba(251, 146, 60, 0.1);
-  color: rgb(234, 88, 12);
-}
-
-.lease-card-body {
+.lease-content {
+  padding: var(--space-6, 1.5rem);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
+  gap: var(--space-4, 1rem);
+}
+
+.lease-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.property-name {
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+}
+
+.tenant-names {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.tenant-names i {
+  font-size: 1rem;
+  color: var(--text-tertiary, #94a3b8);
 }
 
 .lease-dates {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2);
-  background: var(--color-background);
-  border-radius: var(--radius-sm);
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  padding-top: var(--space-3, 0.75rem);
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
-.date-item {
+.date-row {
   display: flex;
-  flex-direction: column;
-  flex: 1;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.date-row i {
+  font-size: 1rem;
+  color: var(--text-tertiary, #94a3b8);
 }
 
 .date-label {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-weight-medium, 500);
+  min-width: 3rem;
 }
 
 .date-value {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text);
+  color: var(--text-primary, #0f172a);
 }
 
-.date-separator {
-  font-size: var(--text-lg);
-  color: var(--color-text-secondary);
-  margin: 0 var(--spacing-2);
-}
-
-.lease-amounts {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-2);
-}
-
-.amount-item {
+.lease-financials {
   display: flex;
-  flex-direction: column;
+  gap: var(--space-4, 1rem);
+  padding-top: var(--space-3, 0.75rem);
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
-.amount-item.total {
-  grid-column: span 3;
-  padding-top: var(--spacing-2);
-  border-top: 1px solid var(--color-border);
-}
-
-.amount-label {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-1);
-}
-
-.amount-value {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.amount-item.total .amount-value {
-  font-size: var(--text-base);
-  color: var(--color-primary);
-}
-
-.lease-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-2);
-  padding: var(--spacing-2);
-  background: var(--color-background);
-  border-radius: var(--radius-sm);
-}
-
-.detail-item {
+.financial-item {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
 }
 
-.detail-label {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-1);
+.financial-item i {
+  font-size: 1rem;
+  color: var(--text-tertiary, #94a3b8);
 }
 
-.detail-value {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text);
+.financial-item.total {
+  margin-left: auto;
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--primary-600, #4f46e5);
 }
 
-.expiration-warning {
-  padding: var(--spacing-2) var(--spacing-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  text-align: center;
+.expiration-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem);
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
 }
 
-.expiration-warning.expired {
+.expiration-alert i {
+  font-size: 1.25rem;
+}
+
+.alert-expired {
   background: rgba(239, 68, 68, 0.1);
   color: rgb(220, 38, 38);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.expiration-warning.urgent {
+.alert-urgent {
   background: rgba(251, 146, 60, 0.1);
   color: rgb(234, 88, 12);
   border: 1px solid rgba(251, 146, 60, 0.2);
 }
 
-.expiration-warning.warning {
+.alert-warning {
   background: rgba(250, 204, 21, 0.1);
   color: rgb(202, 138, 4);
   border: 1px solid rgba(250, 204, 21, 0.2);
 }
 
 @media (max-width: 640px) {
-  .lease-amounts {
-    grid-template-columns: 1fr;
-  }
-
-  .amount-item.total {
-    grid-column: span 1;
-  }
-
-  .lease-details {
-    grid-template-columns: 1fr;
-  }
-
-  .lease-dates {
+  .lease-financials {
     flex-direction: column;
-    align-items: stretch;
+    gap: var(--space-2, 0.5rem);
   }
 
-  .date-separator {
-    transform: rotate(90deg);
-    margin: var(--spacing-1) 0;
+  .financial-item.total {
+    margin-left: 0;
   }
 }
 </style>

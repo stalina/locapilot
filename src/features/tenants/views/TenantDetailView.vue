@@ -101,7 +101,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="tenant-detail-view">
+  <div class="view-container tenant-detail-view">
     <!-- Header -->
     <header class="view-header">
       <Button variant="ghost" icon="arrow-left" @click="handleBack">
@@ -342,48 +342,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.tenant-detail-view {
-  padding: var(--space-8, 2rem);
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-8, 2rem);
-}
-
-.header-actions {
-  display: flex;
-  gap: var(--space-4, 1rem);
-}
-
-.loading-state,
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-16, 4rem);
-  text-align: center;
-  gap: var(--space-4, 1rem);
-}
-
-.loading-state i,
-.error-state i {
-  font-size: 4rem;
-  color: var(--text-tertiary, #94a3b8);
-}
-
-.loading-state {
-  color: var(--text-secondary, #64748b);
-}
-
-.error-state {
-  color: var(--error-600, #dc2626);
-}
+/* Styles spécifiques à la vue de détail d'un locataire */
 
 /* Hero Section */
 .hero-section {
@@ -453,41 +412,12 @@ onMounted(async () => {
   font-size: 1.25rem;
 }
 
-/* Content Grid */
-.content-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--space-8, 2rem);
-}
-
+/* Content Grid spécifique à cette vue */
 .left-column,
 .right-column {
   display: flex;
   flex-direction: column;
   gap: var(--space-6, 1.5rem);
-}
-
-/* Card */
-.card {
-  background: white;
-  border-radius: var(--radius-xl, 1rem);
-  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
-  padding: var(--space-6, 1.5rem);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3, 0.75rem);
-  font-size: var(--text-xl, 1.25rem);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--text-primary, #0f172a);
-  margin: 0 0 var(--space-6, 1.5rem);
-}
-
-.card-title i {
-  font-size: 1.5rem;
-  color: var(--primary-500, #6366f1);
 }
 
 /* Info Grid */
@@ -673,13 +603,7 @@ onMounted(async () => {
   padding-right: var(--space-8, 2rem);
 }
 
-/* Quick Actions */
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4, 1rem);
-}
-
+/* Quick Actions spécifiques */
 .action-button {
   display: flex;
   flex-direction: column;
@@ -727,39 +651,13 @@ onMounted(async () => {
   color: var(--text-secondary, #64748b);
 }
 
-/* Badge */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
-  font-size: var(--text-sm, 0.875rem);
-  font-weight: var(--font-weight-semibold, 600);
-  border-radius: var(--radius-full, 9999px);
-  line-height: 1;
-}
-
-.badge-success {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  color: #065f46;
-}
-
+/* Badge spécifique */
 .badge-accent {
   background: linear-gradient(135deg, #ccfbf1, #99f6e4);
   color: #115e59;
 }
 
-.badge-error {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  color: #991b1b;
-}
-
 /* Responsive */
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 768px) {
   .hero-section {
     flex-direction: column;
@@ -778,10 +676,6 @@ onMounted(async () => {
   }
 
   .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-actions {
     grid-template-columns: 1fr;
   }
 }

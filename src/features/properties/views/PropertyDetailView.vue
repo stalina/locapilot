@@ -95,7 +95,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="property-detail">
+  <div class="view-container property-detail">
     <!-- Loading State -->
     <div v-if="propertiesStore.isLoading" class="loading-state">
       <i class="mdi mdi-loading mdi-spin"></i>
@@ -114,11 +114,23 @@ onMounted(async () => {
     <!-- Property Detail -->
     <template v-else-if="propertiesStore.currentProperty">
       <!-- Header -->
-      <header class="detail-header">
-        <Button variant="outline" icon="arrow-left" @click="handleBack">
-          Retour
-        </Button>
+      <header class="view-header">
+        <div>
+          <h1>{{ propertiesStore.currentProperty.name }}</h1>
+          <div class="header-meta">
+            <Badge
+              v-if="statusConfig"
+              :variant="statusConfig.variant"
+              :icon="statusConfig.icon"
+            >
+              {{ statusConfig.label }}
+            </Badge>
+          </div>
+        </div>
         <div class="header-actions">
+          <Button variant="outline" icon="arrow-left" @click="handleBack">
+            Retour
+          </Button>
           <Button variant="outline" icon="pencil" @click="handleEdit">
             Modifier
           </Button>
@@ -351,11 +363,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.property-detail {
-  padding: var(--space-8, 2rem);
-  max-width: 1400px;
-  margin: 0 auto;
-}
+/* Styles spécifiques à la vue de détail de propriété */
 
 .detail-header {
   display: flex;
@@ -636,35 +644,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 0.75rem);
-}
-
-.loading-state,
-.error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-16, 4rem);
-  text-align: center;
-  gap: var(--space-4, 1rem);
-}
-
-.loading-state i,
-.error-state i {
-  font-size: 4rem;
-  color: var(--text-tertiary, #94a3b8);
-}
-
-.loading-state {
-  color: var(--text-secondary, #64748b);
-}
-
-.error-state {
-  color: var(--error-600, #dc2626);
-}
-
-.error-state h3 {
-  margin: 0;
 }
 
 @media (max-width: 1024px) {

@@ -165,16 +165,19 @@ const goBack = () => {
 </script>
 
 <template>
-  <div class="settings-view">
-    <div class="view-header">
-      <Button @click="goBack" variant="text" class="back-button">
-        ← Retour
-      </Button>
-      <div class="header-title">
+  <div class="view-container settings-view">
+    <!-- Header -->
+    <header class="view-header">
+      <div>
         <h1>Paramètres</h1>
-        <p class="subtitle">Configuration de l'application</p>
+        <div class="header-meta">Configuration de l'application</div>
       </div>
-    </div>
+      <div class="header-actions">
+        <Button variant="outline" icon="arrow-left" @click="goBack">
+          Retour
+        </Button>
+      </div>
+    </header>
 
     <div class="settings-content">
       <!-- PWA Section -->
@@ -290,31 +293,9 @@ const goBack = () => {
 </template>
 
 <style scoped>
+/* Styles spécifiques aux paramètres */
 .settings-view {
-  padding: var(--spacing-6);
   max-width: 900px;
-  margin: 0 auto;
-}
-
-.view-header {
-  margin-bottom: var(--spacing-6);
-}
-
-.back-button {
-  margin-bottom: var(--spacing-4);
-}
-
-.header-title h1 {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-1) 0;
-}
-
-.subtitle {
-  font-size: var(--text-base);
-  color: var(--color-text-secondary);
-  margin: 0;
 }
 
 .settings-content {
@@ -394,20 +375,6 @@ const goBack = () => {
 
 .status-text.info {
   color: rgb(59, 130, 246);
-}
-
-.badge {
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.badge.success {
-  background: rgba(34, 197, 94, 0.1);
-  color: rgb(22, 163, 74);
 }
 
 .about-text {

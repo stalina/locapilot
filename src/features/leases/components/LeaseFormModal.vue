@@ -60,11 +60,11 @@ const modalTitle = computed(() =>
 );
 
 const availableProperties = computed(() => 
-  propertiesStore.properties.filter(p => p.status === 'available' || p.id === props.lease?.propertyId)
+  propertiesStore.properties.filter(p => p.status === 'vacant' || p.id === props.lease?.propertyId)
 );
 
 const availableTenants = computed(() => 
-  tenantsStore.tenants.filter(t => t.status === 'active')
+  tenantsStore.tenants.filter(t => t.status === 'active' || t.status === 'candidate')
 );
 
 const resetForm = () => {
@@ -165,18 +165,37 @@ const validateForm = (): boolean => {
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
+  let leaseData: any = null;
+
   try {
-    const leaseData = {
-      propertyId: formData.value.propertyId,
-      tenantIds: formData.value.tenantIds,
+    // Convert all selected candidates to active tenants
+    for (const tenantId of formData.value.tenantIds) {
+      const tenant = tenantsStore.tenants.find(t => t.id === tenantId);
+      if (tenant && tenant.status === 'candidate') {
+        await tenantsStore.updateTenant(tenantId, {
+          ...tenant,
+          status: 'active',
+        });
+      }
+    }
+
+    leaseData = {
+      propertyId: Number(formData.value.propertyId),
+      tenantIds: formData.value.tenantIds.map((id: any) => Number(id)),
       startDate: new Date(formData.value.startDate),
-      endDate: formData.value.endDate ? new Date(formData.value.endDate) : undefined,
-      rent: formData.value.rent,
-      charges: formData.value.charges,
-      deposit: formData.value.deposit,
-      paymentDay: formData.value.paymentDay,
+      rent: Number(formData.value.rent),
+      charges: Number(formData.value.charges),
+      deposit: Number(formData.value.deposit),
+      paymentDay: Number(formData.value.paymentDay),
       status: formData.value.status,
     };
+
+    // Only add endDate if it exists
+    if (formData.value.endDate) {
+      leaseData.endDate = new Date(formData.value.endDate);
+    }
+
+    console.log('📋 Lease data before creation:', JSON.stringify(leaseData, null, 2));
 
     if (isEditMode.value && props.lease?.id) {
       await leasesStore.updateLease(props.lease.id, leaseData);
@@ -187,8 +206,15 @@ const handleSubmit = async () => {
     emit('success');
     emit('update:modelValue', false);
     resetForm();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save lease:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      inner: error?.inner,
+      stack: error?.stack,
+      formData: formData.value,
+      leaseData
+    });
   }
 };
 
@@ -247,12 +273,12 @@ const toggleTenant = (tenantId: number) => {
             <div
               v-for="tenant in availableTenants"
               :key="tenant.id"
-              :class="['tenant-checkbox', { selected: formData.tenantIds.includes(tenant.id!) }]"
+              :class="['tenant-checkbox', { selected: tenant.id && formData.tenantIds.includes(tenant.id) }]"
               @click="tenant.id && toggleTenant(tenant.id)"
             >
               <input
                 type="checkbox"
-                :checked="formData.tenantIds.includes(tenant.id!)"
+                :checked="tenant.id && formData.tenantIds.includes(tenant.id)"
                 @click.stop
                 @change="tenant.id && toggleTenant(tenant.id)"
               />
