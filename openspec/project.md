@@ -40,6 +40,13 @@ Locapilot est une application de gestion de l'occupation d'appartements en locat
   - Un composant par fichier
   - Grouper les fichiers par fonctionnalité (feature-based)
   - Tests à côté des fichiers source (`Component.vue` + `Component.spec.ts`)
+- **CSS Architecture**:
+  - Styles globaux centralisés dans `src/assets/styles/`
+  - `views.css`: styles communs à toutes les vues (containers, headers, grids, filters, states)
+  - `global.css`: variables CSS et styles de base
+  - `variables.css`: variables de design system (couleurs, espacements, typographie)
+  - Styles scoped dans les composants uniquement pour styles spécifiques non réutilisables
+  - Éviter la duplication de styles entre composants
 
 ### Architecture Patterns
 - **Architecture**: Frontend-only, pas de backend
@@ -52,6 +59,28 @@ Locapilot est une application de gestion de l'occupation d'appartements en locat
   - Props avec TypeScript et validation
   - Emits typés
   - Slots documentés
+- **View Structure** (standardisée):
+  - Toutes les vues principales suivent la même structure HTML:
+    ```vue
+    <div class="view-container {feature}-view">
+      <header class="view-header">
+        <div>
+          <h1>Titre</h1>
+          <div class="header-meta">Métadonnées</div>
+        </div>
+        <div class="header-actions">Boutons d'action</div>
+      </header>
+      <div class="stats-grid">StatCards (4 colonnes responsive)</div>
+      <div class="filters">Filtres de recherche</div>
+      <div class="{feature}-grid">Grille de contenus (3 colonnes responsive)</div>
+    </div>
+    ```
+  - Container max-width: 1400px uniforme
+  - Padding: 32px constant
+  - Stats grid: 4 colonnes (auto-responsive)
+  - Content grid: 3 colonnes avec minmax(320px, 1fr)
+  - Gap: 24px partout
+  - Classes spécifiques: `.properties-grid`, `.tenants-grid`, `.leases-grid`, etc.
 - **Routing**: Vue Router avec routes typées
 - **Form Handling**: Validation côté client avec règles métier
 - **Error Handling**: Gestion d'erreurs centralisée
