@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useLeasesStore } from '../stores/leasesStore';
-import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
-import Modal from '@/shared/components/Modal.vue';
-import Input from '@/shared/components/Input.vue';
-import Button from '@/shared/components/Button.vue';
-import type { Lease } from '@/db/schema';
+import { usePropertiesStore } from '../../properties/stores/propertiesStore';
+import { useTenantsStore } from '../../tenants/stores/tenantsStore';
+import Modal from '../../../shared/components/Modal.vue';
+import Input from '../../../shared/components/Input.vue';
+import Button from '../../../shared/components/Button.vue';
+import type { Lease } from '../../../db/schema';
 
 interface Props {
   modelValue: boolean;
