@@ -8,13 +8,16 @@ import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Calendar from '@/shared/components/Calendar.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
+import RentPaymentModal from '../components/RentPaymentModal.vue';
+import { useNotification } from '@/shared/composables/useNotification';
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
+const { success, error } = useNotification();
 
-const selectedRent = ref<any>(null);
+const selectedRent = ref<Rent | null>(null);
 const showPaymentModal = ref(false);
 
 // Calendar events
@@ -83,13 +86,17 @@ function handleMonthChange(date: Date) {
   console.log('Month changed:', date);
 }
 
-async function handlePayRent(rentId: number) {
+async function handlePayRent(paymentData: any) {
+  if (!selectedRent.value?.id) return;
+  
   try {
-    await rentsStore.payRent(rentId);
+    await rentsStore.payRent(selectedRent.value.id, new Date(paymentData.paymentDate));
+    success('Paiement enregistré avec succès');
     showPaymentModal.value = false;
     selectedRent.value = null;
-  } catch (error) {
-    console.error('Failed to pay rent:', error);
+  } catch (err) {
+    console.error('Failed to pay rent:', err);
+    error('Erreur lors de l\'enregistrement du paiement');
   }
 }
 
@@ -112,11 +119,6 @@ function formatDate(date: Date | string): string {
     month: 'long',
     year: 'numeric',
   });
-}
-
-function closeModal() {
-  showPaymentModal.value = false;
-  selectedRent.value = null;
 }
 
 // Lifecycle
@@ -262,59 +264,14 @@ onMounted(async () => {
     </div>
 
     <!-- Payment Modal -->
-    <div v-if="showPaymentModal && selectedRent" class="modal-overlay" @click="closeModal">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h3>Détails du loyer</h3>
-          <button class="close-button" @click="closeModal">
-            <i class="mdi mdi-close"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="info-row">
-            <span class="info-label">Bien</span>
-            <span class="info-value">{{ getPropertyName(selectedRent.leaseId) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Locataire</span>
-            <span class="info-value">{{ getTenantName(selectedRent.leaseId) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Échéance</span>
-            <span class="info-value">{{ formatDate(selectedRent.dueDate) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Montant</span>
-            <span class="info-value amount">{{ selectedRent.amount.toLocaleString('fr-FR') }}€</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Statut</span>
-            <span
-              class="badge"
-              :class="`badge-${getStatusConfig(selectedRent.status).color}`"
-            >
-              <i class="mdi" :class="`mdi-${getStatusConfig(selectedRent.status).icon}`"></i>
-              {{ getStatusConfig(selectedRent.status).label }}
-            </span>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <Button variant="default" @click="closeModal">
-            Fermer
-          </Button>
-          <Button
-            v-if="selectedRent.status !== 'paid'"
-            variant="success"
-            icon="check"
-            @click="handlePayRent(selectedRent.id)"
-          >
-            Marquer comme payé
-          </Button>
-        </div>
-      </div>
-    </div>
+    <RentPaymentModal
+      v-if="selectedRent"
+      v-model="showPaymentModal"
+      :rent="selectedRent"
+      :property-name="getPropertyName(selectedRent.leaseId)"
+      :tenant-name="getTenantName(selectedRent.leaseId)"
+      @submit="handlePayRent"
+    />
   </div>
 </template>
 
@@ -417,102 +374,6 @@ onMounted(async () => {
 .legend-badge.badge-error {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #991b1b;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--space-4, 1rem);
-}
-
-.modal {
-  background: white;
-  border-radius: var(--radius-2xl, 1.5rem);
-  box-shadow: var(--shadow-2xl, 0 25px 50px rgba(0, 0, 0, 0.25));
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-6, 1.5rem);
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: var(--text-2xl, 1.5rem);
-  font-weight: var(--font-weight-bold, 700);
-}
-
-.close-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-lg, 0.75rem);
-  cursor: pointer;
-  transition: background var(--transition-base, 0.2s ease);
-  font-size: 1.25rem;
-  color: var(--text-secondary, #64748b);
-}
-
-.close-button:hover {
-  background: var(--bg-secondary, #f1f5f9);
-}
-
-.modal-body {
-  padding: var(--space-6, 1.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 1rem);
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3, 0.75rem);
-  background: var(--bg-secondary, #f1f5f9);
-  border-radius: var(--radius-lg, 0.75rem);
-}
-
-.info-label {
-  font-size: var(--text-sm, 0.875rem);
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--text-secondary, #64748b);
-}
-
-.info-value {
-  font-size: var(--text-base, 1rem);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--text-primary, #0f172a);
-}
-
-.info-value.amount {
-  font-size: var(--text-xl, 1.25rem);
-  color: var(--primary-600, #4f46e5);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3, 0.75rem);
-  padding: var(--space-6, 1.5rem);
-  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
 @media (max-width: 1200px) {
