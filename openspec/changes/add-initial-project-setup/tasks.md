@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 173/187 tâches (93%)  
-**Dernière validation**: 27 novembre 2025 - Tests composants complétés
+**Progression**: 174/187 tâches (93%)  
+**Dernière validation**: 27 novembre 2025 - fileUtils complété
 
 ## Phase 1: Configuration de Base ✅
 
@@ -232,7 +232,7 @@
 ### Utilitaires
 
 - [x] `dateUtils.ts` - Fonctions dates ✅ VALIDÉ (26 nov 2025)
-- [ ] `fileUtils.ts` - Gestion fichiers
+- [x] `fileUtils.ts` - Gestion fichiers ✅ VALIDÉ (27 nov 2025 - 43 tests, 63% coverage)
 - [ ] `validationRules.ts` - Règles validation (couvert par useValidation)
 - [x] `formatters.ts` - Formatage valeurs ✅ VALIDÉ (26 nov 2025)
 - [x] `constants.ts` - Constantes app ✅ VALIDÉ (26 nov 2025)
