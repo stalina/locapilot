@@ -53,8 +53,35 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
+      - name: Check bundle size
+        run: |
+          JS_SIZE=$(find dist/assets -name "*.js" -exec du -k {} \; | awk '{sum+=$1} END {print sum}')
+          if [ $JS_SIZE -gt 512 ]; then
+            echo "JavaScript bundle size ($JS_SIZE KB) exceeds 500KB limit"
+            exit 1
+          fi
+          echo "JavaScript bundle size: $JS_SIZE KB (limit: 500KB)"
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run build
+      - run: npm run test:e2e
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
