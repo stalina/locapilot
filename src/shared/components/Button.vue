@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'error' | 'text' | 'ghost' | 'default' | 'danger'
@@ -7,6 +8,7 @@ interface Props {
   disabled?: boolean
   loading?: boolean
   icon?: string
+  to?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -25,10 +27,19 @@ const classes = computed(() => [
     'btn-loading': props.loading,
   },
 ])
+
+const isLink = computed(() => !!props.to && !props.disabled && !props.loading)
 </script>
 
 <template>
-  <button :class="classes" :disabled="disabled || loading">
+  <RouterLink v-if="isLink" :to="to || '/'" custom v-slot="{ navigate }">
+    <button :class="classes" @click="navigate">
+      <i v-if="loading" class="mdi mdi-loading mdi-spin"></i>
+      <i v-else-if="icon" :class="`mdi mdi-${icon}`"></i>
+      <slot />
+    </button>
+  </RouterLink>
+  <button v-else :class="classes" :disabled="disabled || loading">
     <i v-if="loading" class="mdi mdi-loading mdi-spin"></i>
     <i v-else-if="icon" :class="`mdi mdi-${icon}`"></i>
     <slot />
