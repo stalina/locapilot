@@ -10,3 +10,20 @@ export type {
   Communication,
   Settings,
 } from './schema';
+
+// Application-specific settings type
+export interface AppSettings {
+  id?: number;
+  theme: 'light' | 'dark';
+  language: string;
+  currency: string;
+  dateFormat: string;
+  notifications: {
+    enabled: boolean;
+    rentReminders: boolean;
+    leaseExpiration: boolean;
+    paymentConfirmations: boolean;
+  };
+  autoSave: boolean;
+  compactMode: boolean;
+}
