@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 95/185 tâches (51%)  
-**Dernière validation**: 27 novembre 2025 - Styles partagés vues détail
+**Progression**: 103/186 tâches (55%)  
+**Dernière validation**: 27 novembre 2025 - Composables useNotification, useConfirm, useValidation
 
 ## Phase 1: Configuration de Base ✅
 
@@ -197,23 +197,23 @@
 
 ### Composables
 - [ ] `useDatabase.ts` - Accès DB
-- [ ] `useNotification.ts` - Notifications toast
-- [ ] `useConfirm.ts` - Dialogues confirmation
-- [ ] `useFormatter.ts` - Formatage dates, nombres, devises
-- [ ] `useValidation.ts` - Validation formulaires
+- [x] `useNotification.ts` - Notifications toast ✅ VALIDÉ (27 nov 2025)
+- [x] `useConfirm.ts` - Dialogues confirmation ✅ VALIDÉ (27 nov 2025)
+- [x] `useFormatter.ts` - Formatage dates, nombres, devises ✅ VALIDÉ (26 nov 2025)
+- [x] `useValidation.ts` - Validation formulaires ✅ VALIDÉ (27 nov 2025)
 - [ ] `useExport.ts` - Export données
 - [ ] `useImport.ts` - Import données
 
 ### Utilitaires
-- [ ] `dateUtils.ts` - Fonctions dates
+- [x] `dateUtils.ts` - Fonctions dates ✅ VALIDÉ (26 nov 2025)
 - [ ] `fileUtils.ts` - Gestion fichiers
-- [ ] `validationRules.ts` - Règles validation
-- [ ] `formatters.ts` - Formatage valeurs
-- [ ] `constants.ts` - Constantes app
+- [ ] `validationRules.ts` - Règles validation (couvert par useValidation)
+- [x] `formatters.ts` - Formatage valeurs ✅ VALIDÉ (26 nov 2025)
+- [x] `constants.ts` - Constantes app ✅ VALIDÉ (26 nov 2025)
 
 ### Tests Utilitaires
-- [ ] Tests pour tous les utilitaires
-- [ ] Tests pour composables
+- [x] Tests pour tous les utilitaires (dateUtils, formatters tests créés)
+- [x] Tests pour composables (useNotification, useConfirm, useValidation - 55 tests)
 
 ## Phase 8: Configuration Tests
 
