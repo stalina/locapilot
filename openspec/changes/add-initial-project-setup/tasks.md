@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 99/183 tâches (54%)  
-**Dernière validation**: 25 novembre 2025 - Workflow candidat → locataire validé (Playwright MCP)
+**Progression**: 95/185 tâches (51%)  
+**Dernière validation**: 27 novembre 2025 - Styles partagés vues détail
 
 ## Phase 1: Configuration de Base ✅
 
@@ -116,6 +116,7 @@
 - [x] Configurer thème (couleurs, typography)
 - [x] Créer variables CSS/SCSS globales
 - [x] Design tokens (spacing, breakpoints, etc.)
+- [x] Styles partagés pour vues détail (detail-view.css)
 - [ ] Mode sombre (optionnel pour phase 1)
 
 ### Composants de Base
@@ -339,6 +340,48 @@
 - ✅ tenantIds array: `.map(id => Number(id))` pour éviter problèmes de sérialisation
 
 **Test validé**: Création de Paul Durand (candidat) → Création bail 12 Rue Victor Hugo → Paul devient locataire actif
+
+### Refactorisation Styles Vues Détail ✅ VALIDÉE (27 nov 2025)
+
+**Problème identifié**:
+- Les pages de détail (propriétés, baux, locataires) avaient des styles divergents
+- Duplication importante de code CSS entre PropertyDetailView et LeaseDetailView
+- Manque de cohérence visuelle entre les différentes vues détail
+
+**Solution implémentée**:
+1. **Création de `/src/shared/styles/detail-view.css`**:
+   - Styles partagés pour hero section (image + contenu)
+   - Grilles d'informations (info-grid, content-grid)
+   - Listes de locataires et baux
+   - En-têtes de cartes, placeholders vides, actions rapides
+   - Responsive breakpoints pour mobile/tablette
+
+2. **Refactorisation PropertyDetailView**:
+   - Ajout classe `.detail-view` sur conteneur principal
+   - Remplacement styles scopés par import du stylesheet partagé
+   - Conservation de quelques styles spécifiques en scoped
+
+3. **Refactorisation LeaseDetailView**:
+   - Restructuration complète du template pour correspondre au pattern PropertyDetailView
+   - Utilisation composants partagés: `Button`, `Badge`, `Card`
+   - Hero section harmonisée avec icône, titre, statut
+   - Content grid 2-colonnes (infos principales + sidebar)
+   - Import stylesheet partagé + quelques styles locaux (property-summary, property-subtitle)
+
+**Corrections collatérales**:
+- Fix erreurs TypeScript dans `InventoriesView` (date undefined)
+- Fix erreurs TypeScript dans `LeasesView` (null vs undefined pour prop lease)
+- Fix erreurs TypeScript dans `RentsView` (variables inutilisées, config status manquante "partial")
+
+**Résultats**:
+- ✅ Build production réussi (vite build)
+- ✅ Type-check sans erreurs (vue-tsc --noEmit)
+- ✅ Bundle optimisé: 251 KB (index.js gzipped: 89.55 KB)
+- ✅ Cohérence visuelle entre PropertyDetailView et LeaseDetailView
+- ✅ ~500 lignes de CSS dédupliquées
+- ✅ Maintenance future simplifiée (un seul endroit pour modifier styles détail)
+
+**Commit**: `dd6fc8a` - "feat: unify detail views with shared styling"
 
 ## ⚠️ Problèmes Découverts (25 nov 2025)
 
