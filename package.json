@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
     "type-check": "vue-tsc --noEmit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
