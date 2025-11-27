@@ -193,7 +193,7 @@ export const useSettingsStore = defineStore('settings', () => {
       await updateNotifications(defaultSettings.notifications);
       await setSetting('autoSave', defaultSettings.autoSave);
       await setSetting('compactMode', defaultSettings.compactMode);
-      
+
       dateFormat.value = defaultSettings.dateFormat;
       autoSave.value = defaultSettings.autoSave;
       compactMode.value = defaultSettings.compactMode;
