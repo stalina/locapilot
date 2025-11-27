@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 103/186 tâches (55%)  
-**Dernière validation**: 27 novembre 2025 - Composables useNotification, useConfirm, useValidation
+**Progression**: 109/186 tâches (59%)  
+**Dernière validation**: 27 novembre 2025 - RentsCalendarView et RentPaymentModal
 
 ## Phase 1: Configuration de Base ✅
 
@@ -123,13 +123,13 @@
 - [x] `Button.vue`
 - [x] `Input.vue`
 - [x] `Modal.vue` (avec transitions, sizes, footer slot)
-- [ ] `BaseSelect.vue`
+- [x] `Select.vue` (BaseSelect) ✅ VALIDÉ (26 nov 2025)
 - [x] `StatCard.vue`
 - [ ] `BaseTable.vue`
 - [ ] `BasePagination.vue`
-- [ ] `BaseSpinner.vue` (Loading states inline)
-- [ ] `BaseAlert.vue`
-- [ ] `EmptyState.vue` (Empty states inline)
+- [x] `Spinner.vue` (BaseSpinner) ✅ VALIDÉ (26 nov 2025)
+- [x] `Alert.vue` (BaseAlert) ✅ VALIDÉ (26 nov 2025)
+- [x] `EmptyState.vue` ✅ VALIDÉ (26 nov 2025)
 
 ### Composants Métier
 - [x] `PropertyCard.vue`
@@ -165,8 +165,8 @@
 - [x] Page création/édition locataire (TenantFormModal) ✅ VALIDÉ
 
 ### Rents
-- [ ] Page calendrier loyers (RentsCalendarView) ⚠️ Stub uniquement ("En construction")
-- [ ] Modal paiement loyer ⚠️ Non implémenté
+- [x] Page calendrier loyers (RentsCalendarView) ✅ VALIDÉ (27 nov 2025)
+- [x] Modal paiement loyer ✅ VALIDÉ (27 nov 2025)
 
 ### Documents
 - [x] Page gestion documents (DocumentsView) ✅ VALIDÉ
