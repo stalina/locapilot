@@ -16,8 +16,8 @@ const tenantsStore = useTenantsStore();
 
 // Filters
 const statusFilter = ref<'all' | 'pending' | 'paid' | 'late'>('all');
-const currentMonth = ref(new Date().getMonth());
-const currentYear = ref(new Date().getFullYear());
+// const currentMonth = ref(new Date().getMonth());
+// const currentYear = ref(new Date().getFullYear());
 
 onMounted(async () => {
   await Promise.all([
@@ -80,6 +80,7 @@ const statusConfig = (status: Rent['status']) => {
     paid: { variant: 'success' as const, label: 'Payé', icon: 'check-circle' },
     pending: { variant: 'warning' as const, label: 'En attente', icon: 'clock-outline' },
     late: { variant: 'error' as const, label: 'En retard', icon: 'alert-circle' },
+    partial: { variant: 'info' as const, label: 'Partiel', icon: 'alert-outline' },
   };
   return configs[status] || configs.pending;
 };
@@ -94,7 +95,7 @@ const handleMarkAsPaid = async (rent: Rent) => {
   }
 };
 
-const handleGenerateReceipt = async (rent: Rent) => {
+const handleGenerateReceipt = async (_rent: Rent) => {
   // TODO: Implémenter la génération de quittance
   alert('Fonctionnalité de génération de quittance à implémenter');
 };

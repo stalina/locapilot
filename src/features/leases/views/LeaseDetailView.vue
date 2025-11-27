@@ -5,6 +5,8 @@ import { useLeasesStore } from '../stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import { useTenantsStore } from '../../tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
+import Badge from '@/shared/components/Badge.vue';
+import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import type { Tenant } from '@/db/schema';
 
@@ -29,7 +31,7 @@ const lease = computed(() => leasesStore.currentLease);
 
 const property = computed(() => {
   if (!lease.value) return null;
-  return propertiesStore.properties.find(p => p.id === lease.value!.propertyId);
+  return propertiesStore.properties.find(p => p.id === lease.value!.propertyId) ?? null;
 });
 
 const tenants = computed(() => {
@@ -39,24 +41,21 @@ const tenants = computed(() => {
     .filter((tenant): tenant is Tenant => tenant !== undefined);
 });
 
-const statusLabel = computed(() => {
-  if (!lease.value) return '';
-  switch (lease.value.status) {
-    case 'active': return 'Actif';
-    case 'ended': return 'Terminé';
-    case 'pending': return 'En attente';
-    default: return lease.value.status;
+const tenantsNames = computed(() => {
+  if (tenants.value.length === 0) {
+    return 'Locataires non renseignés';
   }
+  return tenants.value.map(t => `${t.firstName} ${t.lastName}`).join(', ');
 });
 
-const statusClass = computed(() => {
-  if (!lease.value) return '';
-  switch (lease.value.status) {
-    case 'active': return 'status-active';
-    case 'ended': return 'status-ended';
-    case 'pending': return 'status-pending';
-    default: return '';
-  }
+const statusConfig = computed(() => {
+  if (!lease.value) return null;
+  const configs = {
+    active: { label: 'Actif', variant: 'success', icon: 'check-circle' },
+    pending: { label: 'En attente', variant: 'warning', icon: 'clock-outline' },
+    ended: { label: 'Terminé', variant: 'default', icon: 'flag-outline' },
+  } as const;
+  return configs[lease.value.status];
 });
 
 const formattedStartDate = computed(() => {
@@ -92,7 +91,7 @@ const handleEditSuccess = async () => {
 
 const handleDelete = async () => {
   if (!lease.value?.id) return;
-  
+
   if (confirm('Êtes-vous sûr de vouloir supprimer ce bail ?')) {
     try {
       await leasesStore.deleteLease(lease.value.id);
@@ -105,7 +104,7 @@ const handleDelete = async () => {
 
 const handleTerminate = async () => {
   if (!lease.value?.id) return;
-  
+
   if (confirm('Êtes-vous sûr de vouloir terminer ce bail ?')) {
     try {
       await leasesStore.terminateLease(lease.value.id);
@@ -131,168 +130,285 @@ const goToTenant = (tenantId: number) => {
 </script>
 
 <template>
-  <div class="view-container lease-detail-view">
+  <div class="view-container lease-detail-view detail-view">
     <div v-if="leasesStore.isLoading" class="loading-state">
+      <i class="mdi mdi-loading mdi-spin"></i>
       Chargement du bail...
     </div>
 
     <div v-else-if="leasesStore.error || !lease" class="error-state">
+      <i class="mdi mdi-alert-circle"></i>
       {{ leasesStore.error || 'Bail non trouvé' }}
-      <Button @click="goBack" variant="secondary">
+      <Button variant="outline" icon="arrow-left" @click="goBack">
         Retour à la liste
       </Button>
     </div>
 
-    <div v-else class="lease-content">
-      <div class="header-section">
-        <Button @click="goBack" variant="text" class="back-button">
-          ← Retour
-        </Button>
-
-        <div class="header-title">
-          <div class="title-row">
-            <h1>Bail {{ property?.name || '#' + lease.propertyId }}</h1>
-            <span :class="['status-badge', statusClass]">{{ statusLabel }}</span>
+    <template v-else>
+      <header class="view-header">
+        <div>
+          <h1>Détail du bail</h1>
+          <div class="header-meta">
+            <Badge
+              v-if="statusConfig"
+              :variant="statusConfig.variant"
+              :icon="statusConfig.icon"
+            >
+              {{ statusConfig.label }}
+            </Badge>
           </div>
-          <p class="subtitle">
-            {{ tenants.map(t => `${t?.firstName} ${t?.lastName}`).join(', ') }}
-          </p>
         </div>
-
         <div class="header-actions">
-          <Button @click="handleEdit" variant="secondary">
+          <Button variant="outline" icon="arrow-left" @click="goBack">
+            Retour
+          </Button>
+          <Button variant="outline" icon="pencil" @click="handleEdit">
             Modifier
           </Button>
-          <Button 
-            v-if="lease.status === 'active'" 
-            @click="handleTerminate" 
+          <Button
+            v-if="lease.status === 'active'"
             variant="warning"
+            icon="close"
+            @click="handleTerminate"
           >
             Terminer
           </Button>
-          <Button @click="handleDelete" variant="danger">
+          <Button variant="error" icon="delete" @click="handleDelete">
             Supprimer
           </Button>
         </div>
-      </div>
+      </header>
 
-      <div class="details-grid">
-        <!-- Property Section -->
-        <section class="detail-section">
-          <h2>Propriété</h2>
-          <div class="detail-card clickable" @click="goToProperty" v-if="property">
+      <section class="hero-section">
+        <div class="hero-image">
+          <i class="mdi mdi-file-document-outline"></i>
+        </div>
+        <div class="hero-content">
+          <div class="title-row">
+            <h1>{{ property?.name || 'Propriété #' + lease.propertyId }}</h1>
+            <Badge
+              v-if="statusConfig"
+              :variant="statusConfig.variant"
+              :icon="statusConfig.icon"
+            >
+              {{ statusConfig.label }}
+            </Badge>
+          </div>
+          <div class="subtitle">
+            <i class="mdi mdi-map-marker"></i>
+            {{ property?.address || 'Adresse non renseignée' }}
+          </div>
+          <div class="hero-meta">
+            <span>
+              <i class="mdi mdi-account-multiple-outline"></i>
+              {{ tenantsNames }}
+            </span>
+            <span>
+              <i class="mdi mdi-calendar-range"></i>
+              {{ formattedStartDate }} - {{ formattedEndDate }}
+            </span>
+            <span>
+              <i class="mdi mdi-cash-multiple"></i>
+              Paiement le {{ lease.paymentDay }} du mois
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <div class="left-column">
+          <Card>
             <div class="card-header">
-              <h3>{{ property.name }}</h3>
-              <span class="link-icon">→</span>
+              <h2>
+                <i class="mdi mdi-information"></i>
+                Informations générales
+              </h2>
             </div>
-            <p class="card-subtitle">{{ property.address }}</p>
             <div class="info-grid">
               <div class="info-item">
-                <span class="label">Type</span>
-                <span class="value">{{ property.type }}</span>
+                <span class="info-label">Date de début</span>
+                <span class="info-value">{{ formattedStartDate }}</span>
               </div>
               <div class="info-item">
-                <span class="label">Surface</span>
-                <span class="value">{{ property.surface }} m²</span>
+                <span class="info-label">Date de fin</span>
+                <span class="info-value">{{ formattedEndDate }}</span>
               </div>
               <div class="info-item">
-                <span class="label">Pièces</span>
-                <span class="value">{{ property.rooms }}</span>
+                <span class="info-label">Jour de paiement</span>
+                <span class="info-value">{{ lease.paymentDay }} du mois</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Statut</span>
+                <Badge
+                  v-if="statusConfig"
+                  :variant="statusConfig.variant"
+                  :icon="statusConfig.icon"
+                >
+                  {{ statusConfig.label }}
+                </Badge>
               </div>
             </div>
-          </div>
-          <div v-else class="detail-card">
-            <p class="empty-state">Propriété non trouvée</p>
-          </div>
-        </section>
+          </Card>
 
-        <!-- Tenants Section -->
-        <section class="detail-section">
-          <h2>Locataires</h2>
-          <div class="tenants-list">
-            <div 
-              v-for="tenant in tenants" 
-              :key="tenant.id"
-              class="detail-card clickable"
-              @click="tenant.id && goToTenant(tenant.id)"
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-currency-eur"></i>
+                Informations financières
+              </h2>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Loyer mensuel</span>
+                <span class="info-value">
+                  {{ lease.rent.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Charges mensuelles</span>
+                <span class="info-value">
+                  {{ lease.charges.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Total mensuel</span>
+                <span class="info-value highlight">
+                  {{ totalMonthlyAmount.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Dépôt de garantie</span>
+                <span class="info-value">
+                  {{ lease.deposit.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          <Card v-if="lease?.documentId">
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-file-document"></i>
+                Document
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              icon="file-document"
+              @click="() => lease && console.log('Voir document', lease.documentId)"
             >
-              <div class="card-header">
-                <h3>{{ tenant.firstName }} {{ tenant.lastName }}</h3>
-                <span class="link-icon">→</span>
+              Voir le contrat de bail
+            </Button>
+          </Card>
+        </div>
+
+        <div class="right-column">
+          <Card :clickable="!!property" :hover="!!property" @click="goToProperty">
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-home"></i>
+                Bien associé
+              </h2>
+            </div>
+            <template v-if="property">
+              <div class="property-summary">
+                <strong>{{ property.name }}</strong>
+                <span class="property-subtitle">
+                  <i class="mdi mdi-map-marker"></i>
+                  {{ property.address }}
+                </span>
               </div>
               <div class="info-grid">
                 <div class="info-item">
-                  <span class="label">Email</span>
-                  <span class="value">{{ tenant.email }}</span>
+                  <span class="info-label">Surface</span>
+                  <span class="info-value">{{ property.surface }} m²</span>
                 </div>
                 <div class="info-item">
-                  <span class="label">Téléphone</span>
-                  <span class="value">{{ tenant.phone }}</span>
+                  <span class="info-label">Pièces</span>
+                  <span class="info-value">{{ property.rooms }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Type</span>
+                  <span class="info-value">{{ property.type }}</span>
                 </div>
               </div>
+            </template>
+            <div v-else class="empty-placeholder">
+              <i class="mdi mdi-home-off-outline"></i>
+              <p>Propriété non trouvée</p>
             </div>
-          </div>
-        </section>
+          </Card>
 
-        <!-- Dates Section -->
-        <section class="detail-section">
-          <h2>Période</h2>
-          <div class="detail-card">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">Date de début</span>
-                <span class="value">{{ formattedStartDate }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Date de fin</span>
-                <span class="value">{{ formattedEndDate }}</span>
-              </div>
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-account-multiple-outline"></i>
+                Locataires
+              </h2>
             </div>
-          </div>
-        </section>
-
-        <!-- Financial Section -->
-        <section class="detail-section">
-          <h2>Informations financières</h2>
-          <div class="detail-card">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">Loyer mensuel</span>
-                <span class="value">{{ lease.rent.toLocaleString('fr-FR') }} €</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Charges</span>
-                <span class="value">{{ lease.charges.toLocaleString('fr-FR') }} €</span>
-              </div>
-              <div class="info-item highlight">
-                <span class="label">Total mensuel</span>
-                <span class="value">{{ totalMonthlyAmount.toLocaleString('fr-FR') }} €</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Dépôt de garantie</span>
-                <span class="value">{{ lease.deposit.toLocaleString('fr-FR') }} €</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Jour de paiement</span>
-                <span class="value">{{ lease.paymentDay }} du mois</span>
+            <div v-if="tenants.length" class="tenants-list">
+              <div
+                v-for="tenant in tenants"
+                :key="tenant.id"
+                class="tenant-item clickable"
+                @click="tenant.id && goToTenant(tenant.id)"
+              >
+                <i class="mdi mdi-account-circle"></i>
+                <div class="tenant-info">
+                  <strong>{{ tenant.firstName }} {{ tenant.lastName }}</strong>
+                  <span>{{ tenant.email }}</span>
+                  <span>{{ tenant.phone || 'Téléphone non renseigné' }}</span>
+                </div>
+                <i class="mdi mdi-chevron-right"></i>
               </div>
             </div>
-          </div>
-        </section>
+            <div v-else class="empty-placeholder">
+              <i class="mdi mdi-account-off"></i>
+              <p>Aucun locataire pour ce bail</p>
+            </div>
+          </Card>
 
-        <!-- Document Section (if exists) -->
-        <section class="detail-section" v-if="lease?.documentId">
-          <h2>Document</h2>
-          <div class="detail-card">
-            <Button variant="secondary" @click="() => lease && console.log('View document', lease.documentId)">
-              Voir le contrat de bail
-            </Button>
-          </div>
-        </section>
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-lightning-bolt"></i>
+                Actions rapides
+              </h2>
+            </div>
+            <div class="quick-actions">
+              <Button variant="outline" icon="home" @click="goToProperty">
+                Voir la propriété
+              </Button>
+              <Button variant="outline" icon="pencil" @click="handleEdit">
+                Modifier le bail
+              </Button>
+              <Button
+                variant="outline"
+                icon="stop-circle"
+                :disabled="lease.status !== 'active'"
+                @click="handleTerminate"
+              >
+                Terminer le bail
+              </Button>
+            </div>
+          </Card>
+
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-history"></i>
+                Historique
+              </h2>
+            </div>
+            <div class="timeline-placeholder">
+              <i class="mdi mdi-timeline-clock"></i>
+              <p>Aucun événement pour le moment</p>
+            </div>
+          </Card>
+        </div>
       </div>
-    </div>
+    </template>
 
-    <!-- Edit Lease Modal -->
     <LeaseFormModal
       v-if="lease"
       v-model="showEditModal"
@@ -303,203 +419,19 @@ const goToTenant = (tenantId: number) => {
 </template>
 
 <style scoped>
-/* Styles spécifiques à la vue de détail d'un bail */
-
-.header-section {
-  margin-bottom: var(--spacing-6);
-}
-
-.back-button {
-  margin-bottom: var(--spacing-4);
-}
-
-.header-title {
-  margin-bottom: var(--spacing-4);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  margin-bottom: var(--spacing-2);
-}
-
-.title-row h1 {
-  font-size: var(--text-3xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-}
-
-.status-badge {
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.status-active {
-  background: rgba(34, 197, 94, 0.1);
-  color: rgb(22, 163, 74);
-}
-
-.status-ended {
-  background: rgba(156, 163, 175, 0.1);
-  color: rgb(107, 114, 128);
-}
-
-.status-pending {
-  background: rgba(251, 146, 60, 0.1);
-  color: rgb(234, 88, 12);
-}
-
-.subtitle {
-  font-size: var(--text-lg);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: var(--spacing-3);
-  flex-wrap: wrap;
-}
-
-.details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--spacing-6);
-}
-
-.detail-section h2 {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-3) 0;
-}
-
-.detail-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
-  transition: all 0.2s ease;
-}
-
-.detail-card.clickable {
-  cursor: pointer;
-}
-
-.detail-card.clickable:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-2);
-}
-
-.card-header h3 {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0;
-}
-
-.link-icon {
-  font-size: var(--text-xl);
-  color: var(--color-primary);
-  transition: transform 0.2s ease;
-}
-
-.detail-card.clickable:hover .link-icon {
-  transform: translateX(4px);
-}
-
-.card-subtitle {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--spacing-3) 0;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-3);
-}
-
-.info-item {
+.property-summary {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--space-2, 0.5rem);
+  margin-bottom: var(--space-4, 1rem);
 }
 
-.info-item.highlight {
-  grid-column: span 2;
-  padding-top: var(--spacing-2);
-  border-top: 1px solid var(--color-border);
-}
-
-.info-item .label {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.info-item .value {
-  font-size: var(--text-base);
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.info-item.highlight .value {
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.tenants-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-@media (max-width: 768px) {
-  .lease-detail-view {
-    padding: var(--spacing-4);
-  }
-
-  .details-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .header-actions {
-    flex-direction: column;
-  }
-
-  .header-actions :deep(button) {
-    width: 100%;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .info-item.highlight {
-    grid-column: span 1;
-  }
+.property-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  color: var(--text-secondary, #64748b);
 }
 </style>
+
+<style src="@/shared/styles/detail-view.css"></style>

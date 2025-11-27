@@ -272,7 +272,7 @@ const handleFormSuccess = async () => {
     <!-- Lease Form Modal -->
     <LeaseFormModal
       v-model="showLeaseForm"
-      :lease="leaseToEdit"
+      :lease="leaseToEdit ?? undefined"
       @success="handleFormSuccess"
     />
   </div>

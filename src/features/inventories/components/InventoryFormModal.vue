@@ -30,7 +30,7 @@ const propertiesStore = usePropertiesStore();
 const formData = ref({
   leaseId: 0 as number,
   type: 'checkin' as Inventory['type'],
-  date: new Date().toISOString().split('T')[0],
+  date: new Date().toISOString().split('T')[0] as string,
   observations: '',
   photos: [] as string[],
   roomsData: {} as Record<string, any>,
@@ -61,7 +61,7 @@ watch(() => props.inventory, (newInventory) => {
     formData.value = {
       leaseId: newInventory.leaseId,
       type: newInventory.type,
-      date: new Date(newInventory.date).toISOString().split('T')[0],
+      date: new Date(newInventory.date).toISOString().split('T')[0] as string,
       observations: newInventory.observations || '',
       photos: newInventory.photos || [],
       roomsData: newInventory.roomsData || {},
@@ -75,7 +75,7 @@ function resetForm() {
   formData.value = {
     leaseId: 0,
     type: 'checkin',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0] as string,
     observations: '',
     photos: [],
     roomsData: {},
@@ -106,7 +106,7 @@ async function handleSubmit() {
     const inventoryData = {
       leaseId: formData.value.leaseId,
       type: formData.value.type,
-      date: new Date(formData.value.date),
+      date: new Date(formData.value.date || new Date()),
       observations: formData.value.observations,
       photos: formData.value.photos,
       roomsData: formData.value.roomsData,
