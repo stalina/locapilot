@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 136/186 tâches (73%)  
-**Dernière validation**: 27 novembre 2025 - Déploiement configuré
+**Progression**: 137/186 tâches (74%)  
+**Dernière validation**: 27 novembre 2025 - Git hooks configurés
 
 ## Phase 1: Configuration de Base ✅
 
@@ -12,7 +12,7 @@
 - [x] Initialiser projet Vite + Vue 3 + TypeScript
 - [x] Configurer TypeScript (tsconfig.json strict mode)
 - [x] Installer et configurer ESLint + Prettier
-- [ ] Configurer Git hooks (husky + lint-staged)
+- [x] Configurer Git hooks (husky + lint-staged) ✅ VALIDÉ (27 nov 2025)
 - [x] Créer structure de dossiers du projet
 - [x] Configurer path aliases (@/, @components/, etc.)
 - [x] Ajouter .editorconfig ✅ VALIDÉ (27 nov 2025)
