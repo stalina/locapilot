@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 174/187 tâches (93%)  
-**Dernière validation**: 27 novembre 2025 - fileUtils complété
+**Progression**: 175/187 tâches (94%)  
+**Dernière validation**: 27 novembre 2025 - Tests accessibilité complétés
 
 ## Phase 1: Configuration de Base ✅
 
@@ -160,7 +160,7 @@
 ### Tests Composants
 
 - [x] Tests pour composants de base ✅ VALIDÉ (27 nov 2025)
-- [ ] Tests accessibilité (a11y)
+- [x] Tests accessibilité (a11y) ✅ VALIDÉ (14 tests automatisés, 67/70 passing - 27 nov 2025)
 
 ## Phase 6: Pages Principales (Structure) ✅
 
