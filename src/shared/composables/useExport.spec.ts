@@ -23,12 +23,12 @@ describe('useExport', () => {
     HTMLAnchorElement.prototype.click = vi.fn();
 
     // Mock Blob constructor
-    global.Blob = class MockBlob {
+    (global as any).Blob = class MockBlob {
       constructor(
         public content: any[],
         public options?: { type?: string }
       ) {}
-    } as any;
+    };
   });
 
   describe('exportToJSON', () => {

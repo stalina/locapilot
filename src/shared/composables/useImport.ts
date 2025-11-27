@@ -101,16 +101,16 @@ export function useImport() {
       }
 
       // Extract headers
-      const headers = parseCSVLine(lines[0]);
+      const headers = parseCSVLine(lines[0]!);
 
       // Parse data rows
       const data: Record<string, string>[] = [];
       for (let i = 1; i < lines.length; i++) {
-        const values = parseCSVLine(lines[i]);
+        const values = parseCSVLine(lines[i]!);
         if (values.length === headers.length) {
           const row: Record<string, string> = {};
           headers.forEach((header, index) => {
-            row[header] = values[index];
+            row[header] = values[index]!;
           });
           data.push(row);
         }
