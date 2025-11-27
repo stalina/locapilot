@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 164/186 tâches (88%)  
-**Dernière validation**: 27 novembre 2025 - Validation Zod intégrée
+**Progression**: 165/187 tâches (88%)  
+**Dernière validation**: 27 novembre 2025 - Système de migrations implémenté
 
 ## Phase 1: Configuration de Base ✅
 
@@ -44,7 +44,7 @@
 - [x] Créer fichier de schéma database (`src/db/schema.ts`)
 - [x] Définir version 1 du schéma avec toutes les tables
 - [x] Créer indexes pour queries fréquentes
-- [ ] Implémenter système de migrations
+- [x] Implémenter système de migrations ✅ VALIDÉ (27 nov 2025)
 - [x] Créer wrapper/composable pour accès DB (`database.ts`)
 - [x] Ajouter error handling et logging
 
