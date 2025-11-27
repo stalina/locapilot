@@ -11,7 +11,7 @@
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
+    "lint": "eslint .",
     "format": "prettier --write src/",
     "type-check": "vue-tsc --noEmit",
     "storybook": "storybook dev -p 6006",
