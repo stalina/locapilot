@@ -94,17 +94,13 @@ export interface InventoryItem {
 export interface Inventory {
   id?: number;
   leaseId: number;
-  type: 'entry' | 'exit';
+  type: 'checkin' | 'checkout';
   date: Date;
-  items: InventoryItem[];
-  generalCondition?: string;
-  signatures?: {
-    tenant: boolean;
-    landlord: boolean;
-  };
-  documentId?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  observations?: string;
+  photos?: string[];
+  roomsData?: Record<string, any>;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Communication {
