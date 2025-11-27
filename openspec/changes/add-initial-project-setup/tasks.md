@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 132/186 tâches (71%)  
-**Dernière validation**: 27 novembre 2025 - CI/CD & Quality Gates
+**Progression**: 136/186 tâches (73%)  
+**Dernière validation**: 27 novembre 2025 - Déploiement configuré
 
 ## Phase 1: Configuration de Base ✅
 
@@ -303,9 +303,9 @@
 
 ### Déploiement
 
-- [ ] Configuration pour static hosting (Netlify/Vercel/GitHub Pages)
-- [ ] Auto-deploy sur main
-- [ ] Preview deploys pour PRs
+- [x] Configuration pour static hosting (Netlify/Vercel/GitHub Pages) ✅ VALIDÉ (27 nov 2025)
+- [x] Auto-deploy sur main ✅ VALIDÉ (27 nov 2025)
+- [x] Preview deploys pour PRs ✅ VALIDÉ (27 nov 2025)
 
 ## Phase 11: Validation Finale
 

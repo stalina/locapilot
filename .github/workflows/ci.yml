@@ -17,7 +17,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      
+
   type-check:
     runs-on: ubuntu-latest
     steps:
