@@ -1,14 +1,8 @@
 import { beforeEach, vi } from 'vitest';
 import { config } from '@vue/test-utils';
+import 'fake-indexeddb/auto';
 
-// Mock IndexedDB for tests
-const indexedDB = {
-  open: vi.fn(),
-  deleteDatabase: vi.fn(),
-  databases: vi.fn(),
-};
-
-global.indexedDB = indexedDB as any;
+// fake-indexeddb provides a full IndexedDB implementation
 
 // Configure Vue Test Utils
 config.global.mocks = {

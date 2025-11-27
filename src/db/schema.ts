@@ -138,6 +138,7 @@ export class LocapilotDB extends Dexie {
   constructor() {
     super('locapilot');
 
+    // Version 1 - Schema initial
     this.version(1).stores({
       properties: '++id, name, status, createdAt',
       tenants: '++id, email, status, lastName, createdAt',
@@ -148,6 +149,21 @@ export class LocapilotDB extends Dexie {
       communications: '++id, relatedEntityType, relatedEntityId, date, type',
       settings: '++id, &key',
     });
+
+    // Futures versions de migration à ajouter ici
+    // Exemple:
+    // this.version(2).stores({
+    //   properties: '++id, name, status, archived, createdAt',
+    //   // ... autres tables (doivent être redéfinies même si inchangées)
+    // }).upgrade(async (transaction) => {
+    //   // Code de migration personnalisé si nécessaire
+    //   const properties = await transaction.table('properties').toArray();
+    //   await Promise.all(
+    //     properties.map(p =>
+    //       transaction.table('properties').update(p.id!, { archived: false })
+    //     )
+    //   );
+    // });
   }
 }
 
@@ -163,7 +179,8 @@ export const db = new LocapilotDB();
 export async function initializeDatabase(): Promise<void> {
   try {
     await db.open();
-    console.log('✅ Database initialized successfully');
+    const version = db.verno;
+    console.log(`✅ Database initialized successfully (version ${version})`);
   } catch (error) {
     console.error('❌ Error initializing database:', error);
     throw error;
@@ -198,7 +215,16 @@ export async function importData(jsonData: string): Promise<void> {
 
   await db.transaction(
     'rw',
-    [db.properties, db.tenants, db.leases, db.rents, db.documents, db.inventories, db.communications, db.settings],
+    [
+      db.properties,
+      db.tenants,
+      db.leases,
+      db.rents,
+      db.documents,
+      db.inventories,
+      db.communications,
+      db.settings,
+    ],
     async () => {
       // Clear existing data
       await Promise.all([
