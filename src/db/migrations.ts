@@ -9,7 +9,7 @@ import { db } from './database';
 export interface Migration {
   version: number;
   description: string;
-  upgrade: (transaction: Dexie.Transaction) => Promise<void>;
+  upgrade: () => Promise<void>;
 }
 
 /**
