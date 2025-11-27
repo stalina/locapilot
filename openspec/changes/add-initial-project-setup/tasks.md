@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 117/186 tâches (63%)  
-**Dernière validation**: 27 novembre 2025 - BaseTable, BasePagination, composables export/import, README
+**Progression**: 121/186 tâches (65%)  
+**Dernière validation**: 27 novembre 2025 - .editorconfig, settingsStore
 
 ## Phase 1: Configuration de Base ✅
 
@@ -14,7 +14,7 @@
 - [ ] Configurer Git hooks (husky + lint-staged)
 - [x] Créer structure de dossiers du projet
 - [x] Configurer path aliases (@/, @components/, etc.)
-- [ ] Ajouter .editorconfig
+- [x] Ajouter .editorconfig ✅ VALIDÉ (27 nov 2025)
 
 ### PWA Configuration ✅
 - [x] Installer @vite-plugin/pwa
@@ -97,12 +97,12 @@
 - [x] Store baux (`leasesStore`)
 - [x] Store loyers (`rentsStore`)
 - [x] Store documents (`documentsStore`)
-- [ ] Store settings (`settingsStore`)
+- [x] Store settings (`settingsStore`) ✅ VALIDÉ (27 nov 2025)
 
 ### Store Features
 - [x] Actions CRUD pour chaque store
 - [x] Getters computed
-- [ ] Persistance sélective (settings)
+- [x] Persistance sélective (settings) ✅ VALIDÉ (27 nov 2025)
 - [x] Intégration avec Dexie.js
 
 ### Tests Stores
