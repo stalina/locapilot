@@ -132,6 +132,11 @@ const handleClick = () => {
         <i :class="`mdi mdi-${expirationWarning.icon}`"></i>
         <span>{{ expirationWarning.text }}</span>
       </div>
+
+      <!-- Actions slot -->
+      <div v-if="$slots.actions" class="lease-actions">
+        <slot name="actions"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -299,6 +304,13 @@ const handleClick = () => {
   background: rgba(250, 204, 21, 0.1);
   color: rgb(202, 138, 4);
   border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+.lease-actions {
+  padding-top: var(--space-3, 0.75rem);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  gap: var(--space-2, 0.5rem);
 }
 
 @media (max-width: 640px) {

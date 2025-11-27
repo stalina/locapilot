@@ -56,6 +56,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Documents' },
   },
   {
+    path: '/inventories',
+    name: 'inventories',
+    component: () => import('@features/inventories/views/InventoriesView.vue'),
+    meta: { title: 'États des lieux' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/features/settings/views/SettingsView.vue'),

@@ -8,6 +8,7 @@ import LeaseFormModal from '../components/LeaseFormModal.vue';
 import Button from '@/shared/components/Button.vue';
 import SearchBox from '@/shared/components/SearchBox.vue';
 import StatCard from '@/shared/components/StatCard.vue';
+import type { Lease } from '../../../db/types';
 
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
@@ -16,6 +17,7 @@ const tenantsStore = useTenantsStore();
 const searchQuery = ref('');
 const statusFilter = ref<'all' | 'active' | 'pending' | 'ended'>('all');
 const showLeaseForm = ref(false);
+const leaseToEdit = ref<Lease | null>(null);
 
 onMounted(async () => {
   await Promise.all([
@@ -94,10 +96,30 @@ const getTenantNames = (tenantIds: number[]) => {
 };
 
 const handleNewLease = () => {
+  leaseToEdit.value = null;
   showLeaseForm.value = true;
 };
 
+const handleEditLease = (lease: Lease, event: Event) => {
+  event.stopPropagation();
+  leaseToEdit.value = lease;
+  showLeaseForm.value = true;
+};
+
+const handleDeleteLease = async (id: number, event: Event) => {
+  event.stopPropagation();
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce bail ?')) {
+    try {
+      await leasesStore.deleteLease(id);
+    } catch (error) {
+      console.error('Failed to delete lease:', error);
+      alert('Erreur lors de la suppression du bail');
+    }
+  }
+};
+
 const handleFormSuccess = async () => {
+  leaseToEdit.value = null;
   await leasesStore.fetchLeases();
 };
 </script>
@@ -223,12 +245,34 @@ const handleFormSuccess = async () => {
         :lease="lease"
         :property-name="getPropertyName(lease.propertyId)"
         :tenant-names="getTenantNames(lease.tenantIds)"
-      />
+      >
+        <template #actions>
+          <Button
+            variant="default"
+            size="sm"
+            icon="pencil"
+            @click="handleEditLease(lease, $event)"
+            data-testid="edit-lease-button"
+          >
+            Modifier
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon="delete"
+            @click="lease.id && handleDeleteLease(lease.id, $event)"
+            data-testid="delete-lease-button"
+          >
+            Supprimer
+          </Button>
+        </template>
+      </LeaseCard>
     </div>
 
     <!-- Lease Form Modal -->
     <LeaseFormModal
       v-model="showLeaseForm"
+      :lease="leaseToEdit"
       @success="handleFormSuccess"
     />
   </div>

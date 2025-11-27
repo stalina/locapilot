@@ -37,6 +37,10 @@
           <i class="mdi mdi-folder-multiple"></i>
           <span>Documents</span>
         </RouterLink>
+        <RouterLink to="/inventories" class="nav-item">
+          <i class="mdi mdi-clipboard-check"></i>
+          <span>États des lieux</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">

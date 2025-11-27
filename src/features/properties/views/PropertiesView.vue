@@ -7,12 +7,14 @@ import SearchBox from '@/shared/components/SearchBox.vue';
 import Button from '@/shared/components/Button.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
+import type { Property } from '../../../db/types';
 
 const router = useRouter();
 const propertiesStore = usePropertiesStore();
 
 // Modals
 const showPropertyForm = ref(false);
+const propertyToEdit = ref<Property | null>(null);
 
 // Filters
 const searchQuery = ref('');
@@ -71,10 +73,30 @@ function handlePropertyClick(id: number) {
 }
 
 function handleNewProperty() {
+  propertyToEdit.value = null;
   showPropertyForm.value = true;
 }
 
+function handleEditProperty(property: Property, event: Event) {
+  event.stopPropagation();
+  propertyToEdit.value = property;
+  showPropertyForm.value = true;
+}
+
+async function handleDeleteProperty(id: number, event: Event) {
+  event.stopPropagation();
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette propriété ?')) {
+    try {
+      await propertiesStore.deleteProperty(id);
+    } catch (error) {
+      console.error('Failed to delete property:', error);
+      alert('Erreur lors de la suppression de la propriété');
+    }
+  }
+}
+
 function handleFormSuccess() {
+  propertyToEdit.value = null;
   propertiesStore.fetchProperties();
 }
 
@@ -239,13 +261,35 @@ onMounted(async () => {
         :key="property.id"
         :property="property"
         @click="handlePropertyClick"
-      />
+      >
+        <template #actions>
+          <Button
+            variant="default"
+            size="sm"
+            icon="pencil"
+            @click="handleEditProperty(property, $event)"
+            data-testid="edit-property-button"
+          >
+            Modifier
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon="delete"
+            @click="property.id && handleDeleteProperty(property.id, $event)"
+            data-testid="delete-property-button"
+          >
+            Supprimer
+          </Button>
+        </template>
+      </PropertyCard>
     </div>
   </div>
 
   <!-- Property Form Modal -->
   <PropertyFormModal
     v-model="showPropertyForm"
+    :property="propertyToEdit"
     @success="handleFormSuccess"
   />
 </template>

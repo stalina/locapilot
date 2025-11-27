@@ -7,12 +7,14 @@ import SearchBox from '@/shared/components/SearchBox.vue';
 import Button from '@/shared/components/Button.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
+import type { Tenant } from '../../../db/types';
 
 const router = useRouter();
 const tenantsStore = useTenantsStore();
 
 // Modals
 const showTenantForm = ref(false);
+const tenantToEdit = ref<Tenant | null>(null);
 
 // Filters
 const searchQuery = ref('');
@@ -65,11 +67,31 @@ function handleTenantClick(id: number) {
 
 function handleNewTenant() {
   console.log('[TenantsView] Opening tenant form modal');
+  tenantToEdit.value = null;
   showTenantForm.value = true;
   console.log('[TenantsView] showTenantForm.value =', showTenantForm.value);
 }
 
+function handleEditTenant(tenant: Tenant, event: Event) {
+  event.stopPropagation();
+  tenantToEdit.value = tenant;
+  showTenantForm.value = true;
+}
+
+async function handleDeleteTenant(id: number, event: Event) {
+  event.stopPropagation();
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce locataire ?')) {
+    try {
+      await tenantsStore.deleteTenant(id);
+    } catch (error) {
+      console.error('Failed to delete tenant:', error);
+      alert('Erreur lors de la suppression du locataire');
+    }
+  }
+}
+
 function handleFormSuccess() {
+  tenantToEdit.value = null;
   tenantsStore.fetchTenants();
 }
 
@@ -206,10 +228,36 @@ onMounted(async () => {
         :key="tenant.id"
         :tenant="tenant"
         @click="handleTenantClick"
-      />
+      >
+        <template #actions>
+          <Button
+            variant="default"
+            size="sm"
+            icon="pencil"
+            @click="handleEditTenant(tenant, $event)"
+            data-testid="edit-tenant-button"
+          >
+            Modifier
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon="delete"
+            @click="tenant.id && handleDeleteTenant(tenant.id, $event)"
+            data-testid="delete-tenant-button"
+          >
+            Supprimer
+          </Button>
+        </template>
+      </TenantCard>
     </div>
 
     <!-- Tenant Form Modal -->
+    <TenantFormModal
+      v-model="showTenantForm"
+      :tenant="tenantToEdit"
+      @success="handleFormSuccess"
+    />
     <TenantFormModal
       v-model="showTenantForm"
       @success="handleFormSuccess"
