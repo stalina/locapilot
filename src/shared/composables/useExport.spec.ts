@@ -24,10 +24,13 @@ describe('useExport', () => {
 
     // Mock Blob constructor
     (global as any).Blob = class MockBlob {
-      constructor(
-        public content: any[],
-        public options?: { type?: string }
-      ) {}
+      content: any[];
+      options?: { type?: string };
+
+      constructor(content: any[], options?: { type?: string }) {
+        this.content = content;
+        this.options = options;
+      }
     };
   });
 
