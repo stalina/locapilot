@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 169/187 tâches (90%)  
-**Dernière validation**: 27 novembre 2025 - Tests database complétés
+**Progression**: 173/187 tâches (93%)  
+**Dernière validation**: 27 novembre 2025 - Tests composants complétés
 
 ## Phase 1: Configuration de Base ✅
 
@@ -117,9 +117,9 @@
 
 ### Tests Stores
 
-- [ ] Tests unitaires pour chaque store
-- [ ] Tests des actions
-- [ ] Tests des getters
+- [x] Tests unitaires pour chaque store ✅ VALIDÉ (27 nov 2025)
+- [x] Tests des actions ✅ VALIDÉ (27 nov 2025)
+- [x] Tests des getters ✅ VALIDÉ (27 nov 2025)
 
 ## Phase 5: UI Foundation ✅
 
@@ -159,7 +159,7 @@
 
 ### Tests Composants
 
-- [ ] Tests pour composants de base
+- [x] Tests pour composants de base ✅ VALIDÉ (27 nov 2025)
 - [ ] Tests accessibilité (a11y)
 
 ## Phase 6: Pages Principales (Structure) ✅
