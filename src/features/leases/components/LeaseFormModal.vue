@@ -241,157 +241,133 @@ const toggleTenant = (tenantId: number) => {
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #default>
-      <form @submit.prevent="handleSubmit" class="lease-form">
-        <!-- Property Selection -->
-        <div class="form-section">
-          <h3>Propriété</h3>
-          <div class="form-group">
-            <label for="propertyId">Propriété *</label>
-            <select
-              id="propertyId"
-              v-model.number="formData.propertyId"
-              :class="['form-select', { error: errors.propertyId }]"
-              required
-            >
-              <option :value="0">Sélectionner une propriété</option>
-              <option 
-                v-for="property in availableProperties" 
-                :key="property.id" 
-                :value="property.id"
+      <form @submit.prevent="handleSubmit">
+        <div class="form-content">
+          <!-- Propriété -->
+          <section class="form-section">
+            <h4 class="section-title">Propriété</h4>
+            <div class="field">
+              <label class="field-label">Propriété <span class="required">*</span></label>
+              <select
+                v-model.number="formData.propertyId"
+                :class="['select', { error: errors.propertyId }]"
+                required
               >
-                {{ property.name }} - {{ property.address }}
-              </option>
-            </select>
-            <span v-if="errors.propertyId" class="error-message">{{ errors.propertyId }}</span>
-          </div>
-        </div>
-
-        <!-- Tenants Selection -->
-        <div class="form-section">
-          <h3>Locataires *</h3>
-          <div class="tenants-selection">
-            <div
-              v-for="tenant in availableTenants"
-              :key="tenant.id"
-              :class="['tenant-checkbox', { selected: tenant.id && formData.tenantIds.includes(tenant.id) }]"
-              @click="tenant.id && toggleTenant(tenant.id)"
-            >
-              <input
-                type="checkbox"
-                :checked="!!(tenant.id && formData.tenantIds.includes(tenant.id))"
-                @click.stop
-                @change="tenant.id && toggleTenant(tenant.id)"
-              />
-              <div class="tenant-info">
-                <strong>{{ tenant.firstName }} {{ tenant.lastName }}</strong>
-                <span>{{ tenant.email }}</span>
-              </div>
+                <option :value="0" disabled>Sélectionner une propriété</option>
+                <option
+                  v-for="property in availableProperties"
+                  :key="property.id"
+                  :value="property.id"
+                >
+                  {{ property.name }} · {{ property.address }}
+                </option>
+              </select>
+              <p v-if="errors.propertyId" class="error-message">{{ errors.propertyId }}</p>
             </div>
-          </div>
-          <span v-if="errors.tenantIds" class="error-message">{{ errors.tenantIds }}</span>
-        </div>
+          </section>
 
-        <!-- Dates -->
-        <div class="form-section">
-          <h3>Période</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="startDate">Date de début *</label>
+          <!-- Locataires -->
+          <section class="form-section">
+            <h4 class="section-title">Locataires</h4>
+            <div class="field">
+              <label class="field-label">Locataires <span class="required">*</span></label>
+              <div class="tenant-list">
+                <label
+                  v-for="tenant in availableTenants"
+                  :key="tenant.id"
+                  :class="['tenant-card', { selected: tenant.id && formData.tenantIds.includes(tenant.id) }]"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="!!(tenant.id && formData.tenantIds.includes(tenant.id))"
+                    @change="tenant.id && toggleTenant(tenant.id)"
+                  />
+                  <div class="tenant-card__info">
+                    <span class="tenant-card__name">{{ tenant.firstName }} {{ tenant.lastName }}</span>
+                    <span class="tenant-card__email">{{ tenant.email }}</span>
+                  </div>
+                </label>
+              </div>
+              <p v-if="errors.tenantIds" class="error-message">{{ errors.tenantIds }}</p>
+            </div>
+          </section>
+
+          <!-- Période -->
+          <section class="form-section">
+            <h4 class="section-title">Période</h4>
+            <div class="field-row">
               <Input
-                id="startDate"
                 v-model="formData.startDate"
+                label="Date de début"
                 type="date"
                 :error="errors.startDate"
                 required
               />
-            </div>
-
-            <div class="form-group">
-              <label for="endDate">Date de fin</label>
               <Input
-                id="endDate"
                 v-model="formData.endDate"
+                label="Date de fin"
                 type="date"
+                hint="Laisser vide pour un bail sans date de fin"
               />
-              <span class="hint">Laisser vide pour un bail sans date de fin</span>
             </div>
-          </div>
-        </div>
+          </section>
 
-        <!-- Financial Info -->
-        <div class="form-section">
-          <h3>Informations financières</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="rent">Loyer mensuel (€) *</label>
+          <!-- Informations financières -->
+          <section class="form-section">
+            <h4 class="section-title">Informations financières</h4>
+            <div class="field-row">
               <Input
-                id="rent"
                 v-model.number="formData.rent"
+                label="Loyer mensuel (€)"
                 type="number"
                 :error="errors.rent"
                 min="0"
                 step="0.01"
                 required
               />
-            </div>
-
-            <div class="form-group">
-              <label for="charges">Charges (€)</label>
               <Input
-                id="charges"
                 v-model.number="formData.charges"
+                label="Charges (€)"
                 type="number"
                 min="0"
                 step="0.01"
               />
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="deposit">Dépôt de garantie (€) *</label>
+            <div class="field-row">
               <Input
-                id="deposit"
                 v-model.number="formData.deposit"
+                label="Dépôt de garantie (€)"
                 type="number"
                 :error="errors.deposit"
                 min="0"
                 step="0.01"
                 required
               />
-            </div>
-
-            <div class="form-group">
-              <label for="paymentDay">Jour de paiement *</label>
               <Input
-                id="paymentDay"
                 v-model.number="formData.paymentDay"
+                label="Jour de paiement"
                 type="number"
                 :error="errors.paymentDay"
                 min="1"
                 max="31"
+                hint="Jour du mois (1-31)"
                 required
               />
-              <span class="hint">Jour du mois (1-31)</span>
             </div>
-          </div>
-        </div>
+          </section>
 
-        <!-- Status -->
-        <div class="form-section">
-          <h3>Statut</h3>
-          <div class="form-group">
-            <label for="status">Statut</label>
-            <select
-              id="status"
-              v-model="formData.status"
-              class="form-select"
-            >
-              <option value="pending">En attente</option>
-              <option value="active">Actif</option>
-              <option value="ended">Terminé</option>
-            </select>
-          </div>
+          <!-- Statut -->
+          <section class="form-section">
+            <h4 class="section-title">Statut</h4>
+            <div class="field">
+              <label class="field-label">Statut</label>
+              <select v-model="formData.status" class="select">
+                <option value="pending">En attente</option>
+                <option value="active">Actif</option>
+                <option value="ended">Terminé</option>
+              </select>
+            </div>
+          </section>
         </div>
       </form>
     </template>
@@ -410,161 +386,144 @@ const toggleTenant = (tenantId: number) => {
 </template>
 
 <style scoped>
-.lease-form {
+.form-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-2);
+  gap: var(--space-6, 1.5rem);
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--space-4, 1rem);
 }
 
-.form-section h3 {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-text);
+.section-title {
   margin: 0;
-  padding-bottom: var(--spacing-3);
-  border-bottom: 2px solid var(--color-border);
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
 }
 
-.form-row {
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.field-label {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #64748b);
+}
+
+.required {
+  color: var(--error-500, #ef4444);
+}
+
+.field-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-4);
+  gap: var(--space-4, 1rem);
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.form-group label {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.form-select {
+.select {
   width: 100%;
-  padding: var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  background: var(--color-surface);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  font-size: var(--text-base, 1rem);
+  color: var(--text-primary, #0f172a);
+  background: #fff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 0.75rem);
+  transition: all var(--transition-base, 0.2s ease);
 }
 
-.form-select:hover {
-  border-color: var(--color-primary);
-}
-
-.form-select:focus {
+.select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--primary-500, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
-.form-select.error {
-  border-color: var(--color-error);
+.select.error {
+  border-color: var(--error-500, #ef4444);
 }
 
-.tenants-selection {
+.tenant-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
-  max-height: 280px;
+  gap: var(--space-3, 0.75rem);
+  max-height: 320px;
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--surface-muted, #f8fafc);
   overflow-y: auto;
-  padding: var(--spacing-3);
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
 }
 
-.tenant-checkbox {
+.tenant-card {
   display: flex;
+  gap: var(--space-3, 0.75rem);
   align-items: center;
-  gap: var(--spacing-3);
-  padding: var(--spacing-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg, 0.75rem);
+  background: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base, 0.2s ease);
 }
 
-.tenant-checkbox:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+.tenant-card:hover {
+  border-color: var(--border-color-strong, #cbd5f5);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
-.tenant-checkbox.selected {
-  border-color: var(--color-primary);
-  background: rgba(59, 130, 246, 0.05);
-  box-shadow: 0 0 0 1px var(--color-primary);
+.tenant-card.selected {
+  border-color: var(--primary-500, #6366f1);
+  box-shadow: 0 0 0 1px var(--primary-500, #6366f1);
 }
 
-.tenant-checkbox input[type="checkbox"] {
+.tenant-card input {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  flex-shrink: 0;
 }
 
-.tenant-info {
+.tenant-card__info {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
-  flex: 1;
+  gap: var(--space-1, 0.25rem);
 }
 
-.tenant-info strong {
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-text);
+.tenant-card__name {
+  font-size: var(--text-base, 1rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-primary, #0f172a);
 }
 
-.tenant-info span {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-
-.hint {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  font-style: italic;
-  margin-top: var(--spacing-1);
+.tenant-card__email {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
 }
 
 .error-message {
-  font-size: var(--text-sm);
-  color: var(--color-error);
-  margin-top: var(--spacing-1);
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--error-500, #ef4444);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--spacing-3);
-  padding-top: var(--spacing-4);
-  border-top: 1px solid var(--color-border);
+  gap: var(--space-3, 0.75rem);
 }
 
-@media (max-width: 640px) {
-  .lease-form {
-    padding: 0;
+@media (max-width: 768px) {
+  .field-row {
+    grid-template-columns: 1fr;
   }
 
-  .form-row {
-    grid-template-columns: 1fr;
+  .tenant-list {
+    max-height: 240px;
   }
 
   .modal-actions {
@@ -573,10 +532,6 @@ const toggleTenant = (tenantId: number) => {
 
   .modal-actions :deep(button) {
     width: 100%;
-  }
-
-  .tenants-selection {
-    max-height: 200px;
   }
 }
 </style>
