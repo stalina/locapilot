@@ -13,7 +13,7 @@ export interface ImportResult<T = any> {
 }
 
 export function useImport() {
-  const { showNotification } = useNotification();
+  const { success: showSuccess, error: showError } = useNotification();
   const isImporting = ref(false);
 
   /**
@@ -55,10 +55,7 @@ export function useImport() {
         data = await options.transform(data);
       }
 
-      showNotification({
-        type: 'success',
-        message: `Fichier CSV ${file.name} importé avec succès`,
-      });
+      showSuccess(`Fichier ${file.name} importé avec succès`);
       return {
         success: true,
         data,
@@ -68,10 +65,7 @@ export function useImport() {
         error instanceof Error ? error.message : "Une erreur est survenue lors de l'import";
 
       console.error('Import error:', error);
-      showNotification({
-        type: 'error',
-        message: errorMessage,
-      });
+      showError(errorMessage);
 
       return {
         success: false,
@@ -136,11 +130,7 @@ export function useImport() {
         transformedData = await options.transform(data);
       }
 
-      showNotification({
-        type: 'success',
-        message: 'Import CSV réussi',
-        description: `Fichier ${file.name} importé avec succès (${data.length} lignes).`,
-      });
+      showSuccess(`Fichier ${file.name} importé avec succès (${data.length} lignes)`);
 
       return {
         success: true,
@@ -151,10 +141,7 @@ export function useImport() {
         error instanceof Error ? error.message : "Une erreur est survenue lors de l'import CSV";
 
       console.error('CSV import error:', error);
-      showNotification({
-        type: 'error',
-        message: errorMessage,
-      });
+      showError(errorMessage);
 
       return {
         success: false,

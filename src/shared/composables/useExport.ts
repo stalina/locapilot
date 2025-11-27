@@ -7,7 +7,7 @@ export interface ExportOptions {
 }
 
 export function useExport() {
-  const { showNotification } = useNotification();
+  const { success: showSuccess, error: showError } = useNotification();
   const isExporting = ref(false);
 
   /**
@@ -40,16 +40,10 @@ export function useExport() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      showNotification({
-        type: 'success',
-        message: `Fichier ${filename} téléchargé avec succès`,
-      });
+      showSuccess(`Fichier ${filename} téléchargé avec succès`);
     } catch (error) {
       console.error('Export error:', error);
-      showNotification({
-        type: 'error',
-        message: error instanceof Error ? error.message : "Erreur lors de l'export",
-      });
+      showError(error instanceof Error ? error.message : "Erreur lors de l'export");
       throw error;
     } finally {
       isExporting.value = false;
@@ -124,16 +118,10 @@ export function useExport() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      showNotification({
-        type: 'success',
-        message: `Fichier ${filename} téléchargé avec succès`,
-      });
+      showSuccess(`Fichier ${filename} téléchargé avec succès`);
     } catch (error) {
       console.error('CSV export error:', error);
-      showNotification({
-        type: 'error',
-        message: error instanceof Error ? error.message : "Erreur lors de l'export CSV",
-      });
+      showError(error instanceof Error ? error.message : "Erreur lors de l'export CSV");
       throw error;
     } finally {
       isExporting.value = false;

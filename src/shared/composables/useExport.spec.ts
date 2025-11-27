@@ -4,7 +4,8 @@ import { useExport } from './useExport';
 // Mock useNotification
 vi.mock('./useNotification', () => ({
   useNotification: vi.fn(() => ({
-    showNotification: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   })),
 }));
 
