@@ -38,7 +38,7 @@ export const usePropertiesStore = defineStore('properties', () => {
       if (!acc[property.type]) {
         acc[property.type] = [];
       }
-      acc[property.type].push(property);
+      acc[property.type]!.push(property);
       return acc;
     }, {} as Record<string, Property[]>);
   });

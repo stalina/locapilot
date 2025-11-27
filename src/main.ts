@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import router from '@core/router';
-import { initializeDatabase } from '@db/schema';
+import { initializeDatabase } from '@/db/schema';
 import { useAppStore } from '@core/store/appStore';
 
 import './assets/styles/variables.css';

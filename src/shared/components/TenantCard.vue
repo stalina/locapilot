@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Badge from './Badge.vue';
-
-interface Tenant {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  birthDate?: Date;
-  status: 'active' | 'candidate' | 'former';
-}
+import type { Tenant } from '@/db/schema';
 
 interface Props {
   tenant: Tenant;
@@ -22,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  click: [id: string];
+  click: [id: number];
 }>();
 
 const statusConfig = computed(() => {

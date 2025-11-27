@@ -95,8 +95,8 @@ watch(() => props.lease, (newLease) => {
     formData.value = {
       propertyId: newLease.propertyId,
       tenantIds: [...newLease.tenantIds],
-      startDate: new Date(newLease.startDate).toISOString().split('T')[0],
-      endDate: newLease.endDate ? new Date(newLease.endDate).toISOString().split('T')[0] : '',
+      startDate: new Date(newLease.startDate).toISOString().split('T')[0] || '',
+      endDate: newLease.endDate ? new Date(newLease.endDate).toISOString().split('T')[0] || '' : '',
       rent: newLease.rent,
       charges: newLease.charges,
       deposit: newLease.deposit,
@@ -112,7 +112,7 @@ const validateForm = (): boolean => {
   let isValid = true;
 
   // Property
-  if (!formData.value.propertyId) {
+  if (!formData.value.propertyId || formData.value.propertyId === 0) {
     errors.value.propertyId = 'La propriété est requise';
     isValid = false;
   } else {
@@ -278,7 +278,7 @@ const toggleTenant = (tenantId: number) => {
             >
               <input
                 type="checkbox"
-                :checked="tenant.id && formData.tenantIds.includes(tenant.id)"
+                :checked="!!(tenant.id && formData.tenantIds.includes(tenant.id))"
                 @click.stop
                 @change="tenant.id && toggleTenant(tenant.id)"
               />

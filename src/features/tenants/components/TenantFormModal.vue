@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
-import Modal from '@shared/components/Modal.vue';
-import Input from '@shared/components/Input.vue';
-import Button from '@shared/components/Button.vue';
+import Modal from '@/shared/components/Modal.vue';
+import Input from '@/shared/components/Input.vue';
+import Button from '@/shared/components/Button.vue';
 import type { Tenant } from '@/db/types';
 
 interface Props {
@@ -47,7 +47,7 @@ watch(() => props.tenant, (newTenant) => {
       lastName: newTenant.lastName,
       email: newTenant.email,
       phone: newTenant.phone || '',
-      birthDate: newTenant.birthDate ? new Date(newTenant.birthDate).toISOString().split('T')[0] : '',
+      birthDate: newTenant.birthDate ? new Date(newTenant.birthDate).toISOString().split('T')[0] || '' : '',
       status: newTenant.status,
     };
   } else {
@@ -107,7 +107,7 @@ async function handleSubmit() {
       data.birthDate = new Date(formData.value.birthDate);
     }
 
-    if (isEditMode.value && props.tenant) {
+    if (isEditMode.value && props.tenant?.id) {
       await tenantsStore.updateTenant(props.tenant.id, data);
     } else {
       await tenantsStore.createTenant(data);

@@ -6,6 +6,7 @@ import { usePropertiesStore } from '@/features/properties/stores/propertiesStore
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
+import type { Tenant } from '@/db/schema';
 
 const route = useRoute();
 const router = useRouter();
@@ -28,14 +29,14 @@ const lease = computed(() => leasesStore.currentLease);
 
 const property = computed(() => {
   if (!lease.value) return null;
-  return propertiesStore.properties.find(p => p.id === lease.value.propertyId);
+  return propertiesStore.properties.find(p => p.id === lease.value!.propertyId);
 });
 
 const tenants = computed(() => {
   if (!lease.value) return [];
   return lease.value.tenantIds
     .map(id => tenantsStore.tenants.find(t => t.id === id))
-    .filter(Boolean);
+    .filter((tenant): tenant is Tenant => tenant !== undefined);
 });
 
 const statusLabel = computed(() => {
@@ -154,7 +155,7 @@ const goToTenant = (tenantId: number) => {
             <span :class="['status-badge', statusClass]">{{ statusLabel }}</span>
           </div>
           <p class="subtitle">
-            {{ tenants.map(t => `${t.firstName} ${t.lastName}`).join(', ') }}
+            {{ tenants.map(t => `${t?.firstName} ${t?.lastName}`).join(', ') }}
           </p>
         </div>
 
@@ -280,10 +281,10 @@ const goToTenant = (tenantId: number) => {
         </section>
 
         <!-- Document Section (if exists) -->
-        <section class="detail-section" v-if="lease.documentId">
+        <section class="detail-section" v-if="lease?.documentId">
           <h2>Document</h2>
           <div class="detail-card">
-            <Button variant="secondary" @click="() => console.log('View document', lease.documentId)">
+            <Button variant="secondary" @click="() => lease && console.log('View document', lease.documentId)">
               Voir le contrat de bail
             </Button>
           </div>

@@ -2,10 +2,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
-import TenantCard from '@shared/components/TenantCard.vue';
-import SearchBox from '@shared/components/SearchBox.vue';
-import Button from '@shared/components/Button.vue';
-import StatCard from '@shared/components/StatCard.vue';
+import TenantCard from '@/shared/components/TenantCard.vue';
+import SearchBox from '@/shared/components/SearchBox.vue';
+import Button from '@/shared/components/Button.vue';
+import StatCard from '@/shared/components/StatCard.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
 
 const router = useRouter();

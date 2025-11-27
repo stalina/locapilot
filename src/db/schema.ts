@@ -32,6 +32,7 @@ export interface Tenant {
   occupation?: string;
   employer?: string;
   income?: number;
+  notes?: string;
   status: 'active' | 'candidate' | 'former';
   createdAt: Date;
   updatedAt: Date;
@@ -71,12 +72,13 @@ export interface Rent {
 export interface Document {
   id?: number;
   name: string;
-  type: 'lease' | 'receipt' | 'inventory' | 'id' | 'payslip' | 'other';
-  relatedEntityType: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant';
-  relatedEntityId: number;
+  type: 'lease' | 'receipt' | 'inventory' | 'id' | 'payslip' | 'invoice' | 'insurance' | 'other';
+  relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant';
+  relatedEntityId?: number;
   mimeType: string;
   size: number;
   data: Blob; // File content
+  description?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useDocumentsStore } from '../stores/documentsStore';
-import DocumentCard from '@shared/components/DocumentCard.vue';
-import UploadZone from '@shared/components/UploadZone.vue';
-import StatCard from '@shared/components/StatCard.vue';
-import SearchBox from '@shared/components/SearchBox.vue';
+import DocumentCard from '@/shared/components/DocumentCard.vue';
+import UploadZone from '@/shared/components/UploadZone.vue';
+import StatCard from '@/shared/components/StatCard.vue';
+import SearchBox from '@/shared/components/SearchBox.vue';
 import type { Document } from '@/db/types';
 
 const documentsStore = useDocumentsStore();
@@ -43,8 +43,8 @@ async function handleUpload(files: File[]) {
     try {
       await documentsStore.uploadDocument(file, {
         type: 'other',
-        relatedEntityType: null,
-        relatedEntityId: null,
+        relatedEntityType: undefined,
+        relatedEntityId: undefined,
       });
     } catch (error) {
       console.error('Failed to upload file:', file.name, error);
@@ -53,12 +53,16 @@ async function handleUpload(files: File[]) {
 }
 
 async function handleDownload(document: Document) {
-  await documentsStore.downloadDocument(document.id);
+  if (document.id) {
+    await documentsStore.downloadDocument(document.id);
+  }
 }
 
 async function handleDelete(document: Document) {
   if (!confirm(`Êtes-vous sûr de vouloir supprimer "${document.name}" ?`)) return;
-  await documentsStore.deleteDocument(document.id);
+  if (document.id) {
+    await documentsStore.deleteDocument(document.id);
+  }
 }
 
 function handleSearch(query: string) {
@@ -103,19 +107,19 @@ onMounted(async () => {
       />
       <StatCard
         label="Baux"
-        :value="documentsStore.documentCounts.lease"
+        :value="String(documentsStore.documentCounts.lease ?? 0)"
         icon="file-document"
         icon-color="primary"
       />
       <StatCard
         label="États des lieux"
-        :value="documentsStore.documentCounts.inventory"
+        :value="String(documentsStore.documentCounts.inventory ?? 0)"
         icon="clipboard-check"
         icon-color="accent"
       />
       <StatCard
         label="Factures"
-        :value="documentsStore.documentCounts.invoice"
+        :value="String(documentsStore.documentCounts.invoice ?? 0)"
         icon="receipt"
         icon-color="warning"
       />

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import Button from '@shared/components/Button.vue';
+import Button from '@/shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
 
 const route = useRoute();
@@ -55,7 +55,7 @@ const activeLease = computed(() => {
 // Propriété actuelle
 const currentProperty = computed(() => {
   if (!activeLease.value) return null;
-  return propertiesStore.properties.find(p => p.id === activeLease.value.propertyId);
+  return propertiesStore.properties.find(p => p.id === activeLease.value!.propertyId);
 });
 
 const goToLease = (leaseId: number) => {

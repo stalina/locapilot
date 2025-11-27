@@ -147,18 +147,19 @@ export const useDocumentsStore = defineStore('documents', {
       this.isLoading = true;
       this.error = null;
       try {
-        await db.documents.update(id, {
+        const updateData = {
           ...updates,
           updatedAt: new Date(),
-        });
+        };
+        await db.documents.update(id, updateData as Partial<Document>);
 
         const index = this.documents.findIndex((d: Document) => d.id === id);
         if (index !== -1) {
-          this.documents[index] = { ...this.documents[index], ...updates, updatedAt: new Date() };
+          this.documents[index] = { ...this.documents[index], ...updateData } as Document;
         }
 
         if (this.currentDocument?.id === id) {
-          this.currentDocument = { ...this.currentDocument, ...updates, updatedAt: new Date() };
+          this.currentDocument = { ...this.currentDocument, ...updateData } as Document;
         }
       } catch (error) {
         this.error = 'Échec de la mise à jour du document';

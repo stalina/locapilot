@@ -5,9 +5,9 @@ import { useRentsStore } from '../stores/rentsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
-import Calendar from '@shared/components/Calendar.vue';
-import StatCard from '@shared/components/StatCard.vue';
-import Button from '@shared/components/Button.vue';
+import Calendar from '@/shared/components/Calendar.vue';
+import StatCard from '@/shared/components/StatCard.vue';
+import Button from '@/shared/components/Button.vue';
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
@@ -23,11 +23,14 @@ const calendarEvents = computed(() => {
     const lease = leasesStore.leases.find(l => l.id === rent.leaseId);
     const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
     
+    // Map rent status to calendar status
+    const calendarStatus = rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
+    
     return {
       id: rent.id?.toString() || '',
       date: new Date(rent.dueDate),
       title: property?.name || 'Bien inconnu',
-      status: rent.status,
+      status: calendarStatus as 'pending' | 'paid' | 'overdue',
       amount: rent.amount,
     };
   });

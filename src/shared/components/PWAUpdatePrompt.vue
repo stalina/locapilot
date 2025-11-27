@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
 import Button from './Button.vue';
 
 const showUpdatePrompt = ref(false);
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({
-  onRegistered(registration) {
+  onRegistered(registration: any) {
     console.log('Service Worker registered:', registration);
   },
-  onRegisterError(error) {
+  onRegisterError(error: any) {
     console.error('Service Worker registration error:', error);
   },
   onNeedRefresh() {

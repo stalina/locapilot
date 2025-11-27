@@ -56,7 +56,7 @@ const typeConfig = computed(() => {
 
 const fileExtension = computed(() => {
   const parts = props.document.name.split('.');
-  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
+  return parts.length > 1 ? (parts[parts.length - 1]?.toUpperCase() || '') : '';
 });
 
 const formattedSize = computed(() => {

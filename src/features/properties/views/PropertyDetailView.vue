@@ -4,9 +4,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { usePropertiesStore } from '../stores/propertiesStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
-import Button from '@shared/components/Button.vue';
-import Badge from '@shared/components/Badge.vue';
-import Card from '@shared/components/Card.vue';
+import Button from '@/shared/components/Button.vue';
+import Badge from '@/shared/components/Badge.vue';
+import Card from '@/shared/components/Card.vue';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 import type { Property } from '@/db/types';
 

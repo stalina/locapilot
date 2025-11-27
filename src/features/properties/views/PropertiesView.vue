@@ -2,10 +2,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePropertiesStore } from '../stores/propertiesStore';
-import PropertyCard from '@shared/components/PropertyCard.vue';
-import SearchBox from '@shared/components/SearchBox.vue';
-import Button from '@shared/components/Button.vue';
-import StatCard from '@shared/components/StatCard.vue';
+import PropertyCard from '@/shared/components/PropertyCard.vue';
+import SearchBox from '@/shared/components/SearchBox.vue';
+import Button from '@/shared/components/Button.vue';
+import StatCard from '@/shared/components/StatCard.vue';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 
 const router = useRouter();

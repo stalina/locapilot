@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import Modal from '@shared/components/Modal.vue';
-import Input from '@shared/components/Input.vue';
-import Button from '@shared/components/Button.vue';
+import Modal from '@/shared/components/Modal.vue';
+import Input from '@/shared/components/Input.vue';
+import Button from '@/shared/components/Button.vue';
 import type { Property } from '@/db/types';
 
 interface Props {
@@ -56,7 +56,7 @@ watch(() => props.property, (newProperty) => {
       bedrooms: newProperty.bedrooms ?? null,
       bathrooms: newProperty.bathrooms ?? null,
       rent: newProperty.rent,
-      charges: newProperty.charges,
+      charges: newProperty.charges ?? 0,
       deposit: newProperty.deposit ?? null,
       status: newProperty.status,
       description: newProperty.description || '',

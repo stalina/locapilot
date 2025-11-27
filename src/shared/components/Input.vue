@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 interface Props {
-  modelValue: string | number;
+  modelValue: string | number | null;
   type?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'url' | 'date';
   label?: string;
   placeholder?: string;
@@ -19,14 +19,14 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number];
+  'update:modelValue': [value: string | number | null];
 }>();
 
 const hasError = computed(() => !!props.error);
 
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
-  const value = props.type === 'number' ? Number(target.value) : target.value;
+  const value = props.type === 'number' ? (target.value === '' ? null : Number(target.value)) : target.value;
   emit('update:modelValue', value);
 }
 </script>

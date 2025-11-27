@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import StatCard from '@shared/components/StatCard.vue';
-import Button from '@shared/components/Button.vue';
-import Badge from '@shared/components/Badge.vue';
-import { db } from '@db/schema';
+import StatCard from '@/shared/components/StatCard.vue';
+import Button from '@/shared/components/Button.vue';
+import Badge from '@/shared/components/Badge.vue';
+import { db } from '@/db/schema';
 
 // Stats
 const stats = ref({
@@ -43,7 +43,7 @@ async function loadDashboardData() {
     const properties = await db.properties.toArray();
     stats.value.totalProperties = properties.length;
     
-    const occupiedProperties = properties.filter(p => p.status === 'rented');
+    const occupiedProperties = properties.filter(p => p.status === 'occupied');
     stats.value.occupancyRate = properties.length > 0
       ? Math.round((occupiedProperties.length / properties.length) * 100 * 10) / 10
       : 0;

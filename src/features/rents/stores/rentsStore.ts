@@ -82,7 +82,7 @@ export const useRentsStore = defineStore('rents', {
       }
     },
 
-    async fetchRentById(id: string) {
+    async fetchRentById(id: number) {
       this.isLoading = true;
       this.error = null;
       try {
@@ -104,18 +104,17 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        const newRent: Rent = {
+        const now = new Date();
+        const newRent: Omit<Rent, 'id'> = {
           ...rent,
-          id,
           createdAt: now,
           updatedAt: now,
         };
 
-        await db.rents.add(newRent);
-        this.rents.push(newRent);
-        return newRent;
+        const id = await db.rents.add(newRent as Rent);
+        const createdRent: Rent = { ...newRent, id: id as number };
+        this.rents.push(createdRent);
+        return createdRent;
       } catch (error) {
         this.error = 'Échec de la création du loyer';
         console.error('Failed to create rent:', error);
@@ -138,11 +137,11 @@ export const useRentsStore = defineStore('rents', {
         
         const index = this.rents.findIndex((r: Rent) => r.id === id);
         if (index !== -1) {
-          this.rents[index] = { ...this.rents[index], ...updatedRent };
+          this.rents[index] = { ...this.rents[index], ...updatedRent } as Rent;
         }
 
         if (this.currentRent?.id === id) {
-          this.currentRent = { ...this.currentRent, ...updatedRent };
+          this.currentRent = { ...this.currentRent, ...updatedRent } as Rent;
         }
       } catch (error) {
         this.error = 'Échec de la mise à jour du loyer';

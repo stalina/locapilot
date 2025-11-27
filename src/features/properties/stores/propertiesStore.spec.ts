@@ -93,9 +93,7 @@ describe('propertiesStore', () => {
         {
           id: 1,
           name: 'Test Property',
-          address: '123 Test St',
-          city: 'Paris',
-          postalCode: '75001',
+          address: '123 Test St, Paris 75001',
           type: 'apartment',
           surface: 50,
           rooms: 2,
