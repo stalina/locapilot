@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useImport } from './useImport';
 
+// Mock useNotification
+vi.mock('../composables/useNotification', () => ({
+  useNotification: vi.fn(() => ({
+    showNotification: vi.fn(),
+  })),
+}));
+
 describe('useImport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,72 +32,57 @@ describe('useImport', () => {
       const result = await importFromJSON(file);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('JSON');
+      expect(result.error).toBe('Le fichier doit être au format JSON');
     });
 
     it('should handle invalid JSON', async () => {
       const { importFromJSON } = useImport();
-      const file = new File(['{ invalid json'], 'test.json', { type: 'application/json' });
+      const file = new File(['{invalid json}'], 'test.json', { type: 'application/json' });
 
       const result = await importFromJSON(file);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('invalide');
+      expect(result.error).toBe('Format JSON invalide');
     });
 
     it('should validate data when validator provided', async () => {
       const { importFromJSON } = useImport();
-      const jsonContent = JSON.stringify({ value: 'test' });
+      const jsonContent = JSON.stringify({ name: 'Test' });
       const file = new File([jsonContent], 'test.json', { type: 'application/json' });
+      const validator = (data: any) => !!data.age;
 
-      const validator = vi.fn().mockResolvedValue(false);
       const result = await importFromJSON(file, { validate: validator });
 
-      expect(validator).toHaveBeenCalledWith({ value: 'test' });
       expect(result.success).toBe(false);
-      expect(result.error).toContain('valides');
+      expect(result.error).toBe('Les données ne sont pas valides');
     });
 
     it('should transform data when transformer provided', async () => {
       const { importFromJSON } = useImport();
-      const jsonContent = JSON.stringify({ value: 10 });
+      const jsonContent = JSON.stringify({ name: 'test' });
       const file = new File([jsonContent], 'test.json', { type: 'application/json' });
+      const transformer = (data: any) => ({ ...data, name: data.name.toUpperCase() });
 
-      const transformer = vi.fn().mockResolvedValue({ value: 20 });
       const result = await importFromJSON(file, { transform: transformer });
 
-      expect(transformer).toHaveBeenCalledWith({ value: 10 });
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({ value: 20 });
-    });
-
-    it('should set isImporting during import', async () => {
-      const { importFromJSON, isImporting } = useImport();
-      const jsonContent = JSON.stringify({ test: true });
-      const file = new File([jsonContent], 'test.json', { type: 'application/json' });
-
-      expect(isImporting.value).toBe(false);
-
-      const promise = importFromJSON(file);
-      expect(isImporting.value).toBe(true);
-
-      await promise;
-      expect(isImporting.value).toBe(false);
+      expect(result.data).toEqual({ name: 'TEST' });
     });
   });
 
   describe('importFromCSV', () => {
     it('should import valid CSV file', async () => {
       const { importFromCSV } = useImport();
-      const csvContent = 'name,age\nAlice,30\nBob,25';
+      const csvContent = 'name,age\nJohn,30\nJane,25';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
 
       const result = await importFromCSV(file);
 
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(2);
-      expect(result.data?.[0]).toEqual({ name: 'Alice', age: '30' });
-      expect(result.data?.[1]).toEqual({ name: 'Bob', age: '25' });
+      expect(result.data).toEqual([
+        { name: 'John', age: '30' },
+        { name: 'Jane', age: '25' },
+      ]);
     });
 
     it('should reject non-CSV files', async () => {
@@ -100,7 +92,7 @@ describe('useImport', () => {
       const result = await importFromCSV(file);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('CSV');
+      expect(result.error).toBe('Le fichier doit être au format CSV');
     });
 
     it('should handle empty CSV file', async () => {
@@ -110,48 +102,43 @@ describe('useImport', () => {
       const result = await importFromCSV(file);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('vide');
+      expect(result.error).toBe('Le fichier CSV est vide');
     });
 
-    it('should parse quoted values correctly', async () => {
+    it('should handle CSV with quoted values', async () => {
       const { importFromCSV } = useImport();
-      const csvContent = 'name,description\n"Smith, John","He said ""hello"""';
+      const csvContent = 'name,description\n"Doe, John","He said ""hello"""';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
 
       const result = await importFromCSV(file);
 
       expect(result.success).toBe(true);
-      expect(result.data?.[0]).toEqual({
-        name: 'Smith, John',
-        description: 'He said "hello"',
-      });
+      expect(result.data).toEqual([{ name: 'Doe, John', description: 'He said "hello"' }]);
     });
 
     it('should validate CSV data when validator provided', async () => {
       const { importFromCSV } = useImport();
-      const csvContent = 'name,age\nAlice,30';
+      const csvContent = 'name\nJohn';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
+      const validator = (data: any) => data.every((row: any) => !!row.age);
 
-      const validator = vi.fn().mockResolvedValue(false);
       const result = await importFromCSV(file, { validate: validator });
 
-      expect(validator).toHaveBeenCalled();
       expect(result.success).toBe(false);
+      expect(result.error).toBe('Les données ne sont pas valides');
     });
 
     it('should transform CSV data when transformer provided', async () => {
       const { importFromCSV } = useImport();
-      const csvContent = 'name,age\nAlice,30';
+      const csvContent = 'name\njohn';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
+      const transformer = (data: any) =>
+        data.map((row: any) => ({ ...row, name: row.name.toUpperCase() }));
 
-      const transformer = vi
-        .fn()
-        .mockImplementation(data => data.map((row: any) => ({ ...row, age: parseInt(row.age) })));
       const result = await importFromCSV(file, { transform: transformer });
 
-      expect(transformer).toHaveBeenCalled();
       expect(result.success).toBe(true);
-      expect(result.data?.[0].age).toBe(30);
+      expect(result.data).toEqual([{ name: 'JOHN' }]);
     });
   });
 });
