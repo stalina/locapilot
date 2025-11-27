@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 160/186 tâches (86%)  
-**Dernière validation**: 27 novembre 2025 - Code review complétée
+**Progression**: 164/186 tâches (88%)  
+**Dernière validation**: 27 novembre 2025 - Validation Zod intégrée
 
 ## Phase 1: Configuration de Base ✅
 
@@ -35,7 +35,7 @@
 - [x] Installer framework UI (décision: Custom design system créé)
 - [x] Installer Vitest + @vue/test-utils
 - [x] Installer Playwright
-- [ ] Installer utilitaires (zod pour validation, etc.)
+- [x] Installer utilitaires (zod pour validation, etc.) ✅ VALIDÉ (27 nov 2025)
 
 ## Phase 2: Database Layer ✅
 
@@ -220,7 +220,8 @@
 
 ### Composables
 
-- [ ] `useDatabase.ts` - Accès DB
+- [x] `useDatabase.ts` - Accès DB ✅ VALIDÉ (27 nov 2025)
+- [x] `useDataTransfer.ts` - Import/Export avec validation Zod ✅ VALIDÉ (27 nov 2025)
 - [x] `useNotification.ts` - Notifications toast ✅ VALIDÉ (27 nov 2025)
 - [x] `useConfirm.ts` - Dialogues confirmation ✅ VALIDÉ (27 nov 2025)
 - [x] `useFormatter.ts` - Formatage dates, nombres, devises ✅ VALIDÉ (26 nov 2025)
@@ -330,7 +331,6 @@
 
 - [x] Vérifier README complet ✅ VALIDÉ (27 nov 2025)
 - [x] Vérifier specs OpenSpec à jour ✅ VALIDÉ (27 nov 2025)
-- [ ] Vérifier commentaires code
 
 ### Critères Acceptance
 
