@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 165/187 tâches (88%)  
-**Dernière validation**: 27 novembre 2025 - Système de migrations implémenté
+**Progression**: 169/187 tâches (90%)  
+**Dernière validation**: 27 novembre 2025 - Tests database complétés
 
 ## Phase 1: Configuration de Base ✅
 
@@ -64,10 +64,10 @@
 
 ### Tests Database
 
-- [ ] Tests unitaires pour schéma
-- [ ] Tests de migrations
-- [ ] Tests CRUD pour chaque table
-- [ ] Tests de relations entre tables
+- [x] Tests unitaires pour schéma ✅ VALIDÉ (27 nov 2025)
+- [x] Tests de migrations ✅ VALIDÉ (27 nov 2025)
+- [x] Tests CRUD pour chaque table ✅ VALIDÉ (27 nov 2025)
+- [x] Tests de relations entre tables ✅ VALIDÉ (27 nov 2025)
 
 ## Phase 3: Routing & Navigation ✅
 
