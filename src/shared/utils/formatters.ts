@@ -153,7 +153,7 @@ export function formatEmailPartial(email: string | null | undefined): string {
   if (!email) return '—'
   
   const [local, domain] = email.split('@')
-  if (!domain) return email
+  if (!domain || !local) return email
   
   const maskedLocal = local.length > 3
     ? local.slice(0, 3) + '***'

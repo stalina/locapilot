@@ -133,7 +133,7 @@ export function isBetween(date: Date, start: Date, end: Date): boolean {
  * Formate une date en ISO string (YYYY-MM-DD)
  */
 export function toISODate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  return date.toISOString().split('T')[0]!
 }
 
 /**
@@ -158,7 +158,7 @@ export function getMonthName(date: Date, short = false): string {
     ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
     : ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
   
-  return months[date.getMonth()]
+  return months[date.getMonth()]!
 }
 
 /**
@@ -169,7 +169,7 @@ export function getDayName(date: Date, short = false): string {
     ? ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
     : ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
   
-  return days[date.getDay()]
+  return days[date.getDay()]!
 }
 
 /**
@@ -180,8 +180,10 @@ export function getMonthDates(date: Date): Date[] {
   const end = endOfMonth(date)
   const dates: Date[] = []
   
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    dates.push(new Date(d))
+  const current = new Date(start)
+  while (current <= end) {
+    dates.push(new Date(current))
+    current.setDate(current.getDate() + 1)
   }
   
   return dates
