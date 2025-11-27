@@ -240,35 +240,35 @@ const toggleTenant = (tenantId: number) => {
     size="lg"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <form @submit.prevent="handleSubmit" class="lease-form">
-      <!-- Property Selection -->
-      <div class="form-section">
-        <h3>Propriété</h3>
-        <div class="form-group">
-          <label for="propertyId">Propriété *</label>
-          <select
-            id="propertyId"
-            v-model.number="formData.propertyId"
-            :class="['form-select', { error: errors.propertyId }]"
-            required
-          >
-            <option :value="0">Sélectionner une propriété</option>
-            <option 
-              v-for="property in availableProperties" 
-              :key="property.id" 
-              :value="property.id"
+    <template #default>
+      <form @submit.prevent="handleSubmit" class="lease-form">
+        <!-- Property Selection -->
+        <div class="form-section">
+          <h3>Propriété</h3>
+          <div class="form-group">
+            <label for="propertyId">Propriété *</label>
+            <select
+              id="propertyId"
+              v-model.number="formData.propertyId"
+              :class="['form-select', { error: errors.propertyId }]"
+              required
             >
-              {{ property.name }} - {{ property.address }}
-            </option>
-          </select>
-          <span v-if="errors.propertyId" class="error-message">{{ errors.propertyId }}</span>
+              <option :value="0">Sélectionner une propriété</option>
+              <option 
+                v-for="property in availableProperties" 
+                :key="property.id" 
+                :value="property.id"
+              >
+                {{ property.name }} - {{ property.address }}
+              </option>
+            </select>
+            <span v-if="errors.propertyId" class="error-message">{{ errors.propertyId }}</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Tenants Selection -->
-      <div class="form-section">
-        <h3>Locataires *</h3>
-        <div class="form-group">
+        <!-- Tenants Selection -->
+        <div class="form-section">
+          <h3>Locataires *</h3>
           <div class="tenants-selection">
             <div
               v-for="tenant in availableTenants"
@@ -290,111 +290,111 @@ const toggleTenant = (tenantId: number) => {
           </div>
           <span v-if="errors.tenantIds" class="error-message">{{ errors.tenantIds }}</span>
         </div>
-      </div>
 
-      <!-- Dates -->
-      <div class="form-section">
-        <h3>Période</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="startDate">Date de début *</label>
-            <Input
-              id="startDate"
-              v-model="formData.startDate"
-              type="date"
-              :error="errors.startDate"
-              required
-            />
-          </div>
+        <!-- Dates -->
+        <div class="form-section">
+          <h3>Période</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startDate">Date de début *</label>
+              <Input
+                id="startDate"
+                v-model="formData.startDate"
+                type="date"
+                :error="errors.startDate"
+                required
+              />
+            </div>
 
-          <div class="form-group">
-            <label for="endDate">Date de fin</label>
-            <Input
-              id="endDate"
-              v-model="formData.endDate"
-              type="date"
-            />
-            <span class="hint">Laisser vide pour un bail sans date de fin</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Financial Info -->
-      <div class="form-section">
-        <h3>Informations financières</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="rent">Loyer mensuel (€) *</label>
-            <Input
-              id="rent"
-              v-model.number="formData.rent"
-              type="number"
-              :error="errors.rent"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="charges">Charges (€)</label>
-            <Input
-              id="charges"
-              v-model.number="formData.charges"
-              type="number"
-              min="0"
-              step="0.01"
-            />
+            <div class="form-group">
+              <label for="endDate">Date de fin</label>
+              <Input
+                id="endDate"
+                v-model="formData.endDate"
+                type="date"
+              />
+              <span class="hint">Laisser vide pour un bail sans date de fin</span>
+            </div>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="deposit">Dépôt de garantie (€) *</label>
-            <Input
-              id="deposit"
-              v-model.number="formData.deposit"
-              type="number"
-              :error="errors.deposit"
-              min="0"
-              step="0.01"
-              required
-            />
+        <!-- Financial Info -->
+        <div class="form-section">
+          <h3>Informations financières</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="rent">Loyer mensuel (€) *</label>
+              <Input
+                id="rent"
+                v-model.number="formData.rent"
+                type="number"
+                :error="errors.rent"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="charges">Charges (€)</label>
+              <Input
+                id="charges"
+                v-model.number="formData.charges"
+                type="number"
+                min="0"
+                step="0.01"
+              />
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="paymentDay">Jour de paiement *</label>
-            <Input
-              id="paymentDay"
-              v-model.number="formData.paymentDay"
-              type="number"
-              :error="errors.paymentDay"
-              min="1"
-              max="31"
-              required
-            />
-            <span class="hint">Jour du mois (1-31)</span>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="deposit">Dépôt de garantie (€) *</label>
+              <Input
+                id="deposit"
+                v-model.number="formData.deposit"
+                type="number"
+                :error="errors.deposit"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="paymentDay">Jour de paiement *</label>
+              <Input
+                id="paymentDay"
+                v-model.number="formData.paymentDay"
+                type="number"
+                :error="errors.paymentDay"
+                min="1"
+                max="31"
+                required
+              />
+              <span class="hint">Jour du mois (1-31)</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Status -->
-      <div class="form-section">
-        <h3>Statut</h3>
-        <div class="form-group">
-          <label for="status">Statut</label>
-          <select
-            id="status"
-            v-model="formData.status"
-            class="form-select"
-          >
-            <option value="pending">En attente</option>
-            <option value="active">Actif</option>
-            <option value="ended">Terminé</option>
-          </select>
+        <!-- Status -->
+        <div class="form-section">
+          <h3>Statut</h3>
+          <div class="form-group">
+            <label for="status">Statut</label>
+            <select
+              id="status"
+              v-model="formData.status"
+              class="form-select"
+            >
+              <option value="pending">En attente</option>
+              <option value="active">Actif</option>
+              <option value="ended">Terminé</option>
+            </select>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </template>
 
     <template #footer>
       <div class="modal-actions">
@@ -414,12 +414,13 @@ const toggleTenant = (tenantId: number) => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-6);
+  padding: var(--spacing-2);
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
+  gap: var(--spacing-4);
 }
 
 .form-section h3 {
@@ -427,8 +428,8 @@ const toggleTenant = (tenantId: number) => {
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
-  padding-bottom: var(--spacing-2);
-  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .form-row {
@@ -450,14 +451,15 @@ const toggleTenant = (tenantId: number) => {
 }
 
 .form-select {
-  padding: var(--spacing-2) var(--spacing-3);
+  width: 100%;
+  padding: var(--spacing-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   color: var(--color-text);
   background: var(--color-surface);
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .form-select:hover {
@@ -477,11 +479,12 @@ const toggleTenant = (tenantId: number) => {
 .tenants-selection {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
-  max-height: 300px;
+  gap: var(--spacing-3);
+  max-height: 280px;
   overflow-y: auto;
-  padding: var(--spacing-2);
+  padding: var(--spacing-3);
   background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -489,7 +492,7 @@ const toggleTenant = (tenantId: number) => {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
-  padding: var(--spacing-3);
+  padding: var(--spacing-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -499,28 +502,33 @@ const toggleTenant = (tenantId: number) => {
 
 .tenant-checkbox:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .tenant-checkbox.selected {
   border-color: var(--color-primary);
   background: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .tenant-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .tenant-info {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
+  flex: 1;
 }
 
 .tenant-info strong {
   font-size: var(--text-base);
+  font-weight: 600;
   color: var(--color-text);
 }
 
@@ -533,20 +541,28 @@ const toggleTenant = (tenantId: number) => {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   font-style: italic;
+  margin-top: var(--spacing-1);
 }
 
 .error-message {
   font-size: var(--text-sm);
   color: var(--color-error);
+  margin-top: var(--spacing-1);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-3);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
 }
 
 @media (max-width: 640px) {
+  .lease-form {
+    padding: 0;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -557,6 +573,10 @@ const toggleTenant = (tenantId: number) => {
 
   .modal-actions :deep(button) {
     width: 100%;
+  }
+
+  .tenants-selection {
+    max-height: 200px;
   }
 }
 </style>
