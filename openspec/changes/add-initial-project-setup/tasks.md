@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 109/186 tâches (59%)  
-**Dernière validation**: 27 novembre 2025 - RentsCalendarView et RentPaymentModal
+**Progression**: 117/186 tâches (63%)  
+**Dernière validation**: 27 novembre 2025 - BaseTable, BasePagination, composables export/import, README
 
 ## Phase 1: Configuration de Base ✅
 
@@ -28,7 +28,7 @@
 - [x] Installer Vue Router
 - [x] Installer Pinia
 - [x] Installer Dexie.js
-- [ ] Installer day.js (date handling)
+- [x] Installer day.js (date handling) ✅ VALIDÉ (27 nov 2025)
 - [x] Installer framework UI (décision: Custom design system créé)
 - [x] Installer Vitest + @vue/test-utils
 - [x] Installer Playwright
@@ -125,8 +125,8 @@
 - [x] `Modal.vue` (avec transitions, sizes, footer slot)
 - [x] `Select.vue` (BaseSelect) ✅ VALIDÉ (26 nov 2025)
 - [x] `StatCard.vue`
-- [ ] `BaseTable.vue`
-- [ ] `BasePagination.vue`
+- [x] `BaseTable.vue` ✅ VALIDÉ (27 nov 2025)
+- [x] `BasePagination.vue` ✅ VALIDÉ (27 nov 2025)
 - [x] `Spinner.vue` (BaseSpinner) ✅ VALIDÉ (26 nov 2025)
 - [x] `Alert.vue` (BaseAlert) ✅ VALIDÉ (26 nov 2025)
 - [x] `EmptyState.vue` ✅ VALIDÉ (26 nov 2025)
@@ -201,8 +201,8 @@
 - [x] `useConfirm.ts` - Dialogues confirmation ✅ VALIDÉ (27 nov 2025)
 - [x] `useFormatter.ts` - Formatage dates, nombres, devises ✅ VALIDÉ (26 nov 2025)
 - [x] `useValidation.ts` - Validation formulaires ✅ VALIDÉ (27 nov 2025)
-- [ ] `useExport.ts` - Export données
-- [ ] `useImport.ts` - Import données
+- [x] `useExport.ts` - Export données ✅ VALIDÉ (27 nov 2025)
+- [x] `useImport.ts` - Import données ✅ VALIDÉ (27 nov 2025)
 
 ### Utilitaires
 - [x] `dateUtils.ts` - Fonctions dates ✅ VALIDÉ (26 nov 2025)
@@ -234,12 +234,12 @@
 
 ## Phase 9: Documentation
 
-### README
-- [ ] Description projet
-- [ ] Instructions installation
-- [ ] Instructions développement
-- [ ] Architecture overview
-- [ ] Stack technique
+### README ✅ VALIDÉ (27 nov 2025)
+- [x] Description projet
+- [x] Instructions installation
+- [x] Instructions développement
+- [x] Architecture overview
+- [x] Stack technique
 
 ### Documentation Développeur
 - [ ] Guide contribution
