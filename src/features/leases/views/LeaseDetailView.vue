@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLeasesStore } from '../stores/leasesStore';
-import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
+import { usePropertiesStore } from '../../properties/stores/propertiesStore';
+import { useTenantsStore } from '../../tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import type { Tenant } from '@/db/schema';
