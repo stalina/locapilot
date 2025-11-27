@@ -50,6 +50,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Loyers' },
   },
   {
+    path: '/rents/calendar',
+    name: 'rents-calendar',
+    component: () => import('@features/rents/views/RentsCalendarView.vue'),
+    meta: { title: 'Calendrier des Loyers' },
+  },
+  {
     path: '/documents',
     name: 'documents',
     component: () => import('@features/documents/views/DocumentsView.vue'),

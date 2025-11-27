@@ -141,9 +141,14 @@ onMounted(async () => {
           Gérez vos échéances de paiement
         </div>
       </div>
-      <Button variant="primary" icon="plus">
-        Nouveau loyer
-      </Button>
+      <div class="header-actions">
+        <Button variant="default" icon="format-list-bulleted" to="/rents">
+          Liste
+        </Button>
+        <Button variant="primary" icon="plus">
+          Nouveau loyer
+        </Button>
+      </div>
     </header>
 
     <!-- Stats Grid -->
