@@ -258,10 +258,6 @@ onMounted(async () => {
       :tenant="tenantToEdit"
       @success="handleFormSuccess"
     />
-    <TenantFormModal
-      v-model="showTenantForm"
-      @success="handleFormSuccess"
-    />
   </div>
 </template>
 

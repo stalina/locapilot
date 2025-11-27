@@ -2,9 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
-import { useLeasesStore } from '@/features/leases/stores/leasesStore';
-import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import Button from '@/shared/components/Button.vue';
+import { useLeasesStore } from '../../leases/stores/leasesStore';
+import { usePropertiesStore } from '../../properties/stores/propertiesStore';
+import Button from '../../../shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
 
 const route = useRoute();
