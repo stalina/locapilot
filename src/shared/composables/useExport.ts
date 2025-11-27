@@ -13,22 +13,15 @@ export function useExport() {
   /**
    * Export data to JSON file
    */
-  const exportToJSON = async <T = any>(
-    data: T,
-    options: ExportOptions = {}
-  ): Promise<void> => {
+  const exportToJSON = async <T = any>(data: T, options: ExportOptions = {}): Promise<void> => {
     isExporting.value = true;
 
     try {
-      const {
-        filename = `export-${new Date().toISOString().split('T')[0]}.json`,
-        pretty = true,
-      } = options;
+      const { filename = `export-${new Date().toISOString().split('T')[0]}.json`, pretty = true } =
+        options;
 
       // Convert data to JSON string
-      const jsonString = pretty
-        ? JSON.stringify(data, null, 2)
-        : JSON.stringify(data);
+      const jsonString = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
 
       // Create blob
       const blob = new Blob([jsonString], { type: 'application/json' });
@@ -49,15 +42,13 @@ export function useExport() {
 
       showNotification({
         type: 'success',
-        message: 'Export réussi',
-        description: `Fichier ${filename} téléchargé avec succès.`,
+        message: `Fichier ${filename} téléchargé avec succès`,
       });
     } catch (error) {
       console.error('Export error:', error);
       showNotification({
         type: 'error',
-        message: 'Erreur d\'export',
-        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'export.',
+        message: error instanceof Error ? error.message : "Erreur lors de l'export",
       });
       throw error;
     } finally {
@@ -92,18 +83,22 @@ export function useExport() {
       for (const row of data) {
         const values = headers.map(header => {
           const value = row[header];
-          
+
           // Handle special cases
           if (value === null || value === undefined) {
             return '';
           }
-          
+
           // Escape commas and quotes
           const stringValue = String(value);
-          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          if (
+            stringValue.includes(',') ||
+            stringValue.includes('"') ||
+            stringValue.includes('\n')
+          ) {
             return `"${stringValue.replace(/"/g, '""')}"`;
           }
-          
+
           return stringValue;
         });
         csvRows.push(values.join(','));
@@ -131,15 +126,13 @@ export function useExport() {
 
       showNotification({
         type: 'success',
-        message: 'Export CSV réussi',
-        description: `Fichier ${filename} téléchargé avec succès.`,
+        message: `Fichier ${filename} téléchargé avec succès`,
       });
     } catch (error) {
       console.error('CSV export error:', error);
       showNotification({
         type: 'error',
-        message: 'Erreur d\'export CSV',
-        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'export CSV.',
+        message: error instanceof Error ? error.message : "Erreur lors de l'export CSV",
       });
       throw error;
     } finally {

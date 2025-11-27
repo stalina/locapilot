@@ -57,10 +57,8 @@ export function useImport() {
 
       showNotification({
         type: 'success',
-        message: 'Import réussi',
-        description: `Fichier ${file.name} importé avec succès.`,
+        message: `Fichier CSV ${file.name} importé avec succès`,
       });
-
       return {
         success: true,
         data,
@@ -72,8 +70,7 @@ export function useImport() {
       console.error('Import error:', error);
       showNotification({
         type: 'error',
-        message: "Erreur d'import",
-        description: errorMessage,
+        message: errorMessage,
       });
 
       return {
@@ -156,8 +153,7 @@ export function useImport() {
       console.error('CSV import error:', error);
       showNotification({
         type: 'error',
-        message: "Erreur d'import CSV",
-        description: errorMessage,
+        message: errorMessage,
       });
 
       return {

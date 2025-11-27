@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useExport } from './useExport';
 
 // Mock useNotification
-vi.mock('../composables/useNotification', () => ({
+vi.mock('./useNotification', () => ({
   useNotification: vi.fn(() => ({
     showNotification: vi.fn(),
   })),
