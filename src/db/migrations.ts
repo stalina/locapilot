@@ -3,7 +3,7 @@
  * Permet de gérer l'évolution du schéma de la base de données
  */
 
-import Dexie from 'dexie';
+import type Dexie from 'dexie';
 import { db } from './database';
 
 export interface Migration {

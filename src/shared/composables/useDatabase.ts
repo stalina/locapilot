@@ -52,15 +52,15 @@ export function useDatabase() {
         () =>
           db.properties.add({
             ...property,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as Property),
         'Erreur lors de la création de la propriété'
       ),
 
     update: (id: number, updates: Partial<Property>) =>
       execute(
-        () => db.properties.update(id, { ...updates, updatedAt: Date.now() }),
+        () => db.properties.update(id, { ...updates, updatedAt: new Date() }),
         'Erreur lors de la mise à jour de la propriété'
       ),
 
@@ -88,15 +88,15 @@ export function useDatabase() {
         () =>
           db.tenants.add({
             ...tenant,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as Tenant),
         'Erreur lors de la création du locataire'
       ),
 
     update: (id: number, updates: Partial<Tenant>) =>
       execute(
-        () => db.tenants.update(id, { ...updates, updatedAt: Date.now() }),
+        () => db.tenants.update(id, { ...updates, updatedAt: new Date() }),
         'Erreur lors de la mise à jour du locataire'
       ),
 
@@ -129,15 +129,15 @@ export function useDatabase() {
         () =>
           db.leases.add({
             ...lease,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as Lease),
         'Erreur lors de la création du bail'
       ),
 
     update: (id: number, updates: Partial<Lease>) =>
       execute(
-        () => db.leases.update(id, { ...updates, updatedAt: Date.now() }),
+        () => db.leases.update(id, { ...updates, updatedAt: new Date() }),
         'Erreur lors de la mise à jour du bail'
       ),
 
@@ -170,15 +170,15 @@ export function useDatabase() {
         () =>
           db.rents.add({
             ...rent,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as Rent),
         'Erreur lors de la création du loyer'
       ),
 
     update: (id: number, updates: Partial<Rent>) =>
       execute(
-        () => db.rents.update(id, { ...updates, updatedAt: Date.now() }),
+        () => db.rents.update(id, { ...updates, updatedAt: new Date() }),
         'Erreur lors de la mise à jour du loyer'
       ),
 
@@ -195,9 +195,9 @@ export function useDatabase() {
     getById: (id: number) =>
       execute(() => db.documents.get(id), 'Erreur lors du chargement du document'),
 
-    getByCategory: (category: Document['category']) =>
+    getByType: (type: Document['type']) =>
       execute(
-        () => db.documents.where('category').equals(category).toArray(),
+        () => db.documents.where('type').equals(type).toArray(),
         'Erreur lors du chargement des documents'
       ),
 
@@ -212,15 +212,15 @@ export function useDatabase() {
         () =>
           db.documents.add({
             ...document,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           } as Document),
         'Erreur lors de la création du document'
       ),
 
     update: (id: number, updates: Partial<Document>) =>
       execute(
-        () => db.documents.update(id, { ...updates, updatedAt: Date.now() }),
+        () => db.documents.update(id, { ...updates, updatedAt: new Date() }),
         'Erreur lors de la mise à jour du document'
       ),
 
@@ -241,12 +241,12 @@ export function useDatabase() {
       const existing = await settings.get(key);
       if (existing) {
         return execute(
-          () => db.settings.update(existing.id!, { value, updatedAt: Date.now() }),
+          () => db.settings.update(existing.id!, { value, updatedAt: new Date() }),
           'Erreur lors de la mise à jour du paramètre'
         );
       } else {
         return execute(
-          () => db.settings.add({ key, value, updatedAt: Date.now() } as Settings),
+          () => db.settings.add({ key, value, updatedAt: new Date() } as Settings),
           'Erreur lors de la création du paramètre'
         );
       }
