@@ -38,7 +38,7 @@ export function useImport() {
       let data: T;
       try {
         data = JSON.parse(content);
-      } catch (error) {
+      } catch {
         throw new Error('Format JSON invalide');
       }
 
@@ -66,12 +66,13 @@ export function useImport() {
         data,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'import';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : "Une erreur est survenue lors de l'import";
+
       console.error('Import error:', error);
       showNotification({
         type: 'error',
-        message: 'Erreur d\'import',
+        message: "Erreur d'import",
         description: errorMessage,
       });
 
@@ -149,12 +150,13 @@ export function useImport() {
         data: transformedData,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'import CSV';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : "Une erreur est survenue lors de l'import CSV";
+
       console.error('CSV import error:', error);
       showNotification({
         type: 'error',
-        message: 'Erreur d\'import CSV',
+        message: "Erreur d'import CSV",
         description: errorMessage,
       });
 
@@ -213,7 +215,7 @@ export function useImport() {
 function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       const result = e.target?.result;
       if (typeof result === 'string') {
         resolve(result);
@@ -260,12 +262,12 @@ function parseCSVLine(line: string): string[] {
 }
 
 function pickFile(accept: string): Promise<File | null> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = accept;
 
-    input.onchange = (e) => {
+    input.onchange = e => {
       const target = e.target as HTMLInputElement;
       const file = target.files?.[0];
       resolve(file || null);
