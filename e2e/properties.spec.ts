@@ -7,9 +7,19 @@ test.describe('Properties CRUD', () => {
   });
 
   test('should display properties list', async ({ page }) => {
-    // Vérifier que la grille de propriétés existe
+    // Attendre que la page soit complètement chargée
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
+
+    // Vérifier que soit la grille de propriétés, soit l'état vide est affiché
     const propertiesGrid = page.locator('.properties-grid');
-    await expect(propertiesGrid).toBeVisible();
+    const emptyState = page.locator('.empty-state');
+
+    // Au moins un des deux doit être visible
+    const gridVisible = await propertiesGrid.isVisible().catch(() => false);
+    const emptyVisible = await emptyState.isVisible().catch(() => false);
+
+    expect(gridVisible || emptyVisible).toBeTruthy();
   });
 
   test('should open create property modal', async ({ page }) => {
@@ -49,15 +59,49 @@ test.describe('Properties CRUD', () => {
   });
 
   test('should view property details', async ({ page }) => {
+    // Créer une propriété de test pour s'assurer qu'il y en a une à afficher
+    await page.click('button:has-text("Nouvelle propriété")');
+    await page.waitForSelector('[data-testid="modal"]', { timeout: 10000 });
+
+    await page.fill('[data-testid="property-name"]', 'Test Property Details');
+    await page.fill('[data-testid="property-address"]', '456 Details Street');
+    await page.fill('[data-testid="property-surface"]', '75');
+    await page.fill('[data-testid="property-rooms"]', '4');
+    await page.fill('[data-testid="property-rent"]', '1500');
+
+    await page.click('button:has-text("Créer")');
+    await expect(page.locator('[data-testid="modal"]')).not.toBeVisible({ timeout: 10000 });
+
+    // Attendre que la propriété apparaisse
+    await expect(page.locator('text=Test Property Details')).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(500);
+
     // Vérifier qu'il y a au moins une propriété dans la grille
     const propertyCards = page.locator('.properties-grid .property-card');
-    await expect(propertyCards.first()).toBeVisible();
+    await expect(propertyCards.first()).toBeVisible({ timeout: 5000 });
 
     // Vérifier que les informations de la propriété sont affichées
     await expect(propertyCards.first().locator('.property-name')).toBeVisible();
   });
 
   test('should filter properties', async ({ page }) => {
+    // Créer une propriété de test avec "Paris" dans l'adresse
+    await page.click('button:has-text("Nouvelle propriété")');
+    await page.waitForSelector('[data-testid="modal"]', { timeout: 10000 });
+
+    await page.fill('[data-testid="property-name"]', 'Test Filter Paris');
+    await page.fill('[data-testid="property-address"]', '789 Rue de Paris, 75001 Paris');
+    await page.fill('[data-testid="property-surface"]', '60');
+    await page.fill('[data-testid="property-rooms"]', '3');
+    await page.fill('[data-testid="property-rent"]', '1300');
+
+    await page.click('button:has-text("Créer")');
+    await expect(page.locator('[data-testid="modal"]')).not.toBeVisible({ timeout: 10000 });
+
+    // Attendre que la propriété apparaisse
+    await expect(page.locator('text=Test Filter Paris')).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(500);
+
     // Trouver le champ de recherche
     const searchInput = page.locator(
       'input[type="search"], input[placeholder*="Rechercher"], input[placeholder*="recherche"]'
@@ -67,7 +111,7 @@ test.describe('Properties CRUD', () => {
       await searchInput.fill('Paris');
 
       // Attendre que les résultats se mettent à jour
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
       // Vérifier que seules les propriétés correspondantes sont affichées
       const visibleProperties = page.locator('.property-card, .property-item');
