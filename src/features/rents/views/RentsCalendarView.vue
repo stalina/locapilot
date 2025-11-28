@@ -9,6 +9,7 @@ import Calendar from '@/shared/components/Calendar.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import RentPaymentModal from '../components/RentPaymentModal.vue';
+import RentFormModal from '../components/RentFormModal.vue';
 import { useNotification } from '@/shared/composables/useNotification';
 
 const rentsStore = useRentsStore();
@@ -19,16 +20,18 @@ const { success, error } = useNotification();
 
 const selectedRent = ref<Rent | null>(null);
 const showPaymentModal = ref(false);
+const showCreateModal = ref(false);
 
 // Calendar events
 const calendarEvents = computed(() => {
   return rentsStore.rents.map((rent: Rent) => {
     const lease = leasesStore.leases.find(l => l.id === rent.leaseId);
     const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
-    
+
     // Map rent status to calendar status
-    const calendarStatus = rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
-    
+    const calendarStatus =
+      rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
+
     return {
       id: rent.id?.toString() || '',
       date: new Date(rent.dueDate),
@@ -57,7 +60,7 @@ const upcomingRents = computed(() => {
 function getPropertyName(leaseId: number): string {
   const lease = leasesStore.leases.find(l => l.id === leaseId);
   if (!lease) return 'Bien inconnu';
-  
+
   const property = propertiesStore.properties.find(p => p.id === lease.propertyId);
   return property?.name || 'Bien inconnu';
 }
@@ -65,7 +68,7 @@ function getPropertyName(leaseId: number): string {
 function getTenantName(leaseId: number): string {
   const lease = leasesStore.leases.find(l => l.id === leaseId);
   if (!lease || !lease.tenantIds.length) return 'Locataire inconnu';
-  
+
   const tenant = tenantsStore.tenants.find(t => t.id === lease.tenantIds[0]);
   return tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Locataire inconnu';
 }
@@ -88,7 +91,7 @@ function handleMonthChange(date: Date) {
 
 async function handlePayRent(paymentData: any) {
   if (!selectedRent.value?.id) return;
-  
+
   try {
     await rentsStore.payRent(selectedRent.value.id, new Date(paymentData.paymentDate));
     success('Paiement enregistré avec succès');
@@ -96,8 +99,29 @@ async function handlePayRent(paymentData: any) {
     selectedRent.value = null;
   } catch (err) {
     console.error('Failed to pay rent:', err);
-    error('Erreur lors de l\'enregistrement du paiement');
+    error("Erreur lors de l'enregistrement du paiement");
   }
+}
+
+async function handleCreateRent(rentData: any) {
+  try {
+    await rentsStore.createRent({
+      leaseId: rentData.leaseId,
+      dueDate: new Date(rentData.dueDate),
+      amount: rentData.amount,
+      charges: rentData.charges,
+      status: 'pending',
+    });
+    success('Loyer créé avec succès');
+    showCreateModal.value = false;
+  } catch (err) {
+    console.error('Failed to create rent:', err);
+    error('Erreur lors de la création du loyer');
+  }
+}
+
+function handleNewRentClick() {
+  showCreateModal.value = true;
 }
 
 function getStatusConfig(status: string) {
@@ -125,6 +149,7 @@ function formatDate(date: Date | string): string {
 onMounted(async () => {
   await Promise.all([
     rentsStore.fetchRents(),
+    leasesStore.fetchLeases(),
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
   ]);
@@ -137,17 +162,11 @@ onMounted(async () => {
     <header class="view-header">
       <div>
         <h1>Calendrier des loyers</h1>
-        <div class="header-meta">
-          Gérez vos échéances de paiement
-        </div>
+        <div class="header-meta">Gérez vos échéances de paiement</div>
       </div>
       <div class="header-actions">
-        <Button variant="default" icon="format-list-bulleted" to="/rents">
-          Liste
-        </Button>
-        <Button variant="primary" icon="plus">
-          Nouveau loyer
-        </Button>
+        <Button variant="default" icon="format-list-bulleted" to="/rents"> Liste </Button>
+        <Button variant="primary" icon="plus" @click="handleNewRentClick"> Nouveau loyer </Button>
       </div>
     </header>
 
@@ -225,10 +244,7 @@ onMounted(async () => {
               <div class="rent-info">
                 <div class="rent-header">
                   <span class="rent-property">{{ getPropertyName(rent.leaseId) }}</span>
-                  <span
-                    class="rent-badge"
-                    :class="`badge-${getStatusConfig(rent.status).color}`"
-                  >
+                  <span class="rent-badge" :class="`badge-${getStatusConfig(rent.status).color}`">
                     {{ getStatusConfig(rent.status).label }}
                   </span>
                 </div>
@@ -237,9 +253,7 @@ onMounted(async () => {
                   <span class="rent-date">{{ formatDate(rent.dueDate) }}</span>
                 </div>
               </div>
-              <div class="rent-amount">
-                {{ rent.amount.toLocaleString('fr-FR') }}€
-              </div>
+              <div class="rent-amount">{{ rent.amount.toLocaleString('fr-FR') }}€</div>
             </div>
           </div>
         </div>
@@ -276,6 +290,15 @@ onMounted(async () => {
       :property-name="getPropertyName(selectedRent.leaseId)"
       :tenant-name="getTenantName(selectedRent.leaseId)"
       @submit="handlePayRent"
+    />
+
+    <!-- Create Rent Modal -->
+    <RentFormModal
+      v-model="showCreateModal"
+      :leases="leasesStore.leases"
+      :properties="propertiesStore.properties"
+      :tenants="tenantsStore.tenants"
+      @submit="handleCreateRent"
     />
   </div>
 </template>
