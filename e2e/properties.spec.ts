@@ -90,29 +90,30 @@ test.describe('Properties CRUD', () => {
     await page.click('button:has-text("Créer")');
     await expect(page.locator('[data-testid="modal"]')).not.toBeVisible({ timeout: 10000 });
 
-    // Attendre que la propriété apparaisse
-    await page.waitForTimeout(500);
+    // Attendre que la propriété apparaisse dans la liste
+    await expect(page.locator('text=Property to Delete')).toBeVisible({ timeout: 10000 });
+
+    // Attendre un peu plus pour être sûr que le DOM est stable
+    await page.waitForTimeout(1000);
 
     // Compter le nombre de propriétés avant suppression
     const initialCount = await page.locator('.properties-grid .property-card').count();
 
-    // Configurer le gestionnaire de dialog AVANT de cliquer
-    const dialogPromise = page.waitForEvent('dialog');
-
-    // Vérifier que le bouton delete existe
+    // Trouver le bouton delete
     const deleteButton = page.locator('[data-testid="delete-property-button"]').first();
-    const isVisible = await deleteButton.isVisible().catch(() => false);
 
-    if (!isVisible) {
-      test.skip();
-      return;
-    }
+    // Attendre que le bouton soit bien visible et stable
+    await deleteButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    await deleteButton.evaluate((el: any) => el.click());
+    // Scroller vers le bouton pour être sûr qu'il est dans la viewport
+    await deleteButton.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
 
-    // Attendre le dialog et l'accepter
-    const dialog = await dialogPromise;
-    await dialog.accept();
+    // Cliquer et gérer le dialog en parallèle
+    await Promise.all([
+      page.waitForEvent('dialog').then(dialog => dialog.accept()),
+      deleteButton.click(),
+    ]);
 
     // Attendre que la propriété soit supprimée (le DOM se met à jour)
     await page.waitForTimeout(1500);
