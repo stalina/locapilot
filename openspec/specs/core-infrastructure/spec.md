@@ -4,18 +4,18 @@
 **Owner**: Platform Team  
 **Status**: Active
 
-## Overview
+## Purpose
 
 Infrastructure de base du projet Locapilot incluant la configuration du build tool (Vite), le framework frontend (Vue.js 3), TypeScript, le routing, le state management, et les outils de qualité code (linting, formatting, testing).
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: REQ-CORE-001: Configuration Vite + Vue 3 + TypeScript
 
+The application MUST be configured with Vite as the build tool, Vue.js 3 as the frontend framework, and TypeScript in strict mode to ensure type safety.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST be configured with Vite as the build tool, Vue.js 3 as the frontend framework, and TypeScript in strict mode to ensure type safety.
 
 **Details**:
 
@@ -60,10 +60,10 @@ The application MUST be configured with Vite as the build tool, Vue.js 3 as the 
 
 ### Requirement: REQ-CORE-002: Vue Router Configuration
 
+The application MUST use Vue Router for navigation between pages with typed routing support and lazy loading.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST use Vue Router for navigation between pages with typed routing support and lazy loading.
 
 **Details**:
 
@@ -107,10 +107,10 @@ The application MUST use Vue Router for navigation between pages with typed rout
 
 ### Requirement: REQ-CORE-003: Pinia State Management
 
+The application MUST use Pinia as the state management solution with typed stores and Devtools integration.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST use Pinia as the state management solution with typed stores and Devtools integration.
 
 **Details**:
 
@@ -155,10 +155,10 @@ The application MUST use Pinia as the state management solution with typed store
 
 ### Requirement: REQ-CORE-004: ESLint et Prettier Configuration
 
+The project MUST have ESLint and Prettier configured to ensure code quality and consistency.
+
 **Priority**: High  
 **Status**: Active
-
-The project MUST have ESLint and Prettier configured to ensure code quality and consistency.
 
 **Details**:
 
@@ -202,10 +202,10 @@ The project MUST have ESLint and Prettier configured to ensure code quality and 
 
 ### Requirement: REQ-CORE-005: Structure de Dossiers
 
+The project MUST have a clear, scalable folder structure organized by feature.
+
 **Priority**: High  
 **Status**: Active
-
-The project MUST have a clear, scalable folder structure organized by feature.
 
 **Details**:
 
@@ -246,10 +246,10 @@ src/
 
 ### Requirement: REQ-CORE-006: Vitest Test Infrastructure
 
+The project MUST have Vitest configured for unit and component testing with good code coverage.
+
 **Priority**: High  
 **Status**: Active
-
-The project MUST have Vitest configured for unit and component testing with good code coverage.
 
 **Details**:
 
@@ -293,10 +293,10 @@ The project MUST have Vitest configured for unit and component testing with good
 
 ### Requirement: REQ-CORE-007: TypeScript Configuration Stricte
 
+TypeScript MUST be configured in strict mode to maximize type safety and code quality.
+
 **Priority**: Critical  
 **Status**: Active
-
-TypeScript MUST be configured in strict mode to maximize type safety and code quality.
 
 **Details**:
 
@@ -330,10 +330,10 @@ TypeScript MUST be configured in strict mode to maximize type safety and code qu
 
 ### Requirement: REQ-CORE-008: Scripts NPM
 
+The project MUST have clear and documented NPM scripts for all common development tasks.
+
 **Priority**: Medium  
 **Status**: Active
-
-The project MUST have clear and documented NPM scripts for all common development tasks.
 
 **Details**:
 Scripts requis:

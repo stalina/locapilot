@@ -4,18 +4,18 @@
 **Owner**: Platform Team  
 **Status**: Active
 
-## Overview
+## Purpose
 
 Fonctionnalités Progressive Web App (PWA) permettant d'installer l'application sur desktop/mobile, de fonctionner offline, de recevoir des notifications, et de gérer les mises à jour automatiquement via Service Worker et Workbox.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: REQ-PWA-001: Installation comme Application Desktop
 
+The application MUST be installable as a native application on macOS, Windows and Linux via the standard PWA protocol.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST be installable as a native application on macOS, Windows and Linux via the standard PWA protocol.
 
 **Details**:
 
@@ -62,10 +62,10 @@ The application MUST be installable as a native application on macOS, Windows an
 
 ### Requirement: REQ-PWA-002: Fonctionnement Offline Complet
 
+The application MUST function entirely offline after the first installation, without requiring an internet connection.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST function entirely offline after the first installation, without requiring an internet connection.
 
 **Details**:
 
@@ -110,10 +110,10 @@ The application MUST function entirely offline after the first installation, wit
 
 ### Requirement: REQ-PWA-003: Service Worker avec Workbox
 
+The application MUST use Workbox to manage the Service Worker with optimal cache strategies and an automatic update system.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST use Workbox to manage the Service Worker with optimal cache strategies and an automatic update system.
 
 **Details**:
 
@@ -161,10 +161,10 @@ The application MUST use Workbox to manage the Service Worker with optimal cache
 
 ### Requirement: REQ-PWA-004: Gestion des Mises à Jour
 
+The application MUST automatically detect new versions and prompt the user to update without data loss.
+
 **Priority**: High  
 **Status**: Active
-
-The application MUST automatically detect new versions and prompt the user to update without data loss.
 
 **Details**:
 
@@ -211,10 +211,10 @@ The application MUST automatically detect new versions and prompt the user to up
 
 ### Requirement: REQ-PWA-005: Icônes et Splash Screens
 
+The application MUST have quality icons for all platforms and splash screens for a professional installation experience.
+
 **Priority**: Medium  
 **Status**: Active
-
-The application MUST have quality icons for all platforms and splash screens for a professional installation experience.
 
 **Details**:
 
@@ -250,10 +250,10 @@ The application MUST have quality icons for all platforms and splash screens for
 
 ### Requirement: REQ-PWA-006: Manifest Configuration
 
+The Web App Manifest MUST be complete and optimized for an optimal installation experience on all platforms.
+
 **Priority**: High  
 **Status**: Active
-
-The Web App Manifest MUST be complete and optimized for an optimal installation experience on all platforms.
 
 **Details**:
 
@@ -296,10 +296,10 @@ The Web App Manifest MUST be complete and optimized for an optimal installation 
 
 ### Requirement: REQ-PWA-007: Détection de l'État Réseau
 
+The application MUST detect online/offline status and adapt the UI accordingly to inform the user.
+
 **Priority**: Medium  
 **Status**: Active
-
-The application MUST detect online/offline status and adapt the UI accordingly to inform the user.
 
 **Details**:
 
@@ -341,10 +341,10 @@ The application MUST detect online/offline status and adapt the UI accordingly t
 
 ### Requirement: REQ-PWA-008: Score Lighthouse PWA
 
+The application MUST achieve a Lighthouse PWA score above 90 to ensure PWA best practices.
+
 **Priority**: High  
 **Status**: Active
-
-The application MUST achieve a Lighthouse PWA score above 90 to ensure PWA best practices.
 
 **Details**:
 Critères Lighthouse:

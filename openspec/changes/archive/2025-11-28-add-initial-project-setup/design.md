@@ -68,6 +68,7 @@ Component Re-render
 **Decision**: Utiliser Vue.js 3 avec Composition API et `<script setup>`
 
 **Rationale**:
+
 - Meilleure réutilisabilité avec composables
 - TypeScript support de premier ordre
 - Performance optimisée
@@ -75,11 +76,13 @@ Component Re-render
 - Meilleure organisation logique
 
 **Alternatives considérées**:
+
 - Options API: Moins moderne, moins de réutilisabilité
 - React: Plus complexe, écosystème plus fragmenté
 - Svelte: Moins mature, écosystème moins riche
 
 **Impact**:
+
 - Tous les composants utiliseront `<script setup>`
 - Logique réutilisable dans des composables
 - TypeScript génériques pour props et emits
@@ -89,6 +92,7 @@ Component Re-render
 **Decision**: Utiliser Dexie.js comme wrapper IndexedDB
 
 **Rationale**:
+
 - API simple et intuitive
 - Promises-based (async/await)
 - Système de migrations robuste
@@ -97,11 +101,13 @@ Component Re-render
 - Gestion des erreurs intégrée
 
 **Alternatives considérées**:
+
 - IndexedDB natif: Trop verbeux, API complexe
 - LocalForage: Pas de queries complexes
 - PouchDB: Overhead inutile pour notre cas
 
 **Impact**:
+
 - Schéma de données versionné
 - Migrations automatiques
 - TypeScript types pour toutes les tables
@@ -111,6 +117,7 @@ Component Re-render
 **Decision**: Utiliser Vite pour build et dev server
 
 **Rationale**:
+
 - HMR ultra-rapide
 - Build optimisé avec Rollup
 - Plugin PWA excellent (@vite-plugin/pwa)
@@ -119,11 +126,13 @@ Component Re-render
 - Écosystème Vue.js officiel
 
 **Alternatives considérées**:
+
 - Webpack: Plus lent, configuration complexe
 - Parcel: Moins de contrôle
 - esbuild seul: Pas de dev server complet
 
 **Impact**:
+
 - Démarrage dev < 1 seconde
 - HMR instantané
 - Build optimisé automatique
@@ -133,6 +142,7 @@ Component Re-render
 **Decision**: Utiliser @vite-plugin/pwa avec Workbox en mode generateSW
 
 **Rationale**:
+
 - Configuration zero-config pour cas simples
 - Stratégies de cache optimales
 - Gestion des updates automatique
@@ -140,11 +150,13 @@ Component Re-render
 - Support offline complet
 
 **Alternatives considérées**:
+
 - Service Worker manuel: Trop complexe
 - InjectManifest: Overkill pour nos besoins
 - Pas de PWA: Ne répond pas aux besoins
 
 **Impact**:
+
 - Application 100% offline après installation
 - Updates automatiques avec notification
 - Cache intelligent des ressources
@@ -154,6 +166,7 @@ Component Re-render
 **Decision**: Utiliser Pinia comme store
 
 **Rationale**:
+
 - Store officiel Vue 3
 - TypeScript excellent support
 - Devtools intégration
@@ -162,11 +175,13 @@ Component Re-render
 - Pas de mutations (direct state)
 
 **Alternatives considérées**:
+
 - Vuex: Deprecated pour Vue 3
 - Composables seuls: Pas de devtools, partage d'état complexe
 - MobX: Non idiomatique Vue
 
 **Impact**:
+
 - Un store par domaine métier
 - Actions asynchrones pour DB
 - Getters computed pour queries
@@ -176,6 +191,7 @@ Component Re-render
 **Decision**: Organisation par feature plutôt que par type
 
 **Structure**:
+
 ```
 src/
 ├── features/
@@ -204,12 +220,14 @@ src/
 ```
 
 **Rationale**:
+
 - Meilleure scalabilité
 - Code colocalisé par fonctionnalité
 - Facilite la maintenance
 - Import paths clairs
 
 **Impact**:
+
 - Path aliases configurés
 - Import restrictions par feature
 - Tests colocalisés
@@ -219,6 +237,7 @@ src/
 **Decision**: TypeScript strict mode activé
 
 **Configuration**:
+
 ```json
 {
   "compilerOptions": {
@@ -233,12 +252,14 @@ src/
 ```
 
 **Rationale**:
+
 - Catch errors à compile time
 - Meilleure autocomplétion
 - Documentation vivante
 - Refactoring sûr
 
 **Impact**:
+
 - Tous les types explicites
 - Pas de `any` (sauf justifié)
 - Validation à la compilation
@@ -248,6 +269,7 @@ src/
 **Decision**: Utiliser Zod pour validation runtime
 
 **Rationale**:
+
 - TypeScript-first
 - Type inference automatique
 - Validation runtime + compile time
@@ -255,11 +277,13 @@ src/
 - Parse + validate en une étape
 
 **Alternatives considérées**:
+
 - Yup: Pas de type inference native
 - Joi: Pas optimisé TypeScript
 - Validation manuelle: Trop verbeux
 
 **Impact**:
+
 - Schémas Zod pour tous les formulaires
 - Validation avant insertion DB
 - Types TypeScript dérivés des schémas
@@ -269,6 +293,7 @@ src/
 **Decision**: PrimeVue comme framework UI (à confirmer)
 
 **Rationale**:
+
 - Composants riches et complets
 - Thémable (PrimeFlex)
 - Accessibilité (WCAG AA)
@@ -278,12 +303,14 @@ src/
 - Templates premium disponibles
 
 **Alternatives considérées**:
+
 - Vuetify: Material Design imposé, plus lourd
 - Element Plus: Moins de composants, design chinois
 - Quasar: Trop orienté mobile-first
 - Tailwind + Headless UI: Plus de travail custom
 
 **Impact**:
+
 - Import composants à la demande
 - Thème personnalisé Locapilot
 - Composants accessibles out-of-the-box
@@ -295,6 +322,7 @@ src/
 **Decision**: Utiliser day.js pour manipulation dates
 
 **Rationale**:
+
 - Lightweight (2KB)
 - API compatible Moment.js
 - Immutable
@@ -303,12 +331,14 @@ src/
 - i18n support
 
 **Alternatives considérées**:
+
 - date-fns: Plus gros, moins chaînable
 - Moment.js: Deprecated, trop lourd
 - Luxon: Plus complexe
 - Native Date: API limitée
 
 **Impact**:
+
 - Plugin locale FR
 - Plugin calendar
 - Plugin relativeTime
@@ -319,16 +349,19 @@ src/
 **Decision**: Vitest + Vue Test Utils + Playwright
 
 **Stack**:
+
 - **Unit**: Vitest (composables, utils, stores)
 - **Component**: Vitest + @vue/test-utils
 - **E2E**: Playwright
 
 **Rationale**:
+
 - Vitest: Compatible Vite, rapide, ESM natif
 - Vue Test Utils: Officiel, complet
 - Playwright: Multi-browser, fiable, rapide
 
 **Coverage Targets**:
+
 - Core logic: 90%
 - Stores: 80%
 - Composables: 80%
@@ -336,6 +369,7 @@ src/
 - Overall: > 70%
 
 **Impact**:
+
 - Tests colocalisés avec code
 - Test utilities partagés
 - CI/CD avec tests automatiques
@@ -479,7 +513,7 @@ export class LocapilotDB extends Dexie {
 
   constructor() {
     super('locapilot');
-    
+
     this.version(1).stores({
       properties: '++id, name, status, createdAt',
       tenants: '++id, email, status, lastName, createdAt',
@@ -498,23 +532,27 @@ export const db = new LocapilotDB();
 
 ### Design Decisions
 
-**Normalization**: 
+**Normalization**:
+
 - Tables séparées par entité
 - Relations via IDs
 - Pas de duplication de données
 
 **Indexes**:
+
 - Indexes sur clés primaires (auto)
 - Indexes sur foreign keys (propertyId, leaseId, etc.)
 - Indexes sur champs de filtrage fréquents (status, date, type)
 - Compound indexes si nécessaire (future optimisation)
 
 **Blobs**:
+
 - Documents stockés comme Blob in IndexedDB
 - Pas de base64 (économie mémoire)
 - Compression optionnelle (future)
 
 **Dates**:
+
 - Toutes les dates en objets Date JavaScript
 - Dexie gère la sérialisation
 - Formatage avec day.js dans UI
@@ -522,16 +560,19 @@ export const db = new LocapilotDB();
 ## Security Considerations
 
 ### Data Privacy
+
 - **Local-only storage**: Aucune donnée envoyée à un serveur
 - **Browser security**: Protection native du browser (same-origin policy)
 - **Encryption optionnelle**: Future feature pour données sensibles (SubtleCrypto API)
 
 ### Input Validation
+
 - **Frontend validation**: Zod schemas pour toutes les entrées
 - **Sanitization**: XSS protection pour contenu affiché
 - **File uploads**: Validation MIME types, taille max
 
 ### Access Control
+
 - **No authentication**: Application mono-utilisateur locale
 - **Browser profile**: Isolation par profil navigateur
 - **Export encryption**: Optionnel pour exports
@@ -539,6 +580,7 @@ export const db = new LocapilotDB();
 ## Performance Considerations
 
 ### Bundle Size
+
 - **Target**: < 500KB gzipped
 - **Strategies**:
   - Code splitting par route
@@ -547,18 +589,21 @@ export const db = new LocapilotDB();
   - Component library imports optimisés
 
 ### Runtime Performance
+
 - **Virtual scrolling**: Pour listes longues (properties, tenants)
 - **Pagination**: Queries DB limitées
 - **Memoization**: Computed properties, useMemo
 - **Debouncing**: Search inputs
 
 ### Database Performance
+
 - **Indexes**: Sur champs de query fréquents
 - **Batch operations**: Pour imports/exports
 - **Transactions**: Pour opérations multi-tables
 - **Query optimization**: Where clauses optimisés
 
 ### PWA Performance
+
 - **Pre-caching**: Core app shell
 - **Runtime caching**: API calls, images
 - **Update strategy**: Background sync
@@ -567,6 +612,7 @@ export const db = new LocapilotDB();
 ## Accessibility
 
 ### WCAG 2.1 AA Compliance
+
 - **Keyboard navigation**: Tous les éléments accessibles au clavier
 - **Screen readers**: ARIA labels appropriés
 - **Color contrast**: Ratio minimum 4.5:1
@@ -575,6 +621,7 @@ export const db = new LocapilotDB();
 - **Error messages**: Descriptifs et accessibles
 
 ### Tools
+
 - **axe-core**: Tests automatisés
 - **Lighthouse**: Audit accessibilité
 - **Screen reader testing**: VoiceOver (macOS), NVDA (Windows)
@@ -582,11 +629,13 @@ export const db = new LocapilotDB();
 ## Internationalization (i18n)
 
 ### Phase 1
+
 - **Français uniquement**: Hardcoded
 - **Format**: Date/nombre locale FR
 - **Currency**: EUR
 
 ### Future
+
 - **Vue I18n**: Si besoin multi-langue
 - **Locale switching**: Settings
 - **RTL support**: Si nécessaire
@@ -594,6 +643,7 @@ export const db = new LocapilotDB();
 ## Error Handling
 
 ### Strategy
+
 - **Global error handler**: Vue errorHandler
 - **Try-catch**: Toutes les async operations
 - **User-friendly messages**: Pas de stack traces
@@ -601,6 +651,7 @@ export const db = new LocapilotDB();
 - **Fallbacks**: Graceful degradation
 
 ### Error Types
+
 - **Network errors**: Offline mode, retry
 - **Database errors**: Transaction rollback, user notification
 - **Validation errors**: Form-level feedback
@@ -609,6 +660,7 @@ export const db = new LocapilotDB();
 ## Build & Deploy
 
 ### Build Process
+
 1. Type check (tsc)
 2. Lint (ESLint)
 3. Tests (Vitest)
@@ -618,12 +670,14 @@ export const db = new LocapilotDB();
 7. Asset optimization
 
 ### Deployment
+
 - **Static hosting**: Netlify, Vercel, ou GitHub Pages
 - **Auto-deploy**: Sur push main
 - **Preview deploys**: Sur PR
 - **Cache headers**: Optimaux pour PWA
 
 ### Environment Variables
+
 - `VITE_APP_VERSION`: Version de l'app
 - `VITE_APP_NAME`: Nom de l'app
 - Pas de secrets (frontend-only)
@@ -631,11 +685,13 @@ export const db = new LocapilotDB();
 ## Monitoring & Analytics
 
 ### Phase 1
+
 - **Console logging**: Dev mode
 - **Error reporting**: Console uniquement
 - **Analytics**: Aucun (privacy-first)
 
 ### Future (Optionnel)
+
 - **Plausible/Simple Analytics**: Privacy-friendly
 - **Error tracking**: Sentry (opt-in)
 - **Usage metrics**: Anonymes
@@ -643,17 +699,20 @@ export const db = new LocapilotDB();
 ## Backup & Data Portability
 
 ### Export
+
 - **Format**: JSON
 - **Content**: Toutes les tables
 - **Blobs**: Base64 encoded in JSON
 - **Trigger**: Manuel via settings
 
 ### Import
+
 - **Validation**: Schema validation avant import
 - **Merge strategy**: Replace ou merge
 - **Backup before import**: Automatic
 
 ### Cloud Sync (Future)
+
 - **Dropbox/Google Drive**: Automatic backup
 - **Conflict resolution**: Latest wins ou manual
 - **Encryption**: Client-side avant upload

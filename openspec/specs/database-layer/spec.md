@@ -4,18 +4,18 @@
 **Owner**: Platform Team  
 **Status**: Active
 
-## Overview
+## Purpose
 
 Couche de données basée sur IndexedDB et Dexie.js permettant le stockage local sécurisé et performant de toutes les données de l'application (propriétés, locataires, baux, documents, etc.) avec support des migrations, transactions et queries complexes.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: REQ-DB-001: Schéma de Base de Données Initial
 
+The database MUST have a complete schema covering all Locapilot business entities with TypeScript types and optimized indexes.
+
 **Priority**: Critical  
 **Status**: Active
-
-The database MUST have a complete schema covering all Locapilot business entities with TypeScript types and optimized indexes.
 
 **Details**:
 
@@ -68,10 +68,10 @@ The database MUST have a complete schema covering all Locapilot business entitie
 
 ### Requirement: REQ-DB-002: CRUD Operations sur Toutes les Tables
 
+The application MUST provide typed and tested CRUD operations (Create, Read, Update, Delete) for all database tables.
+
 **Priority**: Critical  
 **Status**: Active
-
-The application MUST provide typed and tested CRUD operations (Create, Read, Update, Delete) for all database tables.
 
 **Details**:
 
@@ -139,10 +139,10 @@ The application MUST provide typed and tested CRUD operations (Create, Read, Upd
 
 ### Requirement: REQ-DB-003: Système de Migrations
 
+The database MUST support migrations to evolve the schema without data loss during application updates.
+
 **Priority**: High  
 **Status**: Active
-
-The database MUST support migrations to evolve the schema without data loss during application updates.
 
 **Details**:
 
@@ -187,10 +187,10 @@ The database MUST support migrations to evolve the schema without data loss duri
 
 ### Requirement: REQ-DB-004: Composables Database
 
+The application MUST provide reusable Vue composables to facilitate database access in components.
+
 **Priority**: High  
 **Status**: Active
-
-The application MUST provide reusable Vue composables to facilitate database access in components.
 
 **Details**:
 Composables à créer:
@@ -237,10 +237,10 @@ Composables à créer:
 
 ### Requirement: REQ-DB-005: Queries Optimisées avec Indexes
 
+Frequent queries MUST use indexes to ensure optimal performance even with large data volumes.
+
 **Priority**: High  
 **Status**: Active
-
-Frequent queries MUST use indexes to ensure optimal performance even with large data volumes.
 
 **Details**:
 Indexes requis:
@@ -285,10 +285,10 @@ Indexes requis:
 
 ### Requirement: REQ-DB-006: Gestion des Documents et Blobs
 
+Documents (PDFs, images, etc.) MUST be stored in IndexedDB as Blobs with metadata and size management.
+
 **Priority**: High  
 **Status**: Active
-
-Documents (PDFs, images, etc.) MUST be stored in IndexedDB as Blobs with metadata and size management.
 
 **Details**:
 
@@ -345,10 +345,10 @@ Documents (PDFs, images, etc.) MUST be stored in IndexedDB as Blobs with metadat
 
 ### Requirement: REQ-DB-007: Export/Import des Données
 
+The user MUST be able to export all their data in JSON format and re-import it for backup or migration purposes.
+
 **Priority**: Medium  
 **Status**: Active
-
-The user MUST be able to export all their data in JSON format and re-import it for backup or migration purposes.
 
 **Details**:
 
@@ -394,10 +394,10 @@ The user MUST be able to export all their data in JSON format and re-import it f
 
 ### Requirement: REQ-DB-008: Relations entre Entités
 
+The system MUST properly manage relationships between entities (property ↔ lease, lease ↔ rent, etc.) with helpers for relational queries.
+
 **Priority**: High  
 **Status**: Active
-
-The system MUST properly manage relationships between entities (property ↔ lease, lease ↔ rent, etc.) with helpers for relational queries.
 
 **Details**:
 Relations principales:
