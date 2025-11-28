@@ -16,14 +16,14 @@ describe('useExport', () => {
     document.body.removeChild = vi.fn();
 
     // Mock URL methods
-    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
-    global.URL.revokeObjectURL = vi.fn();
+    (globalThis as any).URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    (globalThis as any).URL.revokeObjectURL = vi.fn();
 
     // Mock HTMLAnchorElement click
     HTMLAnchorElement.prototype.click = vi.fn();
 
     // Mock Blob constructor
-    (global as any).Blob = class MockBlob {
+    (globalThis as any).Blob = class MockBlob {
       content: any[];
       options?: { type?: string };
 

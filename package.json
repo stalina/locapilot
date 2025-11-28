@@ -15,8 +15,6 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "type-check": "vue-tsc --noEmit",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
     "prepare": "husky"
   },
   "dependencies": {
@@ -31,13 +29,7 @@
     "zod": "4.1.13"
   },
   "devDependencies": {
-    "@chromatic-com/storybook": "4.1.3",
     "@playwright/test": "1.56.1",
-    "@storybook/addon-a11y": "10.0.8",
-    "@storybook/addon-docs": "10.0.8",
-    "@storybook/addon-onboarding": "10.0.8",
-    "@storybook/addon-vitest": "10.0.8",
-    "@storybook/vue3-vite": "10.0.8",
     "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "8.48.0",
     "@typescript-eslint/parser": "8.48.0",
@@ -50,7 +42,6 @@
     "eslint": "9.39.1",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
-    "eslint-plugin-storybook": "10.0.8",
     "eslint-plugin-vue": "10.6.0",
     "fake-indexeddb": "6.2.5",
     "happy-dom": "20.0.10",
@@ -58,18 +49,12 @@
     "lint-staged": "16.2.7",
     "playwright": "^1.56.1",
     "prettier": "3.6.2",
-    "storybook": "10.0.8",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-pwa": "1.1.0",
     "vitest": "4.0.13",
     "vue-tsc": "^3.1.4",
     "workbox-window": "7.4.0"
-  },
-  "eslintConfig": {
-    "extends": [
-      "plugin:storybook/recommended"
-    ]
   },
   "lint-staged": {
     "*.{ts,vue}": [

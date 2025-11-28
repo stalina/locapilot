@@ -2,8 +2,8 @@
 
 **Change ID**: `add-initial-project-setup`  
 **Status**: En cours  
-**Progression**: 175/187 tâches (94%)  
-**Dernière validation**: 27 novembre 2025 - Tests accessibilité complétés
+**Progression**: 176/187 tâches (94%)  
+**Dernière validation**: 28 novembre 2025 - Storybook retiré du projet
 
 ## Phase 1: Configuration de Base ✅
 
@@ -276,7 +276,7 @@
 - [x] Guide contribution ✅ VALIDÉ (27 nov 2025)
 - [x] Architecture decisions (ADR) ✅ VALIDÉ (27 nov 2025)
 - [x] Database schema documentation ✅ VALIDÉ (27 nov 2025)
-- [ ] Component documentation (Storybook optionnel)
+- [x] Component documentation ✅ NON APPLICABLE (Storybook retiré - projet solo - 28 nov 2025)
 - [x] API documentation (JSDoc/TSDoc) ✅ VALIDÉ (27 nov 2025)
 
 ### Documentation Utilisateur (Basique)
