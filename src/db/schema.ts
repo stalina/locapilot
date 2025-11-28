@@ -83,7 +83,7 @@ export interface Document {
     | 'insurance'
     | 'photo'
     | 'other';
-  relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant';
+  relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant' | 'inventory';
   relatedEntityId?: number;
   mimeType: string;
   size: number;
@@ -107,7 +107,7 @@ export interface Inventory {
   type: 'checkin' | 'checkout';
   date: Date;
   observations?: string;
-  photos?: string[];
+  photos?: number[]; // Document IDs - harmonisé avec Property.photos
   roomsData?: Record<string, any>;
   createdAt?: Date;
   updatedAt?: Date;
@@ -180,20 +180,29 @@ export class LocapilotDB extends Dexie {
         );
       });
 
-    // Futures versions de migration à ajouter ici
-    // Exemple:
-    // this.version(3).stores({
-    //   properties: '++id, name, status, archived, createdAt',
-    //   // ... autres tables (doivent être redéfinies même si inchangées)
-    // }).upgrade(async (transaction) => {
-    //   // Code de migration personnalisé si nécessaire
-    //   const properties = await transaction.table('properties').toArray();
-    //   await Promise.all(
-    //     properties.map(p =>
-    //       transaction.table('properties').update(p.id!, { archived: false })
-    //     )
-    //   );
-    // });
+    // Version 3: Harmonize Inventory.photos to use number[] (like Property.photos)
+    this.version(3)
+      .stores({
+        properties: '++id, name, address, type, surface, status, createdAt',
+        tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+        leases: '++id, propertyId, startDate, endDate, status, createdAt',
+        rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+        documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+        inventories: '++id, leaseId, type, date',
+        communications: '++id, relatedEntityType, relatedEntityId, date, type',
+        settings: '++id, &key',
+      })
+      .upgrade(async transaction => {
+        // Migrate existing inventories: convert photos from string[] to number[]
+        const inventories = await transaction.table('inventories').toArray();
+        await Promise.all(
+          inventories.map(inventory =>
+            transaction.table('inventories').update(inventory.id!, {
+              photos: Array.isArray(inventory.photos) ? [] : [],
+            })
+          )
+        );
+      });
   }
 }
 

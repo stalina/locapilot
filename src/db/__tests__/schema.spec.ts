@@ -21,7 +21,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(2);
+      expect(db.verno).toBe(3);
     });
 
     it('should have all required tables', async () => {

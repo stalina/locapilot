@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useInventoriesStore } from '../stores/inventoriesStore';
-import { useLeasesStore } from '../../leases/stores/leasesStore';
-import { usePropertiesStore } from '../../properties/stores/propertiesStore';
-import Modal from '../../../shared/components/Modal.vue';
-import Input from '../../../shared/components/Input.vue';
-import Button from '../../../shared/components/Button.vue';
-import type { Inventory } from '../../../db/types';
+import { useInventoriesStore } from '@/features/inventories/stores/inventoriesStore';
+import { useLeasesStore } from '@/features/leases/stores/leasesStore';
+import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
+import Modal from '@/shared/components/Modal.vue';
+import Input from '@/shared/components/Input.vue';
+import Button from '@/shared/components/Button.vue';
+import InventoryPhotoGallery from '@/shared/components/InventoryPhotoGallery.vue';
+import type { Inventory } from '@/db/types';
 
 interface Props {
   modelValue: boolean;
@@ -32,7 +33,6 @@ const formData = ref({
   type: 'checkin' as Inventory['type'],
   date: new Date().toISOString().split('T')[0] as string,
   observations: '',
-  photos: [] as string[],
   roomsData: {} as Record<string, any>,
 });
 
@@ -40,8 +40,8 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 const isEditMode = computed(() => !!props.inventory);
-const modalTitle = computed(() => 
-  isEditMode.value ? 'Modifier l\'état des lieux' : 'Nouvel état des lieux'
+const modalTitle = computed(() =>
+  isEditMode.value ? "Modifier l'état des lieux" : 'Nouvel état des lieux'
 );
 
 // Available leases for selection
@@ -56,20 +56,23 @@ const availableLeases = computed(() => {
 });
 
 // Watch inventory changes to populate form
-watch(() => props.inventory, (newInventory) => {
-  if (newInventory) {
-    formData.value = {
-      leaseId: newInventory.leaseId,
-      type: newInventory.type,
-      date: new Date(newInventory.date).toISOString().split('T')[0] as string,
-      observations: newInventory.observations || '',
-      photos: newInventory.photos || [],
-      roomsData: newInventory.roomsData || {},
-    };
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
+watch(
+  () => props.inventory,
+  newInventory => {
+    if (newInventory) {
+      formData.value = {
+        leaseId: newInventory.leaseId,
+        type: newInventory.type,
+        date: new Date(newInventory.date).toISOString().split('T')[0] as string,
+        observations: newInventory.observations || '',
+        roomsData: newInventory.roomsData || {},
+      };
+    } else {
+      resetForm();
+    }
+  },
+  { immediate: true }
+);
 
 function resetForm() {
   formData.value = {
@@ -77,7 +80,6 @@ function resetForm() {
     type: 'checkin',
     date: new Date().toISOString().split('T')[0] as string,
     observations: '',
-    photos: [],
     roomsData: {},
   };
   errors.value = {};
@@ -103,13 +105,11 @@ async function handleSubmit() {
   isSubmitting.value = true;
 
   try {
-    const inventoryData = {
+    const inventoryData: Omit<Inventory, 'id' | 'createdAt' | 'updatedAt'> = {
       leaseId: formData.value.leaseId,
       type: formData.value.type,
       date: new Date(formData.value.date || new Date()),
-      observations: formData.value.observations,
-      photos: formData.value.photos,
-      roomsData: formData.value.roomsData,
+      ...(formData.value.observations && { observations: formData.value.observations }),
     };
 
     if (isEditMode.value && props.inventory?.id) {
@@ -150,11 +150,7 @@ function handleClose() {
             <label class="field-label">Bail <span class="required">*</span></label>
             <select v-model.number="formData.leaseId" class="select" data-testid="inventory-lease">
               <option :value="0" disabled>Sélectionnez un bail</option>
-              <option
-                v-for="lease in availableLeases"
-                :key="lease.id"
-                :value="lease.id"
-              >
+              <option v-for="lease in availableLeases" :key="lease.id" :value="lease.id">
                 {{ lease.label }}
               </option>
             </select>
@@ -184,7 +180,7 @@ function handleClose() {
         <!-- Observations -->
         <div class="form-section full-width">
           <h4 class="section-title">Observations</h4>
-          
+
           <div class="field">
             <label class="field-label">Observations générales</label>
             <textarea
@@ -198,32 +194,26 @@ function handleClose() {
         </div>
 
         <!-- Photos -->
-        <div class="form-section full-width">
+        <div v-if="isEditMode && inventory?.id" class="form-section full-width">
           <h4 class="section-title">Photos</h4>
-          
+
+          <InventoryPhotoGallery :inventory-id="inventory.id" :editable="true" :max-photos="20" />
+        </div>
+        <div v-else class="form-section full-width">
+          <h4 class="section-title">Photos</h4>
+
           <div class="photos-info">
             <i class="mdi mdi-information-outline"></i>
-            <p>La fonctionnalité de gestion des photos sera disponible prochainement.</p>
+            <p>Les photos pourront être ajoutées après la création de l'état des lieux.</p>
           </div>
         </div>
       </div>
     </form>
 
     <template #footer>
-      <Button
-        variant="default"
-        @click="handleClose"
-        :disabled="isSubmitting"
-      >
-        Annuler
-      </Button>
-      <Button
-        variant="primary"
-        @click="handleSubmit"
-        :disabled="isSubmitting"
-        icon="check"
-      >
-        {{ isSubmitting ? 'Enregistrement...' : (isEditMode ? 'Enregistrer' : 'Créer') }}
+      <Button variant="default" @click="handleClose" :disabled="isSubmitting"> Annuler </Button>
+      <Button variant="primary" @click="handleSubmit" :disabled="isSubmitting" icon="check">
+        {{ isSubmitting ? 'Enregistrement...' : isEditMode ? 'Enregistrer' : 'Créer' }}
       </Button>
     </template>
   </Modal>

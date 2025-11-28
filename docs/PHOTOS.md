@@ -212,6 +212,8 @@ Le composable vérifie automatiquement :
 
 ## Tests
 
+### Tests des logements
+
 Fichier de tests : `src/shared/composables/__tests__/usePropertyPhotos.spec.ts`
 
 Couverture :
@@ -222,6 +224,87 @@ Couverture :
 - ✅ Validation des types de fichiers
 - ✅ Gestion des URLs
 
+### Tests des inventaires
+
+Fichier de tests : `src/shared/composables/__tests__/useInventoryPhotos.spec.ts`
+
+Couverture identique au composable des logements :
+
+- ✅ Ajout de photos d'état des lieux
+- ✅ Suppression de photos d'inventaire
+- ✅ Définition de photo principale
+- ✅ Validation des types de fichiers
+- ✅ Gestion des URLs
+
+## Gestion des photos d'états des lieux
+
+### Migration v3
+
+La version 3 du schéma harmonise les photos d'inventaires :
+
+- Champ `Inventory.photos` passe de `string[]` à `number[]`
+- Alignement avec le système des logements
+- Migration automatique des données existantes
+
+### `useInventoryPhotos` (Composable)
+
+Localisation : `src/shared/composables/useInventoryPhotos.ts`
+
+**API identique à `usePropertyPhotos` :**
+
+```typescript
+// Récupérer toutes les photos d'un état des lieux
+getInventoryPhotos(inventoryId: number): Promise<Document[]>
+
+// Ajouter une photo à un inventaire
+addInventoryPhoto(inventoryId: number, file: File, description?: string): Promise<Document | null>
+
+// Supprimer une photo
+removeInventoryPhoto(inventoryId: number, documentId: number): Promise<void>
+
+// Définir la photo principale
+setPrimaryPhoto(inventoryId: number, documentId: number): Promise<void>
+
+// Récupérer la photo principale
+getPrimaryPhoto(inventoryId: number): Promise<Document | null>
+```
+
+### `InventoryPhotoGallery` (Composant)
+
+Localisation : `src/shared/components/InventoryPhotoGallery.vue`
+
+**Props :**
+
+```typescript
+{
+  inventoryId: number;      // ID de l'état des lieux (requis)
+  editable?: boolean;       // Permet ajout/suppression (défaut: true)
+  maxPhotos?: number;       // Limite de photos (défaut: 20)
+}
+```
+
+**Utilisation dans les formulaires :**
+
+Le composant est intégré dans `InventoryFormModal` :
+
+- **Mode création** : Message informatif (photos ajoutables après création)
+- **Mode édition** : Galerie complète avec upload/suppression/gestion
+
+**Cas d'usage :**
+
+1. **État d'entrée** : Photographier l'état initial du logement
+2. **État de sortie** : Documenter l'état à la fin du bail
+3. **Organisation** : Photos principales pour vue d'ensemble, détails par pièce (à venir)
+
+### Différences avec les photos de logements
+
+| Fonctionnalité        | Logements               | États des lieux           |
+| --------------------- | ----------------------- | ------------------------- |
+| Max photos par défaut | 10                      | 20                        |
+| Disponibilité         | Toujours                | Après création uniquement |
+| Usage principal       | Marketing, vue générale | Documentation légale      |
+| Table liée            | `properties`            | `inventories`             |
+
 ## Évolutions futures
 
 Possibilités d'amélioration :
@@ -231,9 +314,14 @@ Possibilités d'amélioration :
 - Watermark automatique
 - Catégorisation des photos (extérieur, intérieur, détails)
 - Génération de miniatures
+- **Photos par pièce** : Association photos ↔ InventoryItem (équipements/pièces)
+- **Comparaison avant/après** : Interface pour comparer états d'entrée/sortie
+- **Annotations** : Marquer des zones sur les photos
 
 ## Références
 
 - [Dexie.js Blobs](https://dexie.org/docs/Blob)
 - [File API](https://developer.mozilla.org/en-US/docs/Web/API/File)
 - [IndexedDB Storage Limits](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Browser_storage_limits_and_eviction_criteria)
+- [OpenSpec: enhance-photo-display](../openspec/changes/archive/enhance-photo-display/)
+- [OpenSpec: add-inventory-photos](../openspec/changes/add-inventory-photos/)

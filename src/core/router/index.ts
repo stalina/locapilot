@@ -68,6 +68,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'États des lieux' },
   },
   {
+    path: '/inventories/:id',
+    name: 'inventory-detail',
+    component: () => import('@features/inventories/views/InventoryDetailView.vue'),
+    meta: { title: 'Détail État des lieux' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/features/settings/views/SettingsView.vue'),
@@ -88,7 +94,7 @@ const router = createRouter({
 
 // Update page title on route change
 router.afterEach(to => {
-  const title = to.meta.title as string || 'Locapilot';
+  const title = (to.meta.title as string) || 'Locapilot';
   document.title = `${title} - Locapilot`;
 });
 
