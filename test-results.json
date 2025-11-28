@@ -1,0 +1,3199 @@
+{
+  "config": {
+    "configFile": "/Users/astalin/Sources/perso/Locapilot/playwright.config.ts",
+    "rootDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 8
+    },
+    "preserveOutput": "always",
+    "reporter": [["json"]],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/astalin/Sources/perso/Locapilot/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/astalin/Sources/perso/Locapilot/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/astalin/Sources/perso/Locapilot/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/astalin/Sources/perso/Locapilot/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/astalin/Sources/perso/Locapilot/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/astalin/Sources/perso/Locapilot/e2e",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "accessibility.spec.ts",
+      "file": "accessibility.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Accessibility Tests",
+          "file": "accessibility.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should have proper page title",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2166,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.549Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-c308ecedb8ac1d24235d",
+              "file": "accessibility.spec.ts",
+              "line": 23,
+              "column": 3
+            },
+            {
+              "title": "should have lang attribute on html element",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3555,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.557Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-6a79be0ac294ba05906f",
+              "file": "accessibility.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "should have skip to main content link (optional)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3291,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "ℹ️  Suggestion: Add a \"skip to main content\" link for keyboard users\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.585Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-21246f0b5d733fe7190c",
+              "file": "accessibility.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "should have accessible navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 3309,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.585Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-4f5ce16bdffd82f7396d",
+              "file": "accessibility.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "should have proper heading hierarchy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 3272,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.550Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-6743550d6f8da32f6c0d",
+              "file": "accessibility.spec.ts",
+              "line": 65,
+              "column": 3
+            },
+            {
+              "title": "should have accessible buttons",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3582,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.569Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-e697ae375ffed07f162c",
+              "file": "accessibility.spec.ts",
+              "line": 80,
+              "column": 3
+            },
+            {
+              "title": "should have accessible form inputs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3262,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.571Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-e034501895dfd0a9e8eb",
+              "file": "accessibility.spec.ts",
+              "line": 104,
+              "column": 3
+            },
+            {
+              "title": "should support keyboard navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 3369,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:07.587Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-5285c0e56331422aca39",
+              "file": "accessibility.spec.ts",
+              "line": 134,
+              "column": 3
+            },
+            {
+              "title": "should have visible focus indicators",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3287,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:10.315Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-ec365eadc208d1026ff4",
+              "file": "accessibility.spec.ts",
+              "line": 167,
+              "column": 3
+            },
+            {
+              "title": "should have proper image alt text",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 1518,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:11.512Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-bac2808fc2aa860a810e",
+              "file": "accessibility.spec.ts",
+              "line": 195,
+              "column": 3
+            },
+            {
+              "title": "should have accessible modal dialogs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1586,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:11.525Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-5a5f3defed22b3385b2e",
+              "file": "accessibility.spec.ts",
+              "line": 218,
+              "column": 3
+            },
+            {
+              "title": "should have no duplicate IDs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1594,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:11.547Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-fdd12e379d81e71f4a74",
+              "file": "accessibility.spec.ts",
+              "line": 241,
+              "column": 3
+            },
+            {
+              "title": "should have proper ARIA roles",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1762,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:11.618Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-85637b25033de6a7675d",
+              "file": "accessibility.spec.ts",
+              "line": 251,
+              "column": 3
+            },
+            {
+              "title": "should have accessible color contrast (manual check recommended)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 1773,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "ℹ️  Manual check: Verify color contrast meets WCAG AA (4.5:1 for normal text)\n"
+                        },
+                        {
+                          "text": "   Body background: rgb(250, 250, 250)\n"
+                        },
+                        {
+                          "text": "   Body color: rgb(23, 23, 23)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:11.619Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-7291f5ea4835c8fbeaf0",
+              "file": "accessibility.spec.ts",
+              "line": 306,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "debug-hierarchy.spec.ts",
+      "file": "debug-hierarchy.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "debug DOM hierarchy",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4515,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n🏠 PROPERTIES HIERARCHY:\n"
+                    },
+                    {
+                      "text": "  0. DIV.view-container properties-view\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1400px, maxWidth: 1400px, width: 1400px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  1. MAIN.app-main\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1640px, maxWidth: none, width: 1640px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  2. DIV.main-wrapper\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1640px, maxWidth: none, width: 1640px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 1 1 0%, grid: none\n"
+                    },
+                    {
+                      "text": "  3. DIV.app-layout\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1920px, maxWidth: none, width: 1920px\n"
+                    },
+                    {
+                      "text": "     display: flex, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  4. DIV.\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1920px, maxWidth: none, width: 1920px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "\n\n👥 TENANTS HIERARCHY:\n"
+                    },
+                    {
+                      "text": "  0. DIV.view-container tenants-view\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1400px, maxWidth: 1400px, width: 1400px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  1. MAIN.app-main\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1640px, maxWidth: none, width: 1640px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  2. DIV.main-wrapper\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1640px, maxWidth: none, width: 1640px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 1 1 0%, grid: none\n"
+                    },
+                    {
+                      "text": "  3. DIV.app-layout\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1920px, maxWidth: none, width: 1920px\n"
+                    },
+                    {
+                      "text": "     display: flex, flex: 0 1 auto, grid: none\n"
+                    },
+                    {
+                      "text": "  4. DIV.\n"
+                    },
+                    {
+                      "text": "     clientWidth: 1920px, maxWidth: none, width: 1920px\n"
+                    },
+                    {
+                      "text": "     display: block, flex: 0 1 auto, grid: none\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:11.766Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6491b53b221dc661dc15-0c51368bec4606c40e89",
+          "file": "debug-hierarchy.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "debug-modal.spec.ts",
+      "file": "debug-modal.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "debug modal opening",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 7130,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[BROWSER debug]: [vite] connecting...\n"
+                    },
+                    {
+                      "text": "[BROWSER debug]: [vite] connected.\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: 🌱 Starting database seeding...\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ Database initialized successfully (version 1)\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ Created 5 properties\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ Created 3 tenants\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ Created 3 leases\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ Created 9 rent entries\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: 🎉 Database seeding completed successfully!\n"
+                    },
+                    {
+                      "text": "[BROWSER log]: ✅ App initialized successfully\n"
+                    },
+                    {
+                      "text": "\n=== Clicking new property button ===\n"
+                    },
+                    {
+                      "text": "Button visible: \u001b[33mtrue\u001b[39m\n"
+                    },
+                    {
+                      "text": "=== Waiting 2 seconds ===\n"
+                    },
+                    {
+                      "text": "Modal visible: \u001b[33mtrue\u001b[39m\n"
+                    },
+                    {
+                      "text": "Screenshot saved to debug-modal.png\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:11.777Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8b9dfa796cd16834ed33-798a5c0095ed900d6b1c",
+          "file": "debug-modal.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "debug-reload.spec.ts",
+      "file": "debug-reload.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "compare same route reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 4674,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n👥 TENANTS (first load):\n"
+                    },
+                    {
+                      "text": "  Container: 1400px\n"
+                    },
+                    {
+                      "text": "  Layout: 1920px\n"
+                    },
+                    {
+                      "text": "  Body: 1920px\n"
+                    },
+                    {
+                      "text": "  HTML: 1920px\n"
+                    },
+                    {
+                      "text": "\n👥 TENANTS (reload):\n"
+                    },
+                    {
+                      "text": "  Container: 1400px\n"
+                    },
+                    {
+                      "text": "  Layout: 1920px\n"
+                    },
+                    {
+                      "text": "  Body: 1920px\n"
+                    },
+                    {
+                      "text": "  HTML: 1920px\n"
+                    },
+                    {
+                      "text": "\n🏠 PROPERTIES:\n"
+                    },
+                    {
+                      "text": "  Container: 1400px\n"
+                    },
+                    {
+                      "text": "  Layout: 1920px\n"
+                    },
+                    {
+                      "text": "  Body: 1920px\n"
+                    },
+                    {
+                      "text": "  HTML: 1920px\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:13.220Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1a5e385498d325291ad7-f509e525b5d1e43056d9",
+          "file": "debug-reload.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "debug-sidebar.spec.ts",
+      "file": "debug-sidebar.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "debug sidebar width",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 3890,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n🏠 PROPERTIES:\n"
+                    },
+                    {
+                      "text": "  Sidebar: 279px (280px)\n"
+                    },
+                    {
+                      "text": "  App Layout: 1920px (flex)\n"
+                    },
+                    {
+                      "text": "  Main Wrapper: 1640px (flex: 1 1 0%)\n"
+                    },
+                    {
+                      "text": "  App Main: 1640px\n"
+                    },
+                    {
+                      "text": "\n👥 TENANTS:\n"
+                    },
+                    {
+                      "text": "  Sidebar: 279px (280px)\n"
+                    },
+                    {
+                      "text": "  App Layout: 1920px (flex)\n"
+                    },
+                    {
+                      "text": "  Main Wrapper: 1640px (flex: 1 1 0%)\n"
+                    },
+                    {
+                      "text": "  App Main: 1640px\n"
+                    },
+                    {
+                      "text": "\n⚖️  COMPARISON:\n"
+                    },
+                    {
+                      "text": "  Sidebar diff: 0px\n"
+                    },
+                    {
+                      "text": "  Layout diff: 0px\n"
+                    },
+                    {
+                      "text": "  Main diff: 0px\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:13.271Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bab380890155c0bb5724-6c33bc2e99e4639658f2",
+          "file": "debug-sidebar.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "debug-styles.spec.ts",
+      "file": "debug-styles.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "inspect computed styles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 4104,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n👥 TENANTS COMPUTED STYLES:\n"
+                    },
+                    {
+                      "text": "  #app: {\n    \"width\": \"1920px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .app-layout: {\n    \"width\": \"1920px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"flex\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .main-wrapper: {\n    \"width\": \"1640px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"1 1 0%\",\n    \"flexGrow\": \"1\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"0%\"\n}\n"
+                    },
+                    {
+                      "text": "  .app-main: {\n    \"width\": \"1640px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .view-container: {\n    \"width\": \"1400px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"1400px\",\n    \"margin\": \"0px 120px\",\n    \"padding\": \"32px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "\n\n🏠 PROPERTIES COMPUTED STYLES:\n"
+                    },
+                    {
+                      "text": "  #app: {\n    \"width\": \"1920px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .app-layout: {\n    \"width\": \"1920px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"flex\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .main-wrapper: {\n    \"width\": \"1640px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"1 1 0%\",\n    \"flexGrow\": \"1\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"0%\"\n}\n"
+                    },
+                    {
+                      "text": "  .app-main: {\n    \"width\": \"1640px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"none\",\n    \"margin\": \"0px\",\n    \"padding\": \"0px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    },
+                    {
+                      "text": "  .view-container: {\n    \"width\": \"1400px\",\n    \"minWidth\": \"0px\",\n    \"maxWidth\": \"1400px\",\n    \"margin\": \"0px 120px\",\n    \"padding\": \"32px\",\n    \"boxSizing\": \"border-box\",\n    \"display\": \"block\",\n    \"flex\": \"0 1 auto\",\n    \"flexGrow\": \"0\",\n    \"flexShrink\": \"1\",\n    \"flexBasis\": \"auto\"\n}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:13.272Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "555cbf936615e2feff2f-79caa7e32905eff0426b",
+          "file": "debug-styles.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "debug-width.spec.ts",
+      "file": "debug-width.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "debug container widths",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 3700,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n🏠 PROPERTIES VIEW:\n"
+                    },
+                    {
+                      "text": "{\n  \"view\": \"Properties\",\n  \"containerClass\": \"view-container properties-view\",\n  \"clientWidth\": 1400,\n  \"offsetWidth\": 1400,\n  \"scrollWidth\": 1400,\n  \"maxWidth\": \"1400px\",\n  \"width\": \"1400px\",\n  \"margin\": \"0px 120px\",\n  \"padding\": \"32px\",\n  \"boxSizing\": \"border-box\",\n  \"parentWidth\": 1640,\n  \"parentMaxWidth\": \"none\",\n  \"parentPadding\": \"0px\"\n}\n"
+                    },
+                    {
+                      "text": "\n👥 TENANTS VIEW:\n"
+                    },
+                    {
+                      "text": "{\n  \"view\": \"Tenants\",\n  \"containerClass\": \"view-container tenants-view\",\n  \"clientWidth\": 1400,\n  \"offsetWidth\": 1400,\n  \"scrollWidth\": 1400,\n  \"maxWidth\": \"1400px\",\n  \"width\": \"1400px\",\n  \"margin\": \"0px 120px\",\n  \"padding\": \"32px\",\n  \"boxSizing\": \"border-box\",\n  \"parentWidth\": 1640,\n  \"parentMaxWidth\": \"none\",\n  \"parentPadding\": \"0px\"\n}\n"
+                    },
+                    {
+                      "text": "\n⚖️  COMPARISON:\n"
+                    },
+                    {
+                      "text": "Properties container: 1400px\n"
+                    },
+                    {
+                      "text": "Tenants container: 1400px\n"
+                    },
+                    {
+                      "text": "Difference: 0px\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-28T13:47:13.436Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ac6e0bfa34a42d384f7c-d31d55c32c3f02e09869",
+          "file": "debug-width.spec.ts",
+          "line": 3,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "final-check.spec.ts",
+      "file": "final-check.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Visual Comparison - Final Check",
+          "file": "final-check.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "all main views have consistent structure",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 4030,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\nPropriétés:\n"
+                        },
+                        {
+                          "text": "  Container: 1400px (max: 1400px)\n"
+                        },
+                        {
+                          "text": "  Padding: 32px\n"
+                        },
+                        {
+                          "text": "  Stats Grid: 316px 316px 316px 316px\n"
+                        },
+                        {
+                          "text": "  Content Grid: 429.328px 429.328px 429.344px\n"
+                        },
+                        {
+                          "text": "  Gap: 24px\n"
+                        },
+                        {
+                          "text": "\nLocataires:\n"
+                        },
+                        {
+                          "text": "  Container: 1400px (max: 1400px)\n"
+                        },
+                        {
+                          "text": "  Padding: 32px\n"
+                        },
+                        {
+                          "text": "  Stats Grid: 316px 316px 316px 316px\n"
+                        },
+                        {
+                          "text": "  Content Grid: 429.328px 429.328px 429.344px\n"
+                        },
+                        {
+                          "text": "  Gap: 24px\n"
+                        },
+                        {
+                          "text": "\nBaux:\n"
+                        },
+                        {
+                          "text": "  Container: 1400px (max: 1400px)\n"
+                        },
+                        {
+                          "text": "  Padding: 32px\n"
+                        },
+                        {
+                          "text": "  Stats Grid: 316px 316px 316px 316px\n"
+                        },
+                        {
+                          "text": "  Content Grid: 429.328px 429.328px 429.344px\n"
+                        },
+                        {
+                          "text": "  Gap: 24px\n"
+                        },
+                        {
+                          "text": "\n\n═══════════════════════════════════════════\n"
+                        },
+                        {
+                          "text": "✅ VÉRIFICATION DE COHÉRENCE\n"
+                        },
+                        {
+                          "text": "═══════════════════════════════════════════\n\n"
+                        },
+                        {
+                          "text": "\nLocataires vs Propriétés:\n"
+                        },
+                        {
+                          "text": "  ✅ Toutes les métriques sont identiques\n"
+                        },
+                        {
+                          "text": "\nBaux vs Propriétés:\n"
+                        },
+                        {
+                          "text": "  ✅ Toutes les métriques sont identiques\n"
+                        },
+                        {
+                          "text": "\n\n🎉 SUCCÈS : Toutes les vues sont cohérentes !\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:13.437Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fb5b553503734b02aa9d-4b81095ea7e34584bc46",
+              "file": "final-check.spec.ts",
+              "line": 4,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "navigation.spec.ts",
+      "file": "navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Navigation",
+          "file": "navigation.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load the home page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2208,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:13.660Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-dab90c632f99b3abe803",
+              "file": "navigation.spec.ts",
+              "line": 4,
+              "column": 3
+            },
+            {
+              "title": "should navigate to dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1940,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:15.910Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-53726638009d49589ef3",
+              "file": "navigation.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should navigate to properties",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1910,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:16.482Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-ee6c53ea32d6e61542c5",
+              "file": "navigation.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "should navigate to tenants",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 2131,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.216Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-327b4c6de31c05f7684c",
+              "file": "navigation.spec.ts",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "should navigate to leases",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2256,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.220Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-ad54b9102f214d92080b",
+              "file": "navigation.spec.ts",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "should navigate to documents",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2298,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.472Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-af52c6d70c36474421a1",
+              "file": "navigation.spec.ts",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "should have responsive navigation menu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 1610,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.700Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-68a11ca2843cd7c4a676",
+              "file": "navigation.spec.ts",
+              "line": 61,
+              "column": 3
+            },
+            {
+              "title": "should highlight active navigation item",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1882,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.881Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-8c32442308196962cf34",
+              "file": "navigation.spec.ts",
+              "line": 74,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "properties-crud.spec.ts",
+      "file": "properties-crud.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Properties CRUD",
+          "file": "properties-crud.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display properties page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3007,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:17.962Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3f1647a1dda689809a59-9c00e37a9d2857f01c97",
+              "file": "properties-crud.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "should create a new property",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4768,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:18.461Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3f1647a1dda689809a59-a1c236e90010439cd8d5",
+              "file": "properties-crud.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "should validate required fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3715,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.191Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3f1647a1dda689809a59-038f7aa0beb8fc3a1998",
+              "file": "properties-crud.spec.ts",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "should edit a property",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "failed",
+                      "duration": 4908,
+                      "error": {
+                        "message": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Modifier\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Modifier\")')\u001b[22m\n",
+                        "stack": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Modifier\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Modifier\")')\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts:86:26",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                          "column": 26,
+                          "line": 86
+                        },
+                        "snippet": "  84 |     // Cliquer sur modifier\n  85 |     const editButton = page.locator('button:has-text(\"Modifier\")');\n> 86 |     if (await editButton.isVisible()) {\n     |                          ^\n  87 |       await editButton.click();\n  88 |       await page.getByTestId('modal').waitFor({ state: 'visible' });\n  89 |       "
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                            "column": 26,
+                            "line": 86
+                          },
+                          "message": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Modifier\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-default btn-sm\" data-testid=\"edit-property-button\">…</button> aka getByTestId('edit-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Modifier\")')\u001b[22m\n\n\n  84 |     // Cliquer sur modifier\n  85 |     const editButton = page.locator('button:has-text(\"Modifier\")');\n> 86 |     if (await editButton.isVisible()) {\n     |                          ^\n  87 |       await editButton.click();\n  88 |       await page.getByTestId('modal').waitFor({ state: 'visible' });\n  89 |       \n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts:86:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.382Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-edit-a-property-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-edit-a-property-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-edit-a-property-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                        "column": 26,
+                        "line": 86
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "3f1647a1dda689809a59-de1e760a40474c7d16eb",
+              "file": "properties-crud.spec.ts",
+              "line": 65,
+              "column": 3
+            },
+            {
+              "title": "should delete a property",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 4807,
+                      "error": {
+                        "message": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Supprimer\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Supprimer\")')\u001b[22m\n",
+                        "stack": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Supprimer\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Supprimer\")')\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts:130:28",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                          "column": 28,
+                          "line": 130
+                        },
+                        "snippet": "  128 |     // Supprimer\n  129 |     const deleteButton = page.locator('button:has-text(\"Supprimer\")');\n> 130 |     if (await deleteButton.isVisible()) {\n      |                            ^\n  131 |       await deleteButton.click();\n  132 |       await page.waitForTimeout(500);\n  133 |       "
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                            "column": 28,
+                            "line": 130
+                          },
+                          "message": "Error: locator.isVisible: Error: strict mode violation: locator('button:has-text(\"Supprimer\")') resolved to 6 elements:\n    1) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').first()\n    2) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(1)\n    3) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(2)\n    4) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(3)\n    5) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(4)\n    6) <button data-v-a3d55949=\"\" data-v-1fc1e182=\"\" class=\"btn btn-danger btn-sm\" data-testid=\"delete-property-button\">…</button> aka getByTestId('delete-property-button').nth(5)\n\nCall log:\n\u001b[2m    - checking visibility of locator('button:has-text(\"Supprimer\")')\u001b[22m\n\n\n  128 |     // Supprimer\n  129 |     const deleteButton = page.locator('button:has-text(\"Supprimer\")');\n> 130 |     if (await deleteButton.isVisible()) {\n      |                            ^\n  131 |       await deleteButton.click();\n  132 |       await page.waitForTimeout(500);\n  133 |       \n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts:130:28"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.462Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-delete-a-property-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-delete-a-property-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-crud-Properties-CRUD-should-delete-a-property-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties-crud.spec.ts",
+                        "column": 28,
+                        "line": 130
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "3f1647a1dda689809a59-fbd8551b188ad27bac78",
+              "file": "properties-crud.spec.ts",
+              "line": 109,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "properties.spec.ts",
+      "file": "properties.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Properties CRUD",
+          "file": "properties.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display properties list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2058,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.524Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-ec2dada0e6c040780045",
+              "file": "properties.spec.ts",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "should open create property modal",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 8211,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\nExpected pattern: \u001b[32m/Propriété|Ajouter/i\u001b[39m\nReceived string:  \u001b[31m\"Nouveau bien\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\u001b[22m\n\u001b[2m    9 × locator resolved to <h3 data-v-355ec75e=\"\" class=\"modal-title\" data-testid=\"modal-title\">Nouveau bien</h3>\u001b[22m\n\u001b[2m      - unexpected value \"Nouveau bien\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\nExpected pattern: \u001b[32m/Propriété|Ajouter/i\u001b[39m\nReceived string:  \u001b[31m\"Nouveau bien\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\u001b[22m\n\u001b[2m    9 × locator resolved to <h3 data-v-355ec75e=\"\" class=\"modal-title\" data-testid=\"modal-title\">Nouveau bien</h3>\u001b[22m\n\u001b[2m      - unexpected value \"Nouveau bien\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:24:57",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                          "column": 57,
+                          "line": 24
+                        },
+                        "snippet": "  22 |     \n  23 |     // Vérifier que le titre du modal est correct\n> 24 |     await expect(modal.locator('h2, h3, .modal-title')).toContainText(/Propriété|Ajouter/i);\n     |                                                         ^\n  25 |   });\n  26 |\n  27 |   test('should create a new property', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                            "column": 57,
+                            "line": 24
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\nExpected pattern: \u001b[32m/Propriété|Ajouter/i\u001b[39m\nReceived string:  \u001b[31m\"Nouveau bien\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.modal, [role=\"dialog\"]').locator('h2, h3, .modal-title')\u001b[22m\n\u001b[2m    9 × locator resolved to <h3 data-v-355ec75e=\"\" class=\"modal-title\" data-testid=\"modal-title\">Nouveau bien</h3>\u001b[22m\n\u001b[2m      - unexpected value \"Nouveau bien\"\u001b[22m\n\n\n  22 |     \n  23 |     // Vérifier que le titre du modal est correct\n> 24 |     await expect(modal.locator('h2, h3, .modal-title')).toContainText(/Propriété|Ajouter/i);\n     |                                                         ^\n  25 |   });\n  26 |\n  27 |   test('should create a new property', async ({ page }) => {\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:24:57"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.802Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                        "column": 57,
+                        "line": 24
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-9a74793b0706e77306bf",
+              "file": "properties.spec.ts",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "should create a new property",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 14501,
+                      "error": {
+                        "message": "TimeoutError: page.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"name\"], input[placeholder*=\"nom\"]')\u001b[22m\n",
+                        "stack": "TimeoutError: page.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"name\"], input[placeholder*=\"nom\"]')\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:32:16",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                          "column": 16,
+                          "line": 32
+                        },
+                        "snippet": "  30 |     \n  31 |     // Remplir le formulaire\n> 32 |     await page.fill('input[name=\"name\"], input[placeholder*=\"nom\"]', 'Appartement Test E2E');\n     |                ^\n  33 |     await page.fill('input[name=\"address\"], input[placeholder*=\"adresse\"]', '123 Rue de Test');\n  34 |     await page.fill('input[name=\"city\"], input[placeholder*=\"ville\"]', 'Paris');\n  35 |     await page.fill('input[name=\"postalCode\"], input[placeholder*=\"postal\"]', '75001');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                            "column": 16,
+                            "line": 32
+                          },
+                          "message": "TimeoutError: page.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\"name\"], input[placeholder*=\"nom\"]')\u001b[22m\n\n\n  30 |     \n  31 |     // Remplir le formulaire\n> 32 |     await page.fill('input[name=\"name\"], input[placeholder*=\"nom\"]', 'Appartement Test E2E');\n     |                ^\n  33 |     await page.fill('input[name=\"address\"], input[placeholder*=\"adresse\"]', '123 Rue de Test');\n  34 |     await page.fill('input[name=\"city\"], input[placeholder*=\"ville\"]', 'Paris');\n  35 |     await page.fill('input[name=\"postalCode\"], input[placeholder*=\"postal\"]', '75001');\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:32:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:19.815Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                        "column": 16,
+                        "line": 32
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-de03ac390fa87ddb92c9",
+              "file": "properties.spec.ts",
+              "line": 27,
+              "column": 3
+            },
+            {
+              "title": "should view property details",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "failed",
+                      "duration": 13380,
+                      "error": {
+                        "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n",
+                        "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:51:25",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                          "column": 25,
+                          "line": 51
+                        },
+                        "snippet": "  49 |     // Cliquer sur la première propriété\n  50 |     const firstProperty = page.locator('.property-card, .property-item').first();\n> 51 |     await firstProperty.click();\n     |                         ^\n  52 |     \n  53 |     // Vérifier que la page de détails se charge\n  54 |     await expect(page).toHaveURL(/\\/properties\\/\\d+/);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                            "column": 25,
+                            "line": 51
+                          },
+                          "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n\n\n  49 |     // Cliquer sur la première propriété\n  50 |     const firstProperty = page.locator('.property-card, .property-item').first();\n> 51 |     await firstProperty.click();\n     |                         ^\n  52 |     \n  53 |     // Vérifier que la page de détails se charge\n  54 |     await expect(page).toHaveURL(/\\/properties\\/\\d+/);\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:51:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:21.136Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-view-property-details-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-view-property-details-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-view-property-details-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                        "column": 25,
+                        "line": 51
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-fb76be5384fedf2efd0b",
+              "file": "properties.spec.ts",
+              "line": 48,
+              "column": 3
+            },
+            {
+              "title": "should filter properties",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2100,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:21.621Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-703f453bbe3198ba4d8f",
+              "file": "properties.spec.ts",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "should delete a property",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "failed",
+                      "duration": 7190,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.property-card, .property-item').first()\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n\u001b[2m    9 × locator resolved to <div data-v-42c8945b=\"\" data-v-1fc1e182=\"\" data-property-id=\"4\" class=\"property-card is-clickable\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.property-card, .property-item').first()\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n\u001b[2m    9 × locator resolved to <div data-v-42c8945b=\"\" data-v-1fc1e182=\"\" data-property-id=\"4\" class=\"property-card is-clickable\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:92:38",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                          "column": 38,
+                          "line": 92
+                        },
+                        "snippet": "  90 |       \n  91 |       // Vérifier que la propriété a été supprimée\n> 92 |       await expect(propertyCard).not.toBeVisible();\n     |                                      ^\n  93 |     }\n  94 |   });\n  95 | });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                            "column": 38,
+                            "line": 92
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).not.\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.property-card, .property-item').first()\nExpected: not visible\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"not toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.property-card, .property-item').first()\u001b[22m\n\u001b[2m    9 × locator resolved to <div data-v-42c8945b=\"\" data-v-1fc1e182=\"\" data-property-id=\"4\" class=\"property-card is-clickable\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"visible\"\u001b[22m\n\n\n  90 |       \n  91 |       // Vérifier que la propriété a été supprimée\n> 92 |       await expect(propertyCard).not.toBeVisible();\n     |                                      ^\n  93 |     }\n  94 |   });\n  95 | });\n    at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:92:38"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:22.980Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-delete-a-property-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-delete-a-property-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/properties-Properties-CRUD-should-delete-a-property-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts",
+                        "column": 38,
+                        "line": 92
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "f03b289860306a08f0a9-f997d252588420cb983c",
+              "file": "properties.spec.ts",
+              "line": 77,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "pwa.spec.ts",
+      "file": "pwa.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "PWA Features",
+          "file": "pwa.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should work offline",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 6837,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/properties/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:5173/\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    9 × unexpected value \"http://localhost:5173/\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/properties/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:5173/\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    9 × unexpected value \"http://localhost:5173/\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:19:24",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                          "column": 24,
+                          "line": 19
+                        },
+                        "snippet": "  17 |     \n  18 |     // Vérifier que la navigation fonctionne hors ligne\n> 19 |     await expect(page).toHaveURL(/\\/properties/);\n     |                        ^\n  20 |     \n  21 |     // Remettre en ligne\n  22 |     await context.setOffline(false);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                            "column": 24,
+                            "line": 19
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/\\/properties/\u001b[39m\nReceived string:  \u001b[31m\"http://localhost:5173/\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    9 × unexpected value \"http://localhost:5173/\"\u001b[22m\n\n\n  17 |     \n  18 |     // Vérifier que la navigation fonctionne hors ligne\n> 19 |     await expect(page).toHaveURL(/\\/properties/);\n     |                        ^\n  20 |     \n  21 |     // Remettre en ligne\n  22 |     await context.setOffline(false);\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:19:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:23.273Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-work-offline-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-work-offline-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-work-offline-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                        "column": 24,
+                        "line": 19
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-0972419f93f7bbf85ac8",
+              "file": "pwa.spec.ts",
+              "line": 4,
+              "column": 3
+            },
+            {
+              "title": "should have manifest.json",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 681,
+                      "error": {
+                        "message": "SyntaxError: Unexpected token '<', \"<!doctype \"... is not valid JSON",
+                        "stack": "SyntaxError: Unexpected token '<', \"<!doctype \"... is not valid JSON\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:29:22",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                          "column": 22,
+                          "line": 29
+                        },
+                        "snippet": "  27 |     expect(response?.status()).toBe(200);\n  28 |     \n> 29 |     const manifest = await response?.json();\n     |                      ^\n  30 |     expect(manifest).toHaveProperty('name');\n  31 |     expect(manifest).toHaveProperty('short_name');\n  32 |     expect(manifest).toHaveProperty('start_url');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                            "column": 22,
+                            "line": 29
+                          },
+                          "message": "SyntaxError: Unexpected token '<', \"<!doctype \"... is not valid JSON\n\n  27 |     expect(response?.status()).toBe(200);\n  28 |     \n> 29 |     const manifest = await response?.json();\n     |                      ^\n  30 |     expect(manifest).toHaveProperty('name');\n  31 |     expect(manifest).toHaveProperty('short_name');\n  32 |     expect(manifest).toHaveProperty('start_url');\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:29:22"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:23.775Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-manifest-json-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-manifest-json-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-manifest-json-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                        "column": 22,
+                        "line": 29
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-c990d9f6cdaf984243cd",
+              "file": "pwa.spec.ts",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "should have service worker",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1221,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:25.722Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-84b917f41c812d7f2ced",
+              "file": "pwa.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "should show install prompt on mobile",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 1167,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:25.723Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-a0afb17f1b6f8433980e",
+              "file": "pwa.spec.ts",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "should cache assets for offline use",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1527,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:25.722Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-533f3be6b5a4a69fbd9c",
+              "file": "pwa.spec.ts",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "should have proper meta tags for PWA",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 7,
+                      "status": "failed",
+                      "duration": 6838,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[name=\"apple-mobile-web-app-capable\"]')\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[name=\"apple-mobile-web-app-capable\"]')\u001b[22m\n\u001b[2m    9 × locator resolved to 0 elements\u001b[22m\n\u001b[2m      - unexpected value \"0\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[name=\"apple-mobile-web-app-capable\"]')\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[name=\"apple-mobile-web-app-capable\"]')\u001b[22m\n\u001b[2m    9 × locator resolved to 0 elements\u001b[22m\n\u001b[2m      - unexpected value \"0\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:82:38",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                          "column": 38,
+                          "line": 82
+                        },
+                        "snippet": "  80 |     \n  81 |     const appleMobileCapable = await page.locator('meta[name=\"apple-mobile-web-app-capable\"]');\n> 82 |     await expect(appleMobileCapable).toHaveCount(1);\n     |                                      ^\n  83 |   });\n  84 |\n  85 |   test('should be responsive on mobile devices', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                            "column": 38,
+                            "line": 82
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('meta[name=\"apple-mobile-web-app-capable\"]')\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('meta[name=\"apple-mobile-web-app-capable\"]')\u001b[22m\n\u001b[2m    9 × locator resolved to 0 elements\u001b[22m\n\u001b[2m      - unexpected value \"0\"\u001b[22m\n\n\n  80 |     \n  81 |     const appleMobileCapable = await page.locator('meta[name=\"apple-mobile-web-app-capable\"]');\n> 82 |     await expect(appleMobileCapable).toHaveCount(1);\n     |                                      ^\n  83 |   });\n  84 |\n  85 |   test('should be responsive on mobile devices', async ({ page }) => {\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:82:38"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:27.259Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                        "column": 38,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-05ddcac0138f0fc588e0",
+              "file": "pwa.spec.ts",
+              "line": 71,
+              "column": 3
+            },
+            {
+              "title": "should be responsive on mobile devices",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 827,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('nav, .sidebar, .mobile-nav')\nExpected: visible\nError: strict mode violation: locator('nav, .sidebar, .mobile-nav') resolved to 2 elements:\n    1) <aside class=\"sidebar\" data-v-0a65876a=\"\">…</aside> aka getByText('LocapilotTableau de')\n    2) <nav data-v-0a65876a=\"\" class=\"sidebar-nav\">…</nav> aka getByText('Tableau de bordPropriété')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, .sidebar, .mobile-nav')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('nav, .sidebar, .mobile-nav')\nExpected: visible\nError: strict mode violation: locator('nav, .sidebar, .mobile-nav') resolved to 2 elements:\n    1) <aside class=\"sidebar\" data-v-0a65876a=\"\">…</aside> aka getByText('LocapilotTableau de')\n    2) <nav data-v-0a65876a=\"\" class=\"sidebar-nav\">…</nav> aka getByText('Tableau de bordPropriété')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, .sidebar, .mobile-nav')\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:96:23",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                          "column": 23,
+                          "line": 96
+                        },
+                        "snippet": "  94 |     // Vérifier que la navigation mobile est visible\n  95 |     const nav = page.locator('nav, .sidebar, .mobile-nav');\n> 96 |     await expect(nav).toBeVisible();\n     |                       ^\n  97 |   });\n  98 |\n  99 |   test('should persist data locally', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                            "column": 23,
+                            "line": 96
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('nav, .sidebar, .mobile-nav')\nExpected: visible\nError: strict mode violation: locator('nav, .sidebar, .mobile-nav') resolved to 2 elements:\n    1) <aside class=\"sidebar\" data-v-0a65876a=\"\">…</aside> aka getByText('LocapilotTableau de')\n    2) <nav data-v-0a65876a=\"\" class=\"sidebar-nav\">…</nav> aka getByText('Tableau de bordPropriété')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('nav, .sidebar, .mobile-nav')\u001b[22m\n\n\n  94 |     // Vérifier que la navigation mobile est visible\n  95 |     const nav = page.locator('nav, .sidebar, .mobile-nav');\n> 96 |     await expect(nav).toBeVisible();\n     |                       ^\n  97 |   });\n  98 |\n  99 |   test('should persist data locally', async ({ page }) => {\n    at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:96:23"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:27.307Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts",
+                        "column": 23,
+                        "line": 96
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-68bbfd0426253062c183",
+              "file": "pwa.spec.ts",
+              "line": 85,
+              "column": 3
+            },
+            {
+              "title": "should persist data locally",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 783,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:27.614Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "30bf0965a0eb07fc9173-5d19a028a1561d04611b",
+              "file": "pwa.spec.ts",
+              "line": 99,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "rents-calendar-new-rent.spec.ts",
+      "file": "rents-calendar-new-rent.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Calendrier des loyers - Nouveau loyer",
+          "file": "rents-calendar-new-rent.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "devrait afficher le bouton \"Nouveau loyer\"",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1478,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:29.421Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-5d238b0185e7b5b4e5b9",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 12,
+              "column": 3
+            },
+            {
+              "title": "devrait ouvrir la modal de création au clic sur \"Nouveau loyer\"",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1640,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:29.435Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-df10a0af458291056826",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "devrait fermer la modal en cliquant sur le bouton fermer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1580,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:28.432Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-ee8141fa479df8142767",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "devrait fermer la modal en cliquant sur le bouton Annuler",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1691,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:30.039Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-5aad524cee48ec41760f",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "devrait fermer la modal en cliquant en dehors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1915,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:31.839Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-fa0cfe926daf4cacf51b",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "devrait pré-remplir les montants lors de la sélection d'un bail",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2249,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:31.862Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-1a5ea3e178100f8fd471",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 75,
+              "column": 3
+            },
+            {
+              "title": "devrait afficher le total à payer",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1385,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:31.248Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-48a999bd4ea6461692e8",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 114,
+              "column": 3
+            },
+            {
+              "title": "devrait désactiver le bouton de soumission si le formulaire est invalide",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1449,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:31.415Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-6c5c51cb30fbf12e0c9e",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 140,
+              "column": 3
+            },
+            {
+              "title": "devrait activer le bouton de soumission si le formulaire est valide",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1511,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:31.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-aef471f17e35ba86dce2",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "devrait créer un nouveau loyer avec succès",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1604,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:32.664Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "357128f9212fccb5328d-0f1560391cfa82bdeba8",
+              "file": "rents-calendar-new-rent.spec.ts",
+              "line": 175,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "visual-comparison.spec.ts",
+      "file": "visual-comparison.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Visual Comparison - View Structure Consistency",
+          "file": "visual-comparison.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "compare all views structure with Properties view reference",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 510,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                          "column": 16,
+                          "line": 5
+                        },
+                        "snippet": "  3 | test.describe('Visual Comparison - View Structure Consistency', () => {\n  4 |   test.beforeEach(async ({ page }) => {\n> 5 |     await page.goto('http://localhost:5175');\n    |                ^\n  6 |   });\n  7 |\n  8 |   test('compare all views structure with Properties view reference', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                            "column": 16,
+                            "line": 5
+                          },
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n\n\n  3 | test.describe('Visual Comparison - View Structure Consistency', () => {\n  4 |   test.beforeEach(async ({ page }) => {\n> 5 |     await page.goto('http://localhost:5175');\n    |                ^\n  6 |   });\n  7 |\n  8 |   test('compare all views structure with Properties view reference', async ({ page }) => {\n    at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:32.941Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/visual-comparison-Visual-C-704b3-h-Properties-view-reference-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/visual-comparison-Visual-C-704b3-h-Properties-view-reference-chromium/video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                        "column": 16,
+                        "line": 5
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "93f91707f26ac243999c-471e86ee55c26bcc5c02",
+              "file": "visual-comparison.spec.ts",
+              "line": 8,
+              "column": 3
+            },
+            {
+              "title": "capture screenshots for visual comparison",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 628,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n\n    at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16",
+                        "location": {
+                          "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                          "column": 16,
+                          "line": 5
+                        },
+                        "snippet": "  3 | test.describe('Visual Comparison - View Structure Consistency', () => {\n  4 |   test.beforeEach(async ({ page }) => {\n> 5 |     await page.goto('http://localhost:5175');\n    |                ^\n  6 |   });\n  7 |\n  8 |   test('compare all views structure with Properties view reference', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                            "column": 16,
+                            "line": 5
+                          },
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5175/\", waiting until \"load\"\u001b[22m\n\n\n  3 | test.describe('Visual Comparison - View Structure Consistency', () => {\n  4 |   test.beforeEach(async ({ page }) => {\n> 5 |     await page.goto('http://localhost:5175');\n    |                ^\n  6 |   });\n  7 |\n  8 |   test('compare all views structure with Properties view reference', async ({ page }) => {\n    at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-28T13:47:33.309Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/visual-comparison-Visual-C-237a3-shots-for-visual-comparison-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/astalin/Sources/perso/Locapilot/test-results/visual-comparison-Visual-C-237a3-shots-for-visual-comparison-chromium/video.webm"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts",
+                        "column": 16,
+                        "line": 5
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "93f91707f26ac243999c-41fb536c8109ee90e8c6",
+              "file": "visual-comparison.spec.ts",
+              "line": 175,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-28T13:47:05.097Z",
+    "duration": 29556.831000000002,
+    "expected": 48,
+    "skipped": 0,
+    "unexpected": 12,
+    "flaky": 0
+  }
+}

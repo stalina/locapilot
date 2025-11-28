@@ -1,0 +1,679 @@
+
+Running 60 tests using 8 workers
+
+ℹ️  Suggestion: Add a "skip to main content" link for keyboard users
+  ✓   2 [chromium] › e2e/accessibility.spec.ts:23:3 › Accessibility Tests › should have proper page title (2.7s)
+  ✓   5 [chromium] › e2e/accessibility.spec.ts:104:3 › Accessibility Tests › should have accessible form inputs (2.7s)
+  ✓   7 [chromium] › e2e/accessibility.spec.ts:29:3 › Accessibility Tests › should have lang attribute on html element (2.7s)
+  ✓   6 [chromium] › e2e/accessibility.spec.ts:65:3 › Accessibility Tests › should have proper heading hierarchy (2.7s)
+  ✓   8 [chromium] › e2e/accessibility.spec.ts:35:3 › Accessibility Tests › should have skip to main content link (optional) (2.7s)
+  ✓   4 [chromium] › e2e/accessibility.spec.ts:80:3 › Accessibility Tests › should have accessible buttons (2.8s)
+  ✓   1 [chromium] › e2e/accessibility.spec.ts:134:3 › Accessibility Tests › should support keyboard navigation (2.9s)
+  ✓   3 [chromium] › e2e/accessibility.spec.ts:45:3 › Accessibility Tests › should have accessible navigation (2.9s)
+[BROWSER debug]: [vite] connecting...
+[BROWSER debug]: [vite] connected.
+[BROWSER log]: 🌱 Starting database seeding...
+[BROWSER log]: ✅ Database initialized successfully (version 1)
+[BROWSER log]: ✅ Created 5 properties
+[BROWSER log]: ✅ Created 3 tenants
+[BROWSER log]: ✅ Created 3 leases
+[BROWSER log]: ✅ Created 9 rent entries
+[BROWSER log]: 🎉 Database seeding completed successfully!
+[BROWSER log]: ✅ App initialized successfully
+  ✓  10 [chromium] › e2e/accessibility.spec.ts:195:3 › Accessibility Tests › should have proper image alt text (1.4s)
+  ✓  11 [chromium] › e2e/accessibility.spec.ts:218:3 › Accessibility Tests › should have accessible modal dialogs (1.4s)
+  ✓  12 [chromium] › e2e/accessibility.spec.ts:241:3 › Accessibility Tests › should have no duplicate IDs (1.5s)
+  ✓  13 [chromium] › e2e/accessibility.spec.ts:251:3 › Accessibility Tests › should have proper ARIA roles (1.6s)
+  ✓   9 [chromium] › e2e/accessibility.spec.ts:167:3 › Accessibility Tests › should have visible focus indicators (1.7s)
+ℹ️  Manual check: Verify color contrast meets WCAG AA (4.5:1 for normal text)
+   Body background: rgb(250, 250, 250)
+   Body color: rgb(23, 23, 23)
+  ✓  14 [chromium] › e2e/accessibility.spec.ts:306:3 › Accessibility Tests › should have accessible color contrast (manual check recommended) (2.0s)
+
+🏠 PROPERTIES HIERARCHY:
+  0. DIV.view-container properties-view
+     clientWidth: 1400px, maxWidth: 1400px, width: 1400px
+     display: block, flex: 0 1 auto, grid: none
+  1. MAIN.app-main
+     clientWidth: 1640px, maxWidth: none, width: 1640px
+     display: block, flex: 0 1 auto, grid: none
+  2. DIV.main-wrapper
+     clientWidth: 1640px, maxWidth: none, width: 1640px
+     display: block, flex: 1 1 0%, grid: none
+  3. DIV.app-layout
+     clientWidth: 1920px, maxWidth: none, width: 1920px
+     display: flex, flex: 0 1 auto, grid: none
+  4. DIV.
+     clientWidth: 1920px, maxWidth: none, width: 1920px
+     display: block, flex: 0 1 auto, grid: none
+
+=== Clicking new property button ===
+Button visible: [33mtrue[39m
+
+
+👥 TENANTS HIERARCHY:
+  0. DIV.view-container tenants-view
+     clientWidth: 1400px, maxWidth: 1400px, width: 1400px
+     display: block, flex: 0 1 auto, grid: none
+  1. MAIN.app-main
+     clientWidth: 1640px, maxWidth: none, width: 1640px
+     display: block, flex: 0 1 auto, grid: none
+  2. DIV.main-wrapper
+     clientWidth: 1640px, maxWidth: none, width: 1640px
+     display: block, flex: 1 1 0%, grid: none
+  3. DIV.app-layout
+     clientWidth: 1920px, maxWidth: none, width: 1920px
+     display: flex, flex: 0 1 auto, grid: none
+  4. DIV.
+     clientWidth: 1920px, maxWidth: none, width: 1920px
+     display: block, flex: 0 1 auto, grid: none
+
+👥 TENANTS (first load):
+  Container: 1400px
+  Layout: 1920px
+  Body: 1920px
+  HTML: 1920px
+
+Propriétés:
+  Container: 1400px (max: 1400px)
+  Padding: 32px
+  Stats Grid: 316px 316px 316px 316px
+  Content Grid: 429.328px 429.328px 429.344px
+  Gap: 24px
+
+👥 TENANTS COMPUTED STYLES:
+  #app: {
+    "width": "1920px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .app-layout: {
+    "width": "1920px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "flex",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .main-wrapper: {
+    "width": "1640px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "1 1 0%",
+    "flexGrow": "1",
+    "flexShrink": "1",
+    "flexBasis": "0%"
+}
+  .app-main: {
+    "width": "1640px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .view-container: {
+    "width": "1400px",
+    "minWidth": "0px",
+    "maxWidth": "1400px",
+    "margin": "0px 120px",
+    "padding": "32px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  ✓  16 [chromium] › e2e/debug-hierarchy.spec.ts:3:1 › debug DOM hierarchy (3.5s)
+
+🏠 PROPERTIES VIEW:
+{
+  "view": "Properties",
+  "containerClass": "view-container properties-view",
+  "clientWidth": 1400,
+  "offsetWidth": 1400,
+  "scrollWidth": 1400,
+  "maxWidth": "1400px",
+  "width": "1400px",
+  "margin": "0px 120px",
+  "padding": "32px",
+  "boxSizing": "border-box",
+  "parentWidth": 1640,
+  "parentMaxWidth": "none",
+  "parentPadding": "0px"
+}
+
+🏠 PROPERTIES:
+  Sidebar: 279px (280px)
+  App Layout: 1920px (flex)
+  Main Wrapper: 1640px (flex: 1 1 0%)
+  App Main: 1640px
+
+Locataires:
+  Container: 1400px (max: 1400px)
+  Padding: 32px
+  Stats Grid: 316px 316px 316px 316px
+  Content Grid: 429.328px 429.328px 429.344px
+  Gap: 24px
+
+👥 TENANTS VIEW:
+{
+  "view": "Tenants",
+  "containerClass": "view-container tenants-view",
+  "clientWidth": 1400,
+  "offsetWidth": 1400,
+  "scrollWidth": 1400,
+  "maxWidth": "1400px",
+  "width": "1400px",
+  "margin": "0px 120px",
+  "padding": "32px",
+  "boxSizing": "border-box",
+  "parentWidth": 1640,
+  "parentMaxWidth": "none",
+  "parentPadding": "0px"
+}
+
+⚖️  COMPARISON:
+Properties container: 1400px
+Tenants container: 1400px
+Difference: 0px
+  ✓  22 [chromium] › e2e/navigation.spec.ts:4:3 › Navigation › should load the home page (1.8s)
+
+👥 TENANTS (reload):
+  Container: 1400px
+  Layout: 1920px
+  Body: 1920px
+  HTML: 1920px
+
+👥 TENANTS:
+  Sidebar: 279px (280px)
+  App Layout: 1920px (flex)
+  Main Wrapper: 1640px (flex: 1 1 0%)
+  App Main: 1640px
+
+⚖️  COMPARISON:
+  Sidebar diff: 0px
+  Layout diff: 0px
+  Main diff: 0px
+
+Baux:
+  Container: 1400px (max: 1400px)
+  Padding: 32px
+  Stats Grid: 316px 316px 316px 316px
+  Content Grid: 429.328px 429.328px 429.344px
+  Gap: 24px
+
+
+═══════════════════════════════════════════
+✅ VÉRIFICATION DE COHÉRENCE
+═══════════════════════════════════════════
+
+
+Locataires vs Propriétés:
+  ✅ Toutes les métriques sont identiques
+
+Baux vs Propriétés:
+  ✅ Toutes les métriques sont identiques
+
+
+🎉 SUCCÈS : Toutes les vues sont cohérentes !
+
+
+🏠 PROPERTIES COMPUTED STYLES:
+  #app: {
+    "width": "1920px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .app-layout: {
+    "width": "1920px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "flex",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .main-wrapper: {
+    "width": "1640px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "1 1 0%",
+    "flexGrow": "1",
+    "flexShrink": "1",
+    "flexBasis": "0%"
+}
+  .app-main: {
+    "width": "1640px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "margin": "0px",
+    "padding": "0px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  .view-container: {
+    "width": "1400px",
+    "minWidth": "0px",
+    "maxWidth": "1400px",
+    "margin": "0px 120px",
+    "padding": "32px",
+    "boxSizing": "border-box",
+    "display": "block",
+    "flex": "0 1 auto",
+    "flexGrow": "0",
+    "flexShrink": "1",
+    "flexBasis": "auto"
+}
+  ✓  20 [chromium] › e2e/debug-width.spec.ts:3:1 › debug container widths (3.3s)
+
+🏠 PROPERTIES:
+  Container: 1400px
+  Layout: 1920px
+  Body: 1920px
+  HTML: 1920px
+  ✓  18 [chromium] › e2e/debug-sidebar.spec.ts:3:1 › debug sidebar width (3.6s)
+  ✓  21 [chromium] › e2e/final-check.spec.ts:4:3 › Visual Comparison - Final Check › all main views have consistent structure (3.4s)
+  ✓  19 [chromium] › e2e/debug-styles.spec.ts:3:1 › inspect computed styles (3.8s)
+  ✓  17 [chromium] › e2e/debug-reload.spec.ts:3:1 › compare same route reload (4.3s)
+  ✓  23 [chromium] › e2e/navigation.spec.ts:11:3 › Navigation › should navigate to dashboard (2.0s)
+  ✓  24 [chromium] › e2e/navigation.spec.ts:24:3 › Navigation › should navigate to properties (2.2s)
+  ✓  25 [chromium] › e2e/navigation.spec.ts:34:3 › Navigation › should navigate to tenants (1.9s)
+  ✓  28 [chromium] › e2e/navigation.spec.ts:61:3 › Navigation › should have responsive navigation menu (1.6s)
+  ✓  27 [chromium] › e2e/navigation.spec.ts:52:3 › Navigation › should navigate to documents (1.8s)
+  ✓  26 [chromium] › e2e/navigation.spec.ts:43:3 › Navigation › should navigate to leases (2.0s)
+  ✓  29 [chromium] › e2e/navigation.spec.ts:74:3 › Navigation › should highlight active navigation item (1.5s)
+  ✓  35 [chromium] › e2e/properties.spec.ts:9:3 › Properties CRUD › should display properties list (1.6s)
+  ✓  30 [chromium] › e2e/properties-crud.spec.ts:11:3 › Properties CRUD › should display properties page (3.1s)
+=== Waiting 2 seconds ===
+  ✓  31 [chromium] › e2e/properties-crud.spec.ts:16:3 › Properties CRUD › should create a new property (4.3s)
+  ✘  38 [chromium] › e2e/properties.spec.ts:48:3 › Properties CRUD › should view property details (1.9s)
+  ✓  32 [chromium] › e2e/properties-crud.spec.ts:53:3 › Properties CRUD › should validate required fields (4.3s)
+  ✓  34 [chromium] › e2e/properties-crud.spec.ts:109:3 › Properties CRUD › should delete a property (4.2s)
+  ✓  33 [chromium] › e2e/properties-crud.spec.ts:65:3 › Properties CRUD › should edit a property (4.4s)
+Modal visible: [33mtrue[39m
+  ✘  41 [chromium] › e2e/pwa.spec.ts:25:3 › PWA Features › should have manifest.json (611ms)
+Screenshot saved to debug-modal.png
+  ✓  42 [chromium] › e2e/pwa.spec.ts:35:3 › PWA Features › should have service worker (729ms)
+  ✓  15 [chromium] › e2e/debug-modal.spec.ts:3:1 › debug modal opening (12.1s)
+  ✓  39 [chromium] › e2e/properties.spec.ts:60:3 › Properties CRUD › should filter properties (1.6s)
+  ✘  45 [chromium] › e2e/pwa.spec.ts:85:3 › PWA Features › should be responsive on mobile devices (640ms)
+  ✓  43 [chromium] › e2e/pwa.spec.ts:59:3 › PWA Features › should cache assets for offline use (1.0s)
+  ✓  47 [chromium] › e2e/rents-calendar-new-rent.spec.ts:12:3 › Calendrier des loyers - Nouveau loyer › devrait afficher le bouton "Nouveau loyer" (1.2s)
+  ✓  48 [chromium] › e2e/pwa.spec.ts:46:3 › PWA Features › should show install prompt on mobile (733ms)
+  ✘  36 [chromium] › e2e/properties.spec.ts:15:3 › Properties CRUD › should open create property modal (7.5s)
+  ✓  49 [chromium] › e2e/rents-calendar-new-rent.spec.ts:18:3 › Calendrier des loyers - Nouveau loyer › devrait ouvrir la modal de création au clic sur "Nouveau loyer" (1.4s)
+  ✓  51 [chromium] › e2e/pwa.spec.ts:99:3 › PWA Features › should persist data locally (723ms)
+  ✓  50 [chromium] › e2e/rents-calendar-new-rent.spec.ts:37:3 › Calendrier des loyers - Nouveau loyer › devrait fermer la modal en cliquant sur le bouton fermer (1.7s)
+  ✓  52 [chromium] › e2e/rents-calendar-new-rent.spec.ts:63:3 › Calendrier des loyers - Nouveau loyer › devrait fermer la modal en cliquant en dehors (1.3s)
+  ✓  54 [chromium] › e2e/rents-calendar-new-rent.spec.ts:114:3 › Calendrier des loyers - Nouveau loyer › devrait afficher le total à payer (1.2s)
+  ✓  53 [chromium] › e2e/rents-calendar-new-rent.spec.ts:75:3 › Calendrier des loyers - Nouveau loyer › devrait pré-remplir les montants lors de la sélection d'un bail (1.8s)
+  ✘  40 [chromium] › e2e/pwa.spec.ts:4:3 › PWA Features › should work offline (6.8s)
+  ✓  56 [chromium] › e2e/rents-calendar-new-rent.spec.ts:140:3 › Calendrier des loyers - Nouveau loyer › devrait désactiver le bouton de soumission si le formulaire est invalide (1.3s)
+  ✓  55 [chromium] › e2e/rents-calendar-new-rent.spec.ts:50:3 › Calendrier des loyers - Nouveau loyer › devrait fermer la modal en cliquant sur le bouton Annuler (1.6s)
+  ✘  44 [chromium] › e2e/pwa.spec.ts:71:3 › PWA Features › should have proper meta tags for PWA (6.3s)
+  ✘  59 [chromium] › e2e/visual-comparison.spec.ts:175:3 › Visual Comparison - View Structure Consistency › capture screenshots for visual comparison (337ms)
+  ✓  57 [chromium] › e2e/rents-calendar-new-rent.spec.ts:152:3 › Calendrier des loyers - Nouveau loyer › devrait activer le bouton de soumission si le formulaire est valide (1.2s)
+  ✓  58 [chromium] › e2e/rents-calendar-new-rent.spec.ts:175:3 › Calendrier des loyers - Nouveau loyer › devrait créer un nouveau loyer avec succès (1.3s)
+  ✘  60 [chromium] › e2e/visual-comparison.spec.ts:8:3 › Visual Comparison - View Structure Consistency › compare all views structure with Properties view reference (387ms)
+  ✘  46 [chromium] › e2e/properties.spec.ts:77:3 › Properties CRUD › should delete a property (7.0s)
+  ✘  37 [chromium] › e2e/properties.spec.ts:27:3 › Properties CRUD › should create a new property (12.3s)
+
+
+  1) [chromium] › e2e/properties.spec.ts:15:3 › Properties CRUD › should open create property modal 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.modal, [role="dialog"]').locator('h2, h3, .modal-title')
+    Expected pattern: [32m/Propriété|Ajouter/i[39m
+    Received string:  [31m"Nouveau bien"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('.modal, [role="dialog"]').locator('h2, h3, .modal-title')[22m
+    [2m    9 × locator resolved to <h3 data-v-355ec75e="" class="modal-title" data-testid="modal-title">Nouveau bien</h3>[22m
+    [2m      - unexpected value "Nouveau bien"[22m
+
+
+      22 |     
+      23 |     // Vérifier que le titre du modal est correct
+    > 24 |     await expect(modal.locator('h2, h3, .modal-title')).toContainText(/Propriété|Ajouter/i);
+         |                                                         ^
+      25 |   });
+      26 |
+      27 |   test('should create a new property', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:24:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/properties-Properties-CRUD-should-open-create-property-modal-chromium/error-context.md
+
+  2) [chromium] › e2e/properties.spec.ts:27:3 › Properties CRUD › should create a new property ─────
+
+    TimeoutError: page.fill: Timeout 10000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="name"], input[placeholder*="nom"]')[22m
+
+
+      30 |     
+      31 |     // Remplir le formulaire
+    > 32 |     await page.fill('input[name="name"], input[placeholder*="nom"]', 'Appartement Test E2E');
+         |                ^
+      33 |     await page.fill('input[name="address"], input[placeholder*="adresse"]', '123 Rue de Test');
+      34 |     await page.fill('input[name="city"], input[placeholder*="ville"]', 'Paris');
+      35 |     await page.fill('input[name="postalCode"], input[placeholder*="postal"]', '75001');
+        at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:32:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/properties-Properties-CRUD-should-create-a-new-property-chromium/error-context.md
+
+  3) [chromium] › e2e/properties.spec.ts:48:3 › Properties CRUD › should view property details ─────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('h1, .property-name')
+    Expected: visible
+    Error: strict mode violation: locator('h1, .property-name') resolved to 2 elements:
+        1) <h1>12 Rue Victor Hugo</h1> aka locator('header').getByRole('heading', { name: 'Rue Victor Hugo' })
+        2) <h1>12 Rue Victor Hugo</h1> aka getByRole('heading', { name: 'Rue Victor Hugo' }).nth(1)
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1, .property-name')[22m
+
+
+      55 |     
+      56 |     // Vérifier que les informations sont affichées
+    > 57 |     await expect(page.locator('h1, .property-name')).toBeVisible();
+         |                                                      ^
+      58 |   });
+      59 |
+      60 |   test('should filter properties', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:57:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-view-property-details-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-view-property-details-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/properties-Properties-CRUD-should-view-property-details-chromium/error-context.md
+
+  4) [chromium] › e2e/properties.spec.ts:77:3 › Properties CRUD › should delete a property ─────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).not.[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('.property-card, .property-item').first()
+    Expected: not visible
+    Received: visible
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "not toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('.property-card, .property-item').first()[22m
+    [2m    9 × locator resolved to <div data-v-42c8945b="" data-v-1fc1e182="" data-property-id="1" class="property-card is-clickable">…</div>[22m
+    [2m      - unexpected value "visible"[22m
+
+
+      90 |       
+      91 |       // Vérifier que la propriété a été supprimée
+    > 92 |       await expect(propertyCard).not.toBeVisible();
+         |                                      ^
+      93 |     }
+      94 |   });
+      95 | });
+        at /Users/astalin/Sources/perso/Locapilot/e2e/properties.spec.ts:92:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-delete-a-property-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/properties-Properties-CRUD-should-delete-a-property-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/properties-Properties-CRUD-should-delete-a-property-chromium/error-context.md
+
+  5) [chromium] › e2e/pwa.spec.ts:4:3 › PWA Features › should work offline ─────────────────────────
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/properties/[39m
+    Received string:  [31m"http://localhost:5173/"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 × unexpected value "http://localhost:5173/"[22m
+
+
+      17 |     
+      18 |     // Vérifier que la navigation fonctionne hors ligne
+    > 19 |     await expect(page).toHaveURL(/\/properties/);
+         |                        ^
+      20 |     
+      21 |     // Remettre en ligne
+      22 |     await context.setOffline(false);
+        at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:19:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-work-offline-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-work-offline-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/pwa-PWA-Features-should-work-offline-chromium/error-context.md
+
+  6) [chromium] › e2e/pwa.spec.ts:25:3 › PWA Features › should have manifest.json ──────────────────
+
+    SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON
+
+      27 |     expect(response?.status()).toBe(200);
+      28 |     
+    > 29 |     const manifest = await response?.json();
+         |                      ^
+      30 |     expect(manifest).toHaveProperty('name');
+      31 |     expect(manifest).toHaveProperty('short_name');
+      32 |     expect(manifest).toHaveProperty('start_url');
+        at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:29:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-have-manifest-json-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-have-manifest-json-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/pwa-PWA-Features-should-have-manifest-json-chromium/error-context.md
+
+  7) [chromium] › e2e/pwa.spec.ts:71:3 › PWA Features › should have proper meta tags for PWA ───────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveCount[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator:  locator('meta[name="apple-mobile-web-app-capable"]')
+    Expected: [32m1[39m
+    Received: [31m0[39m
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toHaveCount" with timeout 5000ms[22m
+    [2m  - waiting for locator('meta[name="apple-mobile-web-app-capable"]')[22m
+    [2m    9 × locator resolved to 0 elements[22m
+    [2m      - unexpected value "0"[22m
+
+
+      80 |     
+      81 |     const appleMobileCapable = await page.locator('meta[name="apple-mobile-web-app-capable"]');
+    > 82 |     await expect(appleMobileCapable).toHaveCount(1);
+         |                                      ^
+      83 |   });
+      84 |
+      85 |   test('should be responsive on mobile devices', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:82:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/pwa-PWA-Features-should-have-proper-meta-tags-for-PWA-chromium/error-context.md
+
+  8) [chromium] › e2e/pwa.spec.ts:85:3 › PWA Features › should be responsive on mobile devices ─────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('nav, .sidebar, .mobile-nav')
+    Expected: visible
+    Error: strict mode violation: locator('nav, .sidebar, .mobile-nav') resolved to 2 elements:
+        1) <aside class="sidebar" data-v-0a65876a="">…</aside> aka getByText('LocapilotTableau de')
+        2) <nav data-v-0a65876a="" class="sidebar-nav">…</nav> aka getByText('Tableau de bordPropriété')
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('nav, .sidebar, .mobile-nav')[22m
+
+
+      94 |     // Vérifier que la navigation mobile est visible
+      95 |     const nav = page.locator('nav, .sidebar, .mobile-nav');
+    > 96 |     await expect(nav).toBeVisible();
+         |                       ^
+      97 |   });
+      98 |
+      99 |   test('should persist data locally', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/pwa.spec.ts:96:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/pwa-PWA-Features-should-be-responsive-on-mobile-devices-chromium/error-context.md
+
+  9) [chromium] › e2e/visual-comparison.spec.ts:8:3 › Visual Comparison - View Structure Consistency › compare all views structure with Properties view reference 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/
+    Call log:
+    [2m  - navigating to "http://localhost:5175/", waiting until "load"[22m
+
+
+      3 | test.describe('Visual Comparison - View Structure Consistency', () => {
+      4 |   test.beforeEach(async ({ page }) => {
+    > 5 |     await page.goto('http://localhost:5175');
+        |                ^
+      6 |   });
+      7 |
+      8 |   test('compare all views structure with Properties view reference', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/visual-comparison-Visual-C-704b3-h-Properties-view-reference-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/visual-comparison-Visual-C-704b3-h-Properties-view-reference-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [chromium] › e2e/visual-comparison.spec.ts:175:3 › Visual Comparison - View Structure Consistency › capture screenshots for visual comparison 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5175/
+    Call log:
+    [2m  - navigating to "http://localhost:5175/", waiting until "load"[22m
+
+
+      3 | test.describe('Visual Comparison - View Structure Consistency', () => {
+      4 |   test.beforeEach(async ({ page }) => {
+    > 5 |     await page.goto('http://localhost:5175');
+        |                ^
+      6 |   });
+      7 |
+      8 |   test('compare all views structure with Properties view reference', async ({ page }) => {
+        at /Users/astalin/Sources/perso/Locapilot/e2e/visual-comparison.spec.ts:5:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/visual-comparison-Visual-C-237a3-shots-for-visual-comparison-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/visual-comparison-Visual-C-237a3-shots-for-visual-comparison-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10 failed
+    [chromium] › e2e/properties.spec.ts:15:3 › Properties CRUD › should open create property modal ─
+    [chromium] › e2e/properties.spec.ts:27:3 › Properties CRUD › should create a new property ──────
+    [chromium] › e2e/properties.spec.ts:48:3 › Properties CRUD › should view property details ──────
+    [chromium] › e2e/properties.spec.ts:77:3 › Properties CRUD › should delete a property ──────────
+    [chromium] › e2e/pwa.spec.ts:4:3 › PWA Features › should work offline ──────────────────────────
+    [chromium] › e2e/pwa.spec.ts:25:3 › PWA Features › should have manifest.json ───────────────────
+    [chromium] › e2e/pwa.spec.ts:71:3 › PWA Features › should have proper meta tags for PWA ────────
+    [chromium] › e2e/pwa.spec.ts:85:3 › PWA Features › should be responsive on mobile devices ──────
+    [chromium] › e2e/visual-comparison.spec.ts:8:3 › Visual Comparison - View Structure Consistency › compare all views structure with Properties view reference 
+    [chromium] › e2e/visual-comparison.spec.ts:175:3 › Visual Comparison - View Structure Consistency › capture screenshots for visual comparison 
+  50 passed (27.3s)

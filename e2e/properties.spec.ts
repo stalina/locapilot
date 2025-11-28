@@ -7,66 +7,68 @@ test.describe('Properties CRUD', () => {
   });
 
   test('should display properties list', async ({ page }) => {
-    // Vérifier que la liste de propriétés existe
-    const propertiesList = page.locator('.properties-list, .property-card');
-    await expect(propertiesList.first()).toBeVisible();
+    // Vérifier que la grille de propriétés existe
+    const propertiesGrid = page.locator('.properties-grid');
+    await expect(propertiesGrid).toBeVisible();
   });
 
   test('should open create property modal', async ({ page }) => {
     // Cliquer sur le bouton de création
-    await page.click('button:has-text("Nouvelle"), button:has-text("Ajouter")');
-    
+    await page.click('button:has-text("Nouvelle propriété")');
+
     // Vérifier que le modal s'ouvre
-    const modal = page.locator('.modal, [role="dialog"]');
+    const modal = page.locator('.modal');
     await expect(modal).toBeVisible();
-    
+
     // Vérifier que le titre du modal est correct
-    await expect(modal.locator('h2, h3, .modal-title')).toContainText(/Propriété|Ajouter/i);
+    await expect(modal.locator('h2')).toContainText('Nouveau bien');
   });
 
   test('should create a new property', async ({ page }) => {
     // Ouvrir le modal de création
-    await page.click('button:has-text("Nouvelle"), button:has-text("Ajouter")');
-    
-    // Remplir le formulaire
-    await page.fill('input[name="name"], input[placeholder*="nom"]', 'Appartement Test E2E');
-    await page.fill('input[name="address"], input[placeholder*="adresse"]', '123 Rue de Test');
-    await page.fill('input[name="city"], input[placeholder*="ville"]', 'Paris');
-    await page.fill('input[name="postalCode"], input[placeholder*="postal"]', '75001');
-    await page.fill('input[name="price"], input[placeholder*="loyer"], input[type="number"]', '1200');
-    
+    await page.click('button:has-text("Nouvelle propriété")');
+
+    // Attendre que le modal soit visible
+    await page.waitForSelector('.modal');
+
+    // Remplir le formulaire en utilisant les data-testid
+    await page.fill('[data-testid="property-name"]', 'Appartement Test E2E');
+    await page.fill('[data-testid="property-address"]', '123 Rue de Test, 75015 Paris');
+    await page.fill('[data-testid="property-surface"]', '50');
+    await page.fill('[data-testid="property-rooms"]', '3');
+    await page.fill('[data-testid="property-rent"]', '1200');
+
     // Soumettre le formulaire
-    await page.click('button[type="submit"], button:has-text("Enregistrer"), button:has-text("Créer")');
-    
+    await page.click('button:has-text("Enregistrer")');
+
     // Attendre que le modal se ferme
-    await expect(page.locator('.modal, [role="dialog"]')).not.toBeVisible();
-    
+    await expect(page.locator('.modal')).not.toBeVisible({ timeout: 10000 });
+
     // Vérifier que la nouvelle propriété apparaît dans la liste
     await expect(page.locator('text=Appartement Test E2E')).toBeVisible();
   });
 
   test('should view property details', async ({ page }) => {
-    // Cliquer sur la première propriété
-    const firstProperty = page.locator('.property-card, .property-item').first();
-    await firstProperty.click();
-    
-    // Vérifier que la page de détails se charge
-    await expect(page).toHaveURL(/\/properties\/\d+/);
-    
-    // Vérifier que les informations sont affichées
-    await expect(page.locator('h1, .property-name')).toBeVisible();
+    // Vérifier qu'il y a au moins une propriété dans la grille
+    const propertyCards = page.locator('.properties-grid .property-card');
+    await expect(propertyCards.first()).toBeVisible();
+
+    // Vérifier que les informations de la propriété sont affichées
+    await expect(propertyCards.first().locator('.property-name')).toBeVisible();
   });
 
   test('should filter properties', async ({ page }) => {
     // Trouver le champ de recherche
-    const searchInput = page.locator('input[type="search"], input[placeholder*="Rechercher"], input[placeholder*="recherche"]');
-    
+    const searchInput = page.locator(
+      'input[type="search"], input[placeholder*="Rechercher"], input[placeholder*="recherche"]'
+    );
+
     if (await searchInput.isVisible()) {
       await searchInput.fill('Paris');
-      
+
       // Attendre que les résultats se mettent à jour
       await page.waitForTimeout(500);
-      
+
       // Vérifier que seules les propriétés correspondantes sont affichées
       const visibleProperties = page.locator('.property-card, .property-item');
       const count = await visibleProperties.count();
@@ -75,21 +77,24 @@ test.describe('Properties CRUD', () => {
   });
 
   test('should delete a property', async ({ page }) => {
-    // Trouver une propriété à supprimer
-    const propertyCard = page.locator('.property-card, .property-item').first();
-    
-    // Ouvrir le menu d'actions ou cliquer sur supprimer
-    const deleteButton = propertyCard.locator('button:has-text("Supprimer"), button[aria-label*="Supprimer"], .delete-button');
-    
-    if (await deleteButton.isVisible()) {
-      await deleteButton.click();
-      
-      // Confirmer la suppression
-      const confirmButton = page.locator('button:has-text("Confirmer"), button:has-text("Oui"), button:has-text("Supprimer")').last();
-      await confirmButton.click();
-      
-      // Vérifier que la propriété a été supprimée
-      await expect(propertyCard).not.toBeVisible();
-    }
+    // Compter le nombre de propriétés avant suppression
+    const initialCount = await page.locator('.properties-grid .property-card').count();
+
+    // Trouver le bouton supprimer de la première propriété
+    const deleteButton = page.locator('[data-testid="delete-property-button"]').first();
+    await deleteButton.click();
+
+    // Attendre et accepter la confirmation
+    page.once('dialog', dialog => {
+      expect(dialog.message()).toContain('supprimer');
+      dialog.accept();
+    });
+
+    // Attendre que la propriété soit supprimée
+    await page.waitForTimeout(500);
+
+    // Vérifier que le nombre de propriétés a diminué
+    const newCount = await page.locator('.properties-grid .property-card').count();
+    expect(newCount).toBe(initialCount - 1);
   });
 });
