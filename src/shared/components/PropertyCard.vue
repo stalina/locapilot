@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import Badge from './Badge.vue';
+import { usePropertyPhotos } from '@/shared/composables/usePropertyPhotos';
 import type { Property } from '@/db/types';
 
 interface Props {
@@ -15,6 +16,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   click: [id: number];
 }>();
+
+const { getPrimaryPhoto, createPhotoUrl, revokePhotoUrl } = usePropertyPhotos();
+const primaryPhotoUrl = ref<string | null>(null);
 
 const statusConfig = computed(() => {
   const configs = {
@@ -59,25 +63,41 @@ function handleClick() {
     emit('click', props.property.id);
   }
 }
+
+async function loadPrimaryPhoto() {
+  if (!props.property.id) return;
+
+  const photo = await getPrimaryPhoto(props.property.id);
+  if (photo) {
+    primaryPhotoUrl.value = createPhotoUrl(photo.data);
+  }
+}
+
+onMounted(() => {
+  loadPrimaryPhoto();
+});
+
+onUnmounted(() => {
+  if (primaryPhotoUrl.value) {
+    revokePhotoUrl(primaryPhotoUrl.value);
+  }
+});
 </script>
 
 <template>
-  <div 
-    class="property-card" 
+  <div
+    class="property-card"
     :class="{ 'is-clickable': clickable }"
     :data-property-id="property.id"
     @click="handleClick"
   >
-    <!-- Image placeholder with gradient -->
+    <!-- Image with photo or gradient fallback -->
     <div class="property-image">
-      <div class="image-overlay">
+      <img v-if="primaryPhotoUrl" :src="primaryPhotoUrl" :alt="property.name" class="photo" />
+      <div v-else class="image-overlay">
         <i :class="`mdi mdi-${typeIcon}`" class="type-icon"></i>
       </div>
-      <Badge 
-        :variant="statusConfig.variant" 
-        :icon="statusConfig.icon"
-        class="status-badge"
-      >
+      <Badge :variant="statusConfig.variant" :icon="statusConfig.icon" class="status-badge">
         {{ statusConfig.label }}
       </Badge>
     </div>
@@ -142,6 +162,13 @@ function handleClick() {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.property-image .photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .image-overlay {

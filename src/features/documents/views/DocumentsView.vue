@@ -20,10 +20,7 @@ const filteredDocuments = computed(() => {
   // Search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter(
-      d =>
-        d.name.toLowerCase().includes(query)
-    );
+    result = result.filter(d => d.name.toLowerCase().includes(query));
   }
 
   // Filter by type
@@ -126,18 +123,12 @@ onMounted(async () => {
     </div>
 
     <!-- Upload Zone -->
-    <UploadZone
-      :disabled="documentsStore.isLoading"
-      @upload="handleUpload"
-    />
+    <UploadZone :disabled="documentsStore.isLoading" @upload="handleUpload" />
 
     <!-- Upload Progress -->
     <div v-if="documentsStore.uploadProgress > 0" class="upload-progress">
       <div class="progress-bar">
-        <div
-          class="progress-fill"
-          :style="{ width: `${documentsStore.uploadProgress}%` }"
-        ></div>
+        <div class="progress-fill" :style="{ width: `${documentsStore.uploadProgress}%` }"></div>
       </div>
       <span class="progress-text">{{ documentsStore.uploadProgress }}%</span>
     </div>
@@ -170,10 +161,10 @@ onMounted(async () => {
           </button>
           <button
             class="filter-button"
-            :class="{ active: filterType === 'other' }"
-            @click="filterType = 'other'"
+            :class="{ active: filterType === 'photo' }"
+            @click="filterType = 'photo'"
           >
-            Autres
+            Photos
           </button>
           <button
             class="filter-button"
@@ -202,9 +193,7 @@ onMounted(async () => {
     <div v-else-if="filteredDocuments.length === 0" class="empty-state">
       <i class="mdi mdi-file-outline"></i>
       <h3>Aucun document trouvé</h3>
-      <p v-if="searchQuery || filterType !== 'all'">
-        Essayez de modifier vos filtres de recherche
-      </p>
+      <p v-if="searchQuery || filterType !== 'all'">Essayez de modifier vos filtres de recherche</p>
       <p v-else>Commencez par téléverser vos premiers documents</p>
     </div>
 

@@ -26,13 +26,23 @@ export const migrations: Migration[] = [
     },
   },
 
-  // Exemple de migration future (version 2)
+  {
+    version: 2,
+    description:
+      'Ajout du support des photos pour les propriétés (champ photos[], type document photo)',
+    upgrade: async () => {
+      // Migration gérée dans schema.ts version 2
+      // Initialise le champ photos: [] pour toutes les propriétés existantes
+    },
+  },
+
+  // Exemple de migration future (version 3)
   // {
-  //   version: 2,
+  //   version: 3,
   //   description: 'Ajout de la colonne "archived" aux propriétés',
   //   upgrade: async (transaction) => {
   //     // Les migrations Dexie sont déclaratives
-  //     // Il suffit de définir le nouveau schéma dans db.version(2).stores()
+  //     // Il suffit de définir le nouveau schéma dans db.version(3).stores()
   //     // et Dexie gère automatiquement l'ajout de colonnes
   //
   //     // Pour des transformations de données complexes:
@@ -47,12 +57,12 @@ export const migrations: Migration[] = [
   //   },
   // },
 
-  // Exemple: Migration version 3 - Ajout table inventories
+  // Exemple: Migration version 4 - Ajout table inventories
   // {
-  //   version: 3,
+  //   version: 4,
   //   description: 'Ajout de la table inventories pour les états des lieux',
   //   upgrade: async () => {
-  //     // Schéma défini dans db.version(3).stores() dans schema.ts
+  //     // Schéma défini dans db.version(4).stores() dans schema.ts
   //     // Pas besoin de code ici sauf pour migration de données
   //   },
   // },

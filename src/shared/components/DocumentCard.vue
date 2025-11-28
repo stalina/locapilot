@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import type { Document } from '@/db/types';
 
 interface Props {
@@ -13,7 +13,22 @@ const emit = defineEmits<{
   delete: [];
 }>();
 
+const photoPreviewUrl = ref<string | null>(null);
+
+const isPhoto = computed(() => {
+  return props.document.type === 'photo' || props.document.mimeType?.startsWith('image/');
+});
+
 const typeConfig = computed(() => {
+  if (isPhoto.value) {
+    return {
+      label: 'Photo',
+      icon: 'image',
+      color: 'accent',
+      gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+    };
+  }
+
   switch (props.document.type) {
     case 'lease':
       return {
@@ -56,7 +71,7 @@ const typeConfig = computed(() => {
 
 const fileExtension = computed(() => {
   const parts = props.document.name.split('.');
-  return parts.length > 1 ? (parts[parts.length - 1]?.toUpperCase() || '') : '';
+  return parts.length > 1 ? parts[parts.length - 1]?.toUpperCase() || '' : '';
 });
 
 const formattedSize = computed(() => {
@@ -83,14 +98,38 @@ function handleDownload() {
 function handleDelete() {
   emit('delete');
 }
+
+function loadPhotoPreview() {
+  if (isPhoto.value && props.document.data) {
+    photoPreviewUrl.value = URL.createObjectURL(props.document.data);
+  }
+}
+
+onMounted(() => {
+  loadPhotoPreview();
+});
+
+onUnmounted(() => {
+  if (photoPreviewUrl.value) {
+    URL.revokeObjectURL(photoPreviewUrl.value);
+  }
+});
 </script>
 
 <template>
   <div class="document-card">
-    <!-- Icon Section -->
-    <div class="document-icon" :style="{ background: typeConfig.gradient }">
-      <i class="mdi" :class="`mdi-${typeConfig.icon}`"></i>
-      <span v-if="fileExtension" class="file-extension">{{ fileExtension }}</span>
+    <!-- Icon/Photo Section -->
+    <div class="document-icon" :style="isPhoto ? {} : { background: typeConfig.gradient }">
+      <img
+        v-if="isPhoto && photoPreviewUrl"
+        :src="photoPreviewUrl"
+        :alt="document.name"
+        class="photo-preview"
+      />
+      <template v-else>
+        <i class="mdi" :class="`mdi-${typeConfig.icon}`"></i>
+        <span v-if="fileExtension" class="file-extension">{{ fileExtension }}</span>
+      </template>
     </div>
 
     <!-- Content Section -->
@@ -159,6 +198,14 @@ function handleDelete() {
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+.photo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .document-icon i {

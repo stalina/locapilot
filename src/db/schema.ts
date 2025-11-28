@@ -16,6 +16,7 @@ export interface Property {
   deposit?: number;
   description?: string;
   features?: string[];
+  photos?: number[]; // Document IDs for property photos
   status: 'vacant' | 'occupied' | 'maintenance';
   createdAt: Date;
   updatedAt: Date;
@@ -72,7 +73,16 @@ export interface Rent {
 export interface Document {
   id?: number;
   name: string;
-  type: 'lease' | 'receipt' | 'inventory' | 'id' | 'payslip' | 'invoice' | 'insurance' | 'other';
+  type:
+    | 'lease'
+    | 'receipt'
+    | 'inventory'
+    | 'id'
+    | 'payslip'
+    | 'invoice'
+    | 'insurance'
+    | 'photo'
+    | 'other';
   relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant';
   relatedEntityId?: number;
   mimeType: string;
@@ -150,9 +160,29 @@ export class LocapilotDB extends Dexie {
       settings: '++id, &key',
     });
 
+    // Version 2 - Ajout du support des photos pour les propriétés
+    this.version(2)
+      .stores({
+        properties: '++id, name, status, createdAt',
+        tenants: '++id, email, status, lastName, createdAt',
+        leases: '++id, propertyId, status, startDate, endDate',
+        rents: '++id, leaseId, dueDate, status, paidDate',
+        documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+        inventories: '++id, leaseId, type, date',
+        communications: '++id, relatedEntityType, relatedEntityId, date, type',
+        settings: '++id, &key',
+      })
+      .upgrade(async transaction => {
+        // Initialiser le champ photos pour toutes les propriétés existantes
+        const properties = await transaction.table('properties').toArray();
+        await Promise.all(
+          properties.map(p => transaction.table('properties').update(p.id!, { photos: [] }))
+        );
+      });
+
     // Futures versions de migration à ajouter ici
     // Exemple:
-    // this.version(2).stores({
+    // this.version(3).stores({
     //   properties: '++id, name, status, archived, createdAt',
     //   // ... autres tables (doivent être redéfinies même si inchangées)
     // }).upgrade(async (transaction) => {

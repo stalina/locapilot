@@ -7,6 +7,7 @@ import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
+import PhotoGallery from '@/shared/components/PhotoGallery.vue';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 import type { Property } from '@/db/types';
 
@@ -30,7 +31,7 @@ const typeLabels: Record<Property['type'], string> = {
 
 const statusConfig = computed(() => {
   if (!propertiesStore.currentProperty) return null;
-  
+
   const configs = {
     occupied: { variant: 'success' as const, label: 'Occupé', icon: 'check-circle' },
     vacant: { variant: 'info' as const, label: 'Vacant', icon: 'home-outline' },
@@ -106,9 +107,7 @@ onMounted(async () => {
     <div v-else-if="propertiesStore.error" class="error-state">
       <i class="mdi mdi-alert-circle"></i>
       <h3>{{ propertiesStore.error }}</h3>
-      <Button variant="outline" icon="arrow-left" @click="handleBack">
-        Retour à la liste
-      </Button>
+      <Button variant="outline" icon="arrow-left" @click="handleBack"> Retour à la liste </Button>
     </div>
 
     <!-- Property Detail -->
@@ -118,25 +117,15 @@ onMounted(async () => {
         <div>
           <h1>{{ propertiesStore.currentProperty.name }}</h1>
           <div class="header-meta">
-            <Badge
-              v-if="statusConfig"
-              :variant="statusConfig.variant"
-              :icon="statusConfig.icon"
-            >
+            <Badge v-if="statusConfig" :variant="statusConfig.variant" :icon="statusConfig.icon">
               {{ statusConfig.label }}
             </Badge>
           </div>
         </div>
         <div class="header-actions">
-          <Button variant="outline" icon="arrow-left" @click="handleBack">
-            Retour
-          </Button>
-          <Button variant="outline" icon="pencil" @click="handleEdit">
-            Modifier
-          </Button>
-          <Button variant="error" icon="delete" @click="handleDelete">
-            Supprimer
-          </Button>
+          <Button variant="outline" icon="arrow-left" @click="handleBack"> Retour </Button>
+          <Button variant="outline" icon="pencil" @click="handleEdit"> Modifier </Button>
+          <Button variant="error" icon="delete" @click="handleDelete"> Supprimer </Button>
         </div>
       </header>
 
@@ -148,11 +137,7 @@ onMounted(async () => {
         <div class="hero-content">
           <div class="title-row">
             <h1>{{ propertiesStore.currentProperty.name }}</h1>
-            <Badge
-              v-if="statusConfig"
-              :variant="statusConfig.variant"
-              :icon="statusConfig.icon"
-            >
+            <Badge v-if="statusConfig" :variant="statusConfig.variant" :icon="statusConfig.icon">
               {{ statusConfig.label }}
             </Badge>
           </div>
@@ -181,15 +166,11 @@ onMounted(async () => {
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">Surface</span>
-                <span class="info-value">
-                  {{ propertiesStore.currentProperty.surface }} m²
-                </span>
+                <span class="info-value"> {{ propertiesStore.currentProperty.surface }} m² </span>
               </div>
               <div class="info-item">
                 <span class="info-label">Nombre de pièces</span>
-                <span class="info-value">
-                  {{ propertiesStore.currentProperty.rooms }} pièces
-                </span>
+                <span class="info-value"> {{ propertiesStore.currentProperty.rooms }} pièces </span>
               </div>
               <div class="info-item">
                 <span class="info-label">Loyer mensuel</span>
@@ -234,6 +215,21 @@ onMounted(async () => {
               {{ propertiesStore.currentProperty.description }}
             </p>
           </Card>
+
+          <!-- Photos Gallery -->
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-image-multiple"></i>
+                Photos du logement
+              </h2>
+            </div>
+            <PhotoGallery
+              :property-id="propertyId"
+              :editable="true"
+              @update="() => propertiesStore.fetchPropertyById(propertyId)"
+            />
+          </Card>
         </div>
 
         <!-- Right Column: Related Data -->
@@ -243,12 +239,14 @@ onMounted(async () => {
             <div class="card-header">
               <h2>
                 <i class="mdi mdi-account"></i>
-                Locataire{{ currentTenants.length > 1 ? 's' : '' }} actuel{{ currentTenants.length > 1 ? 's' : '' }}
+                Locataire{{ currentTenants.length > 1 ? 's' : '' }} actuel{{
+                  currentTenants.length > 1 ? 's' : ''
+                }}
               </h2>
             </div>
             <div class="tenants-list">
-              <div 
-                v-for="tenant in currentTenants" 
+              <div
+                v-for="tenant in currentTenants"
                 :key="tenant.id"
                 class="tenant-item clickable"
                 @click="tenant.id && goToTenant(tenant.id)"
@@ -264,15 +262,21 @@ onMounted(async () => {
             <div class="lease-summary" v-if="activeLease">
               <div class="summary-item">
                 <span class="label">Loyer mensuel</span>
-                <span class="value">{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span>
+                <span class="value"
+                  >{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span
+                >
               </div>
               <div class="summary-item">
                 <span class="label">Échéance</span>
-                <span class="value">{{ activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString('fr-FR') : 'Indéterminée' }}</span>
+                <span class="value">{{
+                  activeLease.endDate
+                    ? new Date(activeLease.endDate).toLocaleDateString('fr-FR')
+                    : 'Indéterminée'
+                }}</span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 icon="file-document"
                 @click="activeLease.id && goToLease(activeLease.id)"
                 class="view-lease-btn"
@@ -292,19 +296,33 @@ onMounted(async () => {
               <Badge variant="info">{{ propertyLeases.length }}</Badge>
             </div>
             <div class="leases-list">
-              <div 
-                v-for="lease in propertyLeases" 
+              <div
+                v-for="lease in propertyLeases"
                 :key="lease.id"
                 :class="['lease-item clickable', lease.status]"
                 @click="lease.id && goToLease(lease.id)"
               >
                 <div class="lease-header">
-                  <Badge 
-                    :variant="lease.status === 'active' ? 'success' : lease.status === 'pending' ? 'warning' : 'default'"
+                  <Badge
+                    :variant="
+                      lease.status === 'active'
+                        ? 'success'
+                        : lease.status === 'pending'
+                          ? 'warning'
+                          : 'default'
+                    "
                   >
-                    {{ lease.status === 'active' ? 'Actif' : lease.status === 'pending' ? 'En attente' : 'Terminé' }}
+                    {{
+                      lease.status === 'active'
+                        ? 'Actif'
+                        : lease.status === 'pending'
+                          ? 'En attente'
+                          : 'Terminé'
+                    }}
                   </Badge>
-                  <span class="lease-date">{{ new Date(lease.startDate).toLocaleDateString('fr-FR') }}</span>
+                  <span class="lease-date">{{
+                    new Date(lease.startDate).toLocaleDateString('fr-FR')
+                  }}</span>
                 </div>
                 <div class="lease-amount">{{ lease.rent.toLocaleString('fr-FR') }} € / mois</div>
                 <i class="mdi mdi-chevron-right"></i>
@@ -327,9 +345,7 @@ onMounted(async () => {
               <Button variant="outline" icon="currency-eur" @click="() => {}">
                 Voir les loyers
               </Button>
-              <Button variant="outline" icon="file-multiple" @click="() => {}">
-                Documents
-              </Button>
+              <Button variant="outline" icon="file-multiple" @click="() => {}"> Documents </Button>
               <Button variant="outline" icon="clipboard-check" @click="() => {}">
                 États des lieux
               </Button>

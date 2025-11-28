@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Badge from '@/shared/components/Badge.vue';
+import { usePropertyPhotos } from '@/shared/composables/usePropertyPhotos';
 import type { Lease } from '@/db/schema';
 
 interface Props {
@@ -12,6 +13,9 @@ interface Props {
 
 const props = defineProps<Props>();
 const router = useRouter();
+
+const { getPrimaryPhoto, createPhotoUrl, revokePhotoUrl } = usePropertyPhotos();
+const propertyPhotoUrl = ref<string | null>(null);
 
 const statusConfig = computed(() => {
   const configs = {
@@ -45,22 +49,28 @@ const totalMonthlyAmount = computed(() => {
 
 const daysUntilExpiration = computed(() => {
   if (!props.lease.endDate || props.lease.status !== 'active') return null;
-  
+
   const today = new Date();
   const endDate = new Date(props.lease.endDate);
   const diffTime = endDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   return diffDays;
 });
 
 const expirationWarning = computed(() => {
   const days = daysUntilExpiration.value;
   if (days === null) return null;
-  
+
   if (days < 0) return { severity: 'expired', text: '⚠️ Bail expiré', icon: 'alert-circle' };
-  if (days <= 30) return { severity: 'urgent', text: `Expire dans ${days} jour${days > 1 ? 's' : ''}`, icon: 'alarm' };
-  if (days <= 90) return { severity: 'warning', text: `Expire dans ${days} jours`, icon: 'calendar-alert' };
+  if (days <= 30)
+    return {
+      severity: 'urgent',
+      text: `Expire dans ${days} jour${days > 1 ? 's' : ''}`,
+      icon: 'alarm',
+    };
+  if (days <= 90)
+    return { severity: 'warning', text: `Expire dans ${days} jours`, icon: 'calendar-alert' };
   return null;
 });
 
@@ -69,23 +79,39 @@ const handleClick = () => {
     router.push(`/leases/${props.lease.id}`);
   }
 };
+
+async function loadPropertyPhoto() {
+  const photo = await getPrimaryPhoto(props.lease.propertyId);
+  if (photo) {
+    propertyPhotoUrl.value = createPhotoUrl(photo.data);
+  }
+}
+
+onMounted(() => {
+  loadPropertyPhoto();
+});
+
+onUnmounted(() => {
+  if (propertyPhotoUrl.value) {
+    revokePhotoUrl(propertyPhotoUrl.value);
+  }
+});
 </script>
 
 <template>
-  <div 
-    class="lease-card" 
-    @click="handleClick"
-  >
-    <!-- Header with gradient -->
+  <div class="lease-card" @click="handleClick">
+    <!-- Header with photo or gradient -->
     <div class="lease-header">
-      <div class="header-overlay">
+      <img
+        v-if="propertyPhotoUrl"
+        :src="propertyPhotoUrl"
+        :alt="propertyName || 'Propriété'"
+        class="header-photo"
+      />
+      <div v-else class="header-overlay">
         <i class="mdi mdi-file-document-outline header-icon"></i>
       </div>
-      <Badge 
-        :variant="statusConfig.variant" 
-        :icon="statusConfig.icon"
-        class="status-badge"
-      >
+      <Badge :variant="statusConfig.variant" :icon="statusConfig.icon" class="status-badge">
         {{ statusConfig.label }}
       </Badge>
     </div>
@@ -128,7 +154,10 @@ const handleClick = () => {
         </div>
       </div>
 
-      <div v-if="expirationWarning" :class="['expiration-alert', `alert-${expirationWarning.severity}`]">
+      <div
+        v-if="expirationWarning"
+        :class="['expiration-alert', `alert-${expirationWarning.severity}`]"
+      >
         <i :class="`mdi mdi-${expirationWarning.icon}`"></i>
         <span>{{ expirationWarning.text }}</span>
       </div>
@@ -163,6 +192,13 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.header-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .header-overlay {
