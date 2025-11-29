@@ -8,6 +8,7 @@ import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
 import PhotoGallery from '@/shared/components/PhotoGallery.vue';
+import RichTextDisplay from '@/shared/components/RichTextDisplay.vue';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 import type { Property } from '@/db/types';
 
@@ -211,9 +212,7 @@ onMounted(async () => {
                 Description
               </h2>
             </div>
-            <p class="description">
-              {{ propertiesStore.currentProperty.description }}
-            </p>
+            <RichTextDisplay :content="propertiesStore.currentProperty.description" />
           </Card>
 
           <!-- Photos Gallery -->

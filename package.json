@@ -19,8 +19,13 @@
   },
   "dependencies": {
     "@mdi/font": "7.4.47",
+    "@tiptap/extension-link": "3.11.1",
+    "@tiptap/extension-placeholder": "3.11.1",
+    "@tiptap/starter-kit": "3.11.1",
+    "@tiptap/vue-3": "3.11.1",
     "dayjs": "1.11.19",
     "dexie": "4.2.1",
+    "dompurify": "3.3.0",
     "pinia": "3.0.4",
     "primeicons": "7.0.0",
     "primevue": "4.4.1",
@@ -30,6 +35,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
+    "@types/dompurify": "3.0.5",
     "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "8.48.0",
     "@typescript-eslint/parser": "8.48.0",

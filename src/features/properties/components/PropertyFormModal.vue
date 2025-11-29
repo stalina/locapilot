@@ -4,6 +4,7 @@ import { usePropertiesStore } from '@/features/properties/stores/propertiesStore
 import Modal from '@/shared/components/Modal.vue';
 import Input from '@/shared/components/Input.vue';
 import Button from '@/shared/components/Button.vue';
+import RichTextEditor from '@/shared/components/RichTextEditor.vue';
 import type { Property } from '@/db/types';
 
 interface Props {
@@ -42,29 +43,33 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 const isEditMode = computed(() => !!props.property);
-const modalTitle = computed(() => isEditMode.value ? 'Modifier le bien' : 'Nouveau bien');
+const modalTitle = computed(() => (isEditMode.value ? 'Modifier le bien' : 'Nouveau bien'));
 
 // Watch property changes to populate form
-watch(() => props.property, (newProperty) => {
-  if (newProperty) {
-    formData.value = {
-      name: newProperty.name,
-      address: newProperty.address,
-      type: newProperty.type,
-      surface: newProperty.surface,
-      rooms: newProperty.rooms,
-      bedrooms: newProperty.bedrooms ?? null,
-      bathrooms: newProperty.bathrooms ?? null,
-      rent: newProperty.rent,
-      charges: newProperty.charges ?? 0,
-      deposit: newProperty.deposit ?? null,
-      status: newProperty.status,
-      description: newProperty.description || '',
-    };
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
+watch(
+  () => props.property,
+  newProperty => {
+    if (newProperty) {
+      formData.value = {
+        name: newProperty.name,
+        address: newProperty.address,
+        type: newProperty.type,
+        surface: newProperty.surface,
+        rooms: newProperty.rooms,
+        bedrooms: newProperty.bedrooms ?? null,
+        bathrooms: newProperty.bathrooms ?? null,
+        rent: newProperty.rent,
+        charges: newProperty.charges ?? 0,
+        deposit: newProperty.deposit ?? null,
+        status: newProperty.status,
+        description: newProperty.description || '',
+      };
+    } else {
+      resetForm();
+    }
+  },
+  { immediate: true }
+);
 
 function resetForm() {
   formData.value = {
@@ -91,7 +96,7 @@ function validateForm(): boolean {
     errors.value.name = 'Le nom est requis';
   }
   if (!formData.value.address.trim()) {
-    errors.value.address = 'L\'adresse est requise';
+    errors.value.address = "L'adresse est requise";
   }
   if (!formData.value.surface || formData.value.surface <= 0) {
     errors.value.surface = 'La surface doit être supérieure à 0';
@@ -283,32 +288,19 @@ function handleClose() {
         <div class="form-section full-width">
           <div class="field">
             <label class="field-label">Description</label>
-            <textarea
+            <RichTextEditor
               v-model="formData.description"
-              class="textarea"
-              rows="4"
               placeholder="Ajoutez une description du bien..."
-            ></textarea>
+            />
           </div>
         </div>
       </div>
     </form>
 
     <template #footer>
-      <Button
-        variant="default"
-        @click="handleClose"
-        :disabled="isSubmitting"
-      >
-        Annuler
-      </Button>
-      <Button
-        variant="primary"
-        @click="handleSubmit"
-        :disabled="isSubmitting"
-        icon="check"
-      >
-        {{ isSubmitting ? 'Enregistrement...' : (isEditMode ? 'Enregistrer' : 'Créer') }}
+      <Button variant="default" @click="handleClose" :disabled="isSubmitting"> Annuler </Button>
+      <Button variant="primary" @click="handleSubmit" :disabled="isSubmitting" icon="check">
+        {{ isSubmitting ? 'Enregistrement...' : isEditMode ? 'Enregistrer' : 'Créer' }}
       </Button>
     </template>
   </Modal>

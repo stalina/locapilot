@@ -82,11 +82,12 @@ export function useInventoryPhotos() {
       return createdDocument || null;
     } catch (err) {
       try {
+        const errorObj = err as any;
         console.error(
           'Failed to add inventory photo:',
-          err && (err.name || err.message || String(err))
+          errorObj && (errorObj.name || errorObj.message || String(err))
         );
-        if (err && (err as any).stack) console.error((err as any).stack);
+        if (errorObj && errorObj.stack) console.error(errorObj.stack);
       } catch (e) {
         console.error('Failed to add inventory photo (logging error)', String(e));
       }
