@@ -169,8 +169,14 @@ test.describe('WYSIWYG Property Description', () => {
     await page.getByText('Property to Edit').click();
     await page.waitForLoadState('networkidle');
 
-    // Click edit button
-    await page.getByRole('button', { name: /modifier/i }).click();
+    // Click the edit button for the created property (wait for its row first)
+    await page.getByText('Property to Edit').waitFor({ state: 'visible', timeout: 5000 });
+    const card = page.locator('.properties-grid').locator('text=Property to Edit').first();
+    await expect(card).toBeVisible();
+    // find edit button within that card
+    const editBtn = card.locator('[data-testid="edit-property-button"]').first();
+    await editBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await editBtn.click();
     await page.waitForSelector('.rich-text-editor');
 
     // Verify existing content is loaded in editor

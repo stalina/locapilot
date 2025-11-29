@@ -30,9 +30,7 @@ const filteredProperties = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(
-      p =>
-        p.name.toLowerCase().includes(query) ||
-        p.address.toLowerCase().includes(query)
+      p => p.name.toLowerCase().includes(query) || p.address.toLowerCase().includes(query)
     );
   }
 
@@ -122,7 +120,13 @@ onMounted(async () => {
           placeholder="Rechercher une propriété..."
           @search="handleSearch"
         />
-        <Button variant="primary" icon="plus" @click="handleNewProperty" data-testid="new-property-button">
+        <Button
+          variant="primary"
+          icon="plus"
+          @click="handleNewProperty"
+          data-testid="new-property-button"
+          aria-label="Nouveau bien"
+        >
           Nouvelle propriété
         </Button>
       </div>
@@ -249,7 +253,13 @@ onMounted(async () => {
         Essayez de modifier vos filtres de recherche
       </p>
       <p v-else>Commencez par ajouter votre première propriété</p>
-      <Button variant="primary" icon="plus" @click="handleNewProperty" data-testid="new-property-button">
+      <Button
+        variant="primary"
+        icon="plus"
+        @click="handleNewProperty"
+        data-testid="new-property-button"
+        aria-label="Nouveau bien"
+      >
         Nouvelle propriété
       </Button>
     </div>
