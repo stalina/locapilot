@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Locapilot - Redirection</title>
+    <script>
+      // GitHub Pages SPA redirect script
+      // Stores the current location and redirects to the base URL
+      // The app will then handle the routing client-side
+
+      const pathSegmentsToKeep = 1; // Keep '/locapilot'
+      const location = window.location;
+
+      // Store the path in sessionStorage so the app can restore it
+      sessionStorage.setItem(
+        'redirectPath',
+        location.pathname.slice(0, location.pathname.indexOf('/', pathSegmentsToKeep + 1)) +
+          (location.pathname.slice(location.pathname.indexOf('/', pathSegmentsToKeep + 1)) || '/') +
+          (location.search || '')
+      );
+
+      // Redirect to the base URL
+      location.replace(
+        location.protocol +
+          '//' +
+          location.hostname +
+          (location.port ? ':' + location.port : '') +
+          location.pathname.split('/').slice(0, pathSegmentsToKeep + 1).join('/') +
+          '/?redirect=' +
+          encodeURIComponent(
+            location.pathname.slice(location.pathname.indexOf('/', pathSegmentsToKeep + 1)) +
+              (location.search || '')
+          )
+      );
+    </script>
+  </head>
+  <body>
+    Redirection...
+  </body>
+</html>
