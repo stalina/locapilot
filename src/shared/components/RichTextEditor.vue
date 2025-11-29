@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick, onMounted } from 'vue';
+import { ref, watch, onBeforeUnmount } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 
 interface Props {
   modelValue: string;
@@ -25,10 +26,6 @@ const emit = defineEmits<{
 const showLinkDialog = ref(false);
 const linkUrl = ref('');
 const linkText = ref('');
-const popinStyle = ref<Record<string, string>>({});
-const popinRef = ref<HTMLElement | null>(null);
-const toolbarRef = ref<HTMLElement | null>(null);
-const popinFlip = ref(false);
 
 const buildExtensions = () => {
   // Base extensions (StarterKit + Placeholder)
@@ -108,92 +105,12 @@ const openLinkDialog = () => {
       ''
     ) || '';
   showLinkDialog.value = true;
-  nextTick(() => positionPopin());
-};
-
-const positionPopin = () => {
-  const popin = popinRef.value;
-  const toolbar = toolbarRef.value;
-  if (!popin || !toolbar) return;
-  const rect = toolbar.getBoundingClientRect();
-  const popinRect = popin.getBoundingClientRect();
-  const viewportH = window.innerHeight;
-  // default below toolbar
-  let top = rect.bottom + 8;
-  let flip = false;
-  // detect if toolbar is inside a modal/dialog (common classes: .modal, .p-dialog)
-  const isInModal = (() => {
-    let el: HTMLElement | null = toolbar;
-    while (el) {
-      if (
-        el.classList &&
-        (el.classList.contains('modal') ||
-          el.classList.contains('p-dialog') ||
-          el.getAttribute('role') === 'dialog')
-      )
-        return true;
-      el = el.parentElement;
-    }
-    return false;
-  })();
-
-  // Always prefer above placement when in modal to avoid overlap with form fields
-  if (isInModal) {
-    if (rect.top - 16 - popinRect.height > 0) {
-      top = rect.top - 16 - popinRect.height; // larger offset when above
-      flip = true;
-    } else if (rect.bottom + 16 + popinRect.height < viewportH) {
-      // Only use below if there's enough space
-      top = rect.bottom + 16;
-      flip = false;
-    } else {
-      // Force above even if tight
-      top = Math.max(8, rect.top - 16 - popinRect.height);
-      flip = true;
-    }
-  } else {
-    if (rect.bottom + 8 + popinRect.height > viewportH && rect.top - 8 - popinRect.height > 0) {
-      // place above
-      top = rect.top - 8 - popinRect.height;
-      flip = true;
-    }
-  }
-  let left = rect.left + rect.width / 2 - popinRect.width / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - popinRect.width - 8));
-  popinFlip.value = flip;
-  popinStyle.value = {
-    left: `${Math.round(left)}px`,
-    top: `${Math.round(top)}px`,
-    transform: 'none',
-  };
-
-  // autofocus the URL input when popin positioned
-  nextTick(() => {
-    const input = document.getElementById('link-url') as HTMLInputElement | null;
-    if (input) {
-      input.focus();
-      input.select();
-    }
-  });
 };
 
 const closeLinkDialog = () => {
   showLinkDialog.value = false;
   linkUrl.value = '';
   linkText.value = '';
-};
-
-const onDocumentMouseDown = (e: MouseEvent) => {
-  const popinEl = popinRef.value;
-  const toolbarEl = toolbarRef.value;
-  if (!popinEl) return;
-  const target = e.target as Node | null;
-  if (target && (popinEl.contains(target) || (toolbarEl && toolbarEl.contains(target)))) return;
-  showLinkDialog.value = false;
-};
-
-const onDocumentKeyDown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') closeLinkDialog();
 };
 
 const setLink = () => {
@@ -237,19 +154,7 @@ const isActive = (name: string, attrs = {}) => {
 };
 
 // Cleanup
-onMounted(() => {
-  document.addEventListener('mousedown', onDocumentMouseDown);
-  document.addEventListener('keydown', onDocumentKeyDown);
-  window.addEventListener('resize', positionPopin);
-  // capture scroll to reposition when modal or page scrolls
-  window.addEventListener('scroll', positionPopin, true);
-});
-
 onBeforeUnmount(() => {
-  document.removeEventListener('mousedown', onDocumentMouseDown);
-  document.removeEventListener('keydown', onDocumentKeyDown);
-  window.removeEventListener('resize', positionPopin);
-  window.removeEventListener('scroll', positionPopin, true);
   editor.value?.destroy();
 });
 </script>
@@ -367,61 +272,51 @@ onBeforeUnmount(() => {
     <!-- Editor Content -->
     <EditorContent :editor="editor" />
 
-    <!-- Teleported popin rendered in body to avoid modal stacking issues -->
-    <teleport to="body">
-      <div
-        v-if="showLinkDialog"
-        ref="popinRef"
-        class="link-popin"
-        role="dialog"
-        aria-modal="true"
-        :style="popinStyle"
-        :data-flip="popinFlip"
-      >
-        <div class="link-popin-inner" role="document">
-          <div class="link-dialog">
-            <div class="field">
-              <label for="link-url" class="field-label">URL</label>
-              <input
-                id="link-url"
-                v-model="linkUrl"
-                type="url"
-                class="text-input"
-                placeholder="https://exemple.com"
-                @keyup.enter="setLink"
-              />
-            </div>
-            <div class="field">
-              <label for="link-text" class="field-label">Texte du lien (optionnel)</label>
-              <input
-                id="link-text"
-                v-model="linkText"
-                type="text"
-                class="text-input"
-                placeholder="Cliquez ici"
-                @keyup.enter="setLink"
-              />
-            </div>
-          </div>
-
-          <div class="link-popin-actions">
-            <button class="btn btn-secondary" type="button" @click="closeLinkDialog">
-              Annuler
-            </button>
-            <button
-              v-if="isActive('link')"
-              class="btn btn-danger"
-              type="button"
-              @click="removeLink"
-            >
-              Supprimer le lien
-            </button>
-            <button class="btn btn-primary" type="button" @click="setLink">Insérer</button>
-          </div>
+    <!-- Dialog PrimeVue pour l'insertion de lien -->
+    <Dialog
+      v-model:visible="showLinkDialog"
+      modal
+      header="Ajouter un lien"
+      :style="{ width: '450px' }"
+      :dismissableMask="true"
+    >
+      <div class="link-dialog">
+        <div class="field">
+          <label for="link-url" class="field-label">URL</label>
+          <input
+            id="link-url"
+            v-model="linkUrl"
+            type="url"
+            class="text-input"
+            placeholder="https://exemple.com"
+            @keyup.enter="setLink"
+            autofocus
+          />
         </div>
-        <div class="link-popin-caret" aria-hidden="true"></div>
+        <div class="field">
+          <label for="link-text" class="field-label">Texte du lien (optionnel)</label>
+          <input
+            id="link-text"
+            v-model="linkText"
+            type="text"
+            class="text-input"
+            placeholder="Cliquez ici"
+            @keyup.enter="setLink"
+          />
+        </div>
       </div>
-    </teleport>
+
+      <template #footer>
+        <Button label="Annuler" severity="secondary" @click="closeLinkDialog" />
+        <Button
+          v-if="isActive('link')"
+          label="Supprimer le lien"
+          severity="danger"
+          @click="removeLink"
+        />
+        <Button label="Insérer" @click="setLink" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -530,143 +425,53 @@ onBeforeUnmount(() => {
   color: var(--color-primary-dark);
 }
 
-/* Popin styles */
-.link-popin {
-  position: fixed;
-  left: 0;
-  top: 0;
-  transform: none;
-  display: block;
-  z-index: 9999999; /* ensure above modal overlays and dialogs */
-  pointer-events: auto;
-}
-
-.link-popin[data-flip='true'] .link-popin-caret {
-  transform: rotate(180deg);
-  top: 100%;
-}
-
-.link-popin-inner {
-  background: var(--color-surface);
-  padding: 14px;
-  border-radius: 10px;
-  width: 380px;
-  max-width: calc(100% - 32px);
-  box-shadow: 0 12px 34px rgba(2, 6, 23, 0.26);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.link-popin-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
-.btn {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-.btn-secondary {
-  background: var(--color-surface-2);
-}
-.btn-danger {
-  background: var(--color-danger);
-  color: #fff;
-}
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-}
-
 /* Underline style in editor */
 :deep(.rich-text-editor-content u) {
   text-decoration: underline;
 }
 
-/* Link Dialog */
+/* Link Dialog Styles */
 .link-dialog {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  padding: 4px 0;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .field-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .text-input {
   padding: 10px 12px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: var(--font-family);
-  background: #ffffff;
+  background: var(--color-background);
   color: var(--color-text-primary);
   transition:
-    border-color 0.12s,
-    box-shadow 0.12s;
-  box-shadow: none;
-}
-
-.link-popin .text-input {
+    border-color 0.2s,
+    box-shadow 0.2s;
   width: 100%;
   box-sizing: border-box;
-}
-
-.link-popin .field-label {
-  margin-bottom: 4px;
 }
 
 .text-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 4px 18px rgba(12, 60, 140, 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .text-input::placeholder {
   color: var(--color-text-secondary);
-}
-
-.link-popin-caret {
-  width: 18px;
-  height: 10px;
-  position: absolute;
-  left: 50%;
-  top: -10px;
-  transform: translateX(-50%);
-  background: transparent;
-  pointer-events: none;
-}
-
-.link-popin-caret::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 18px;
-  height: 10px;
-  background: var(--color-surface);
-  transform-origin: center;
-  transform: rotate(45deg) translateY(-55%);
-  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.12);
-}
-
-.link-popin[data-flip='true'] .link-popin-caret {
-  top: 100%;
-}
-
-.link-popin[data-flip='true'] .link-popin-caret::after {
-  transform: rotate(225deg) translateY(55%);
 }
 </style>
