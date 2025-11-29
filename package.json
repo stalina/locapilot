@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
-    "test:e2e": "playwright test",
+    "test:e2e": "ENABLE_PWA_IN_DEV=1 playwright test",
     "lint": "eslint .",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",

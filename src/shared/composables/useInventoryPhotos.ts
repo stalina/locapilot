@@ -81,7 +81,15 @@ export function useInventoryPhotos() {
       const createdDocument = await db.documents.get(documentId);
       return createdDocument || null;
     } catch (err) {
-      console.error('Failed to add inventory photo:', err);
+      try {
+        console.error(
+          'Failed to add inventory photo:',
+          err && (err.name || err.message || String(err))
+        );
+        if (err && (err as any).stack) console.error((err as any).stack);
+      } catch (e) {
+        console.error('Failed to add inventory photo (logging error)', String(e));
+      }
       error.value = err instanceof Error ? err.message : "Échec de l'ajout de la photo";
       return null;
     } finally {

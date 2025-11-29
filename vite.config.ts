@@ -49,6 +49,9 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
       },
+      devOptions: {
+        enabled: process.env.ENABLE_PWA_IN_DEV === '1' || process.env.ENABLE_PWA_IN_DEV === 'true',
+      },
     }),
   ],
   resolve: {
