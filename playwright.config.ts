@@ -25,7 +25,10 @@ export default defineConfig({
   /* Configuration partagée pour tous les projets */
   use: {
     /* Base URL pour les tests */
-    baseURL: 'http://localhost:5173',
+    baseURL:
+      process.env.ENABLE_PWA_IN_DEV === '1'
+        ? 'http://localhost:4173/locapilot'
+        : 'http://localhost:5173',
 
     /* Timeouts plus généreux pour les interactions */
     actionTimeout: 10000,
@@ -73,7 +76,10 @@ export default defineConfig({
   webServer: {
     command:
       process.env.ENABLE_PWA_IN_DEV === '1' ? 'npm run build && npm run preview' : 'npm run dev',
-    url: 'http://localhost:5173',
+    url:
+      process.env.ENABLE_PWA_IN_DEV === '1'
+        ? 'http://localhost:4173/locapilot'
+        : 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

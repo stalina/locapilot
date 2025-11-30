@@ -8,8 +8,10 @@ import { fileURLToPath } from 'node:url';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+const basePath = '/';
+
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/locapilot/' : '/',
+  base: basePath,
   plugins: [
     vue(),
     VitePWA({
@@ -22,8 +24,8 @@ export default defineConfig({
         theme_color: '#4f46e5',
         background_color: '#ffffff',
         display: 'standalone',
-        scope: process.env.NODE_ENV === 'production' ? '/locapilot/' : '/',
-        start_url: process.env.NODE_ENV === 'production' ? '/locapilot/' : '/',
+        scope: basePath,
+        start_url: basePath,
         lang: 'fr',
         icons: [
           {
