@@ -8,10 +8,12 @@ import { fileURLToPath } from 'node:url';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-const basePath = '/';
+// Determine base path: use /locapilot/ in production build or when explicitly testing PWA
+const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV === 'production';
+const basePath = isPWABuild ? '/locapilot/' : '/';
 
 export default defineConfig({
-  base: basePath,
+  base: '/',
   plugins: [
     vue(),
     VitePWA({
