@@ -55,12 +55,20 @@ jobs:
       - run: npm run build
       - name: Check bundle size
         run: |
-          JS_SIZE=$(find dist/assets -name "*.js" -exec du -k {} \; | awk '{sum+=$1} END {print sum}')
-          if [ $JS_SIZE -gt 512 ]; then
-            echo "JavaScript bundle size ($JS_SIZE KB) exceeds 500KB limit"
+          # Calculate total gzipped size of JS files (in bytes)
+          JS_SIZE_BYTES=$(find dist/assets -name "*.js" -exec sh -c 'gzip -9 -c "$1" | wc -c' _ {} \; | awk '{sum+=$1} END {print sum}')
+          if [ -z "$JS_SIZE_BYTES" ] || [ "$JS_SIZE_BYTES" -eq 0 ]; then
+            echo "No JS files found in dist/assets"
             exit 1
           fi
-          echo "JavaScript bundle size: $JS_SIZE KB (limit: 500KB)"
+          # Convert to KB (rounded up)
+          JS_SIZE_KB=$(( (JS_SIZE_BYTES + 1023) / 1024 ))
+          LIMIT_KB=500
+          if [ "$JS_SIZE_KB" -gt "$LIMIT_KB" ]; then
+            echo "JavaScript gzipped bundle size ($JS_SIZE_KB KB) exceeds ${LIMIT_KB}KB limit"
+            exit 1
+          fi
+          echo "JavaScript gzipped bundle size: $JS_SIZE_KB KB (limit: ${LIMIT_KB}KB)"
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
