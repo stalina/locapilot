@@ -13,7 +13,7 @@ const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV
 const basePath = isPWABuild ? '/locapilot/' : '/';
 
 export default defineConfig({
-  base: '/',
+  base: basePath,
   plugins: [
     vue(),
     VitePWA({

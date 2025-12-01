@@ -76,10 +76,7 @@ export default defineConfig({
   webServer: {
     command:
       process.env.ENABLE_PWA_IN_DEV === '1' ? 'npm run build && npm run preview' : 'npm run dev',
-    url:
-      process.env.ENABLE_PWA_IN_DEV === '1'
-        ? 'http://localhost:4173/locapilot'
-        : 'http://localhost:5173',
+    url: process.env.ENABLE_PWA_IN_DEV === '1' ? 'http://localhost:4173' : 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
