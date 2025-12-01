@@ -376,5 +376,3 @@ onMounted(async () => {
     />
   </div>
 </template>
-
-<style src="@/shared/styles/detail-view.css"></style>

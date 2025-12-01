@@ -139,9 +139,7 @@ const goToTenant = (tenantId: number) => {
     <div v-else-if="leasesStore.error || !lease" class="error-state">
       <i class="mdi mdi-alert-circle"></i>
       {{ leasesStore.error || 'Bail non trouvé' }}
-      <Button variant="outline" icon="arrow-left" @click="goBack">
-        Retour à la liste
-      </Button>
+      <Button variant="outline" icon="arrow-left" @click="goBack"> Retour à la liste </Button>
     </div>
 
     <template v-else>
@@ -149,22 +147,14 @@ const goToTenant = (tenantId: number) => {
         <div>
           <h1>Détail du bail</h1>
           <div class="header-meta">
-            <Badge
-              v-if="statusConfig"
-              :variant="statusConfig.variant"
-              :icon="statusConfig.icon"
-            >
+            <Badge v-if="statusConfig" :variant="statusConfig.variant" :icon="statusConfig.icon">
               {{ statusConfig.label }}
             </Badge>
           </div>
         </div>
         <div class="header-actions">
-          <Button variant="outline" icon="arrow-left" @click="goBack">
-            Retour
-          </Button>
-          <Button variant="outline" icon="pencil" @click="handleEdit">
-            Modifier
-          </Button>
+          <Button variant="outline" icon="arrow-left" @click="goBack"> Retour </Button>
+          <Button variant="outline" icon="pencil" @click="handleEdit"> Modifier </Button>
           <Button
             v-if="lease.status === 'active'"
             variant="warning"
@@ -173,9 +163,7 @@ const goToTenant = (tenantId: number) => {
           >
             Terminer
           </Button>
-          <Button variant="error" icon="delete" @click="handleDelete">
-            Supprimer
-          </Button>
+          <Button variant="error" icon="delete" @click="handleDelete"> Supprimer </Button>
         </div>
       </header>
 
@@ -186,11 +174,7 @@ const goToTenant = (tenantId: number) => {
         <div class="hero-content">
           <div class="title-row">
             <h1>{{ property?.name || 'Propriété #' + lease.propertyId }}</h1>
-            <Badge
-              v-if="statusConfig"
-              :variant="statusConfig.variant"
-              :icon="statusConfig.icon"
-            >
+            <Badge v-if="statusConfig" :variant="statusConfig.variant" :icon="statusConfig.icon">
               {{ statusConfig.label }}
             </Badge>
           </div>
@@ -260,15 +244,11 @@ const goToTenant = (tenantId: number) => {
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">Loyer mensuel</span>
-                <span class="info-value">
-                  {{ lease.rent.toLocaleString('fr-FR') }} €
-                </span>
+                <span class="info-value"> {{ lease.rent.toLocaleString('fr-FR') }} € </span>
               </div>
               <div class="info-item">
                 <span class="info-label">Charges mensuelles</span>
-                <span class="info-value">
-                  {{ lease.charges.toLocaleString('fr-FR') }} €
-                </span>
+                <span class="info-value"> {{ lease.charges.toLocaleString('fr-FR') }} € </span>
               </div>
               <div class="info-item">
                 <span class="info-label">Total mensuel</span>
@@ -278,9 +258,7 @@ const goToTenant = (tenantId: number) => {
               </div>
               <div class="info-item">
                 <span class="info-label">Dépôt de garantie</span>
-                <span class="info-value">
-                  {{ lease.deposit.toLocaleString('fr-FR') }} €
-                </span>
+                <span class="info-value"> {{ lease.deposit.toLocaleString('fr-FR') }} € </span>
               </div>
             </div>
           </Card>
@@ -433,5 +411,3 @@ const goToTenant = (tenantId: number) => {
   color: var(--text-secondary, #64748b);
 }
 </style>
-
-<style src="@/shared/styles/detail-view.css"></style>

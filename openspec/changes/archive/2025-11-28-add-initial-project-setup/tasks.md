@@ -128,7 +128,6 @@
 - [x] Configurer thème (couleurs, typography)
 - [x] Créer variables CSS/SCSS globales
 - [x] Design tokens (spacing, breakpoints, etc.)
-- [x] Styles partagés pour vues détail (detail-view.css)
 - [ ] Mode sombre (optionnel pour phase 1)
 
 ### Composants de Base
@@ -391,13 +390,6 @@
 - Manque de cohérence visuelle entre les différentes vues détail
 
 **Solution implémentée**:
-
-1. **Création de `/src/shared/styles/detail-view.css`**:
-   - Styles partagés pour hero section (image + contenu)
-   - Grilles d'informations (info-grid, content-grid)
-   - Listes de locataires et baux
-   - En-têtes de cartes, placeholders vides, actions rapides
-   - Responsive breakpoints pour mobile/tablette
 
 2. **Refactorisation PropertyDetailView**:
    - Ajout classe `.detail-view` sur conteneur principal
