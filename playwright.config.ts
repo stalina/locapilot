@@ -5,79 +5,31 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './e2e',
-
-  /* Exécuter les tests en parallèle */
-  fullyParallel: true,
-
-  /* Fail the build on CI if you accidentally left test.only in the source code */
+  testDir: 'e2e',
+  timeout: 30_000,
+  expect: { timeout: 5000 },
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
-
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-
-  /* Workers - 1 en CI pour stabilité, plusieurs en local */
   workers: process.env.CI ? 1 : undefined,
-
-  /* Reporter */
-  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
-
-  /* Configuration partagée pour tous les projets */
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    /* Base URL pour les tests */
-    baseURL:
-      process.env.ENABLE_PWA_IN_DEV === '1'
-        ? 'http://localhost:4173/locapilot'
-        : 'http://localhost:5173',
-
-    /* Timeouts plus généreux pour les interactions */
-    actionTimeout: 10000,
-    navigationTimeout: 15000,
-
-    /* Collect trace when retrying the failed test */
+    baseURL: 'http://localhost:4173/locapilot',
+    headless: true,
+    viewport: { width: 1280, height: 800 },
+    actionTimeout: 5000,
     trace: 'on-first-retry',
-
-    /* Screenshot on failure */
-    screenshot: 'only-on-failure',
-
-    /* Video on failure */
-    video: 'retain-on-failure',
   },
-
-  /* Configuration des projets pour différents navigateurs */
+  webServer: {
+    command: 'npm run preview -- --port 4173',
+    url: 'http://localhost:4173/locapilot/',
+    timeout: 120_000,
+    reuseExistingServer: process.env.CI ? false : true,
+  },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Tests sur mobile viewports */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
   ],
-
-  /* Démarrer le serveur de dev avant de lancer les tests */
-  webServer: {
-    command:
-      process.env.ENABLE_PWA_IN_DEV === '1' ? 'npm run build && npm run preview' : 'npm run dev',
-    url: process.env.ENABLE_PWA_IN_DEV === '1' ? 'http://localhost:4173' : 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
 });

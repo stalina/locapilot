@@ -298,8 +298,21 @@ function handleClose() {
     </form>
 
     <template #footer>
-      <Button variant="default" @click="handleClose" :disabled="isSubmitting"> Annuler </Button>
-      <Button variant="primary" @click="handleSubmit" :disabled="isSubmitting" icon="check">
+      <Button
+        variant="default"
+        @click="handleClose"
+        :disabled="isSubmitting"
+        data-testid="property-form-cancel"
+      >
+        Annuler
+      </Button>
+      <Button
+        variant="primary"
+        @click="handleSubmit"
+        :disabled="isSubmitting"
+        icon="check"
+        data-testid="property-form-submit"
+      >
         {{ isSubmitting ? 'Enregistrement...' : isEditMode ? 'Enregistrer' : 'Créer' }}
       </Button>
     </template>

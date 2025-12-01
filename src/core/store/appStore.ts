@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { seedDatabase } from '@/db/seed';
 
 export const useAppStore = defineStore('app', () => {
   // State
@@ -25,7 +24,10 @@ export const useAppStore = defineStore('app', () => {
     isOnline.value = status;
   }
 
-  function showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+  function showNotification(
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'info'
+  ) {
     notification.value = { message, type };
     setTimeout(() => {
       notification.value = null;
@@ -45,15 +47,14 @@ export const useAppStore = defineStore('app', () => {
   // Initialize app (seed database if needed)
   async function initializeApp() {
     if (isInitialized.value) return;
-    
+
     try {
       setLoading(true);
-      await seedDatabase();
       isInitialized.value = true;
       console.log('✅ App initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize app:', error);
-      showNotification('Erreur lors de l\'initialisation', 'error');
+      showNotification("Erreur lors de l'initialisation", 'error');
     } finally {
       setLoading(false);
     }

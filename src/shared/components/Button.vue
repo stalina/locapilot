@@ -1,14 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning' | 'error' | 'text' | 'ghost' | 'default' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
-  disabled?: boolean
-  loading?: boolean
-  icon?: string
-  to?: string
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'outline'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'text'
+    | 'ghost'
+    | 'default'
+    | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: string;
+  to?: string;
+  testId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -16,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   disabled: false,
   loading: false,
-})
+});
 
 const classes = computed(() => [
   'btn',
@@ -26,20 +37,31 @@ const classes = computed(() => [
     'btn-disabled': props.disabled,
     'btn-loading': props.loading,
   },
-])
+]);
 
-const isLink = computed(() => !!props.to && !props.disabled && !props.loading)
+const isLink = computed(() => !!props.to && !props.disabled && !props.loading);
 </script>
 
 <template>
   <RouterLink v-if="isLink" :to="to || '/'" custom v-slot="{ navigate }">
-    <button :class="classes" @click="navigate">
+    <button
+      v-bind="$attrs"
+      :class="classes"
+      @click="navigate"
+      :data-testid="props.testId || undefined"
+    >
       <i v-if="loading" class="mdi mdi-loading mdi-spin"></i>
       <i v-else-if="icon" :class="`mdi mdi-${icon}`"></i>
       <slot />
     </button>
   </RouterLink>
-  <button v-else :class="classes" :disabled="disabled || loading">
+  <button
+    v-else
+    v-bind="$attrs"
+    :class="classes"
+    :disabled="disabled || loading"
+    :data-testid="props.testId || undefined"
+  >
     <i v-if="loading" class="mdi mdi-loading mdi-spin"></i>
     <i v-else-if="icon" :class="`mdi mdi-${icon}`"></i>
     <slot />
@@ -119,22 +141,26 @@ const isLink = computed(() => !!props.to && !props.disabled && !props.loading)
   background: var(--warning-600);
 }
 
-.btn-error, .btn-danger {
+.btn-error,
+.btn-danger {
   background: var(--error-500);
   color: white;
 }
 
-.btn-error:hover:not(:disabled), .btn-danger:hover:not(:disabled) {
+.btn-error:hover:not(:disabled),
+.btn-danger:hover:not(:disabled) {
   background: var(--error-600);
 }
 
-.btn-text, .btn-ghost {
+.btn-text,
+.btn-ghost {
   background: transparent;
   color: var(--text-primary);
   box-shadow: none;
 }
 
-.btn-text:hover:not(:disabled), .btn-ghost:hover:not(:disabled) {
+.btn-text:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled) {
   background: var(--neutral-100);
 }
 

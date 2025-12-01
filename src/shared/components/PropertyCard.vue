@@ -89,6 +89,7 @@ onUnmounted(() => {
     class="property-card"
     :class="{ 'is-clickable': clickable }"
     :data-property-id="property.id"
+    :data-testid="`property-card-${property.id}`"
     @click="handleClick"
   >
     <!-- Image with photo or gradient fallback -->
@@ -105,11 +106,15 @@ onUnmounted(() => {
     <!-- Content -->
     <div class="property-content">
       <div class="property-header">
-        <h3 class="property-name">{{ property.name }}</h3>
-        <span class="property-type">{{ typeLabel }}</span>
+        <h3 class="property-name" :data-testid="`property-name-${property.id}`">
+          {{ property.name }}
+        </h3>
+        <span class="property-type" :data-testid="`property-type-${property.id}`">{{
+          typeLabel
+        }}</span>
       </div>
 
-      <div class="property-address">
+      <div class="property-address" :data-testid="`property-address-${property.id}`">
         <i class="mdi mdi-map-marker"></i>
         {{ property.address }}
       </div>
@@ -123,7 +128,7 @@ onUnmounted(() => {
           <i class="mdi mdi-door"></i>
           <span>{{ property.rooms }} pièces</span>
         </div>
-        <div class="stat stat-price">
+        <div class="stat stat-price" :data-testid="`property-price-${property.id}`">
           <i class="mdi mdi-currency-eur"></i>
           <span>{{ totalRent }} €/mois</span>
         </div>
