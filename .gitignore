@@ -30,4 +30,5 @@ storybook-static
 coverage
 playwright-report
 test-results
+test-output
 .nyc_output

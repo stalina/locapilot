@@ -117,7 +117,12 @@ onMounted(async () => {
           placeholder="Rechercher un locataire..."
           @search="handleSearch"
         />
-        <Button variant="primary" icon="account-plus" @click="handleNewTenant">
+        <Button
+          variant="primary"
+          icon="account-plus"
+          @click="handleNewTenant"
+          :testId="'new-tenant-button'"
+        >
           Nouveau locataire
         </Button>
       </div>
@@ -216,7 +221,12 @@ onMounted(async () => {
         Essayez de modifier vos filtres de recherche
       </p>
       <p v-else>Commencez par ajouter votre premier locataire</p>
-      <Button variant="primary" icon="account-plus" @click="handleNewTenant">
+      <Button
+        variant="primary"
+        icon="account-plus"
+        @click="handleNewTenant"
+        :testId="'new-tenant-button'"
+      >
         Nouveau locataire
       </Button>
     </div>
@@ -253,11 +263,7 @@ onMounted(async () => {
     </div>
 
     <!-- Tenant Form Modal -->
-    <TenantFormModal
-      v-model="showTenantForm"
-      :tenant="tenantToEdit"
-      @success="handleFormSuccess"
-    />
+    <TenantFormModal v-model="showTenantForm" :tenant="tenantToEdit" @success="handleFormSuccess" />
   </div>
 </template>
 

@@ -36,28 +36,40 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 const isEditMode = computed(() => !!props.tenant);
-const modalTitle = computed(() => isEditMode.value ? 'Modifier le locataire' : 'Nouveau locataire');
+const modalTitle = computed(() =>
+  isEditMode.value ? 'Modifier le locataire' : 'Nouveau locataire'
+);
 
 // Watch tenant changes to populate form
-watch(() => props.tenant, (newTenant) => {
-  console.log('[TenantFormModal] Tenant changed:', newTenant);
-  if (newTenant) {
-    formData.value = {
-      firstName: newTenant.firstName,
-      lastName: newTenant.lastName,
-      email: newTenant.email,
-      phone: newTenant.phone || '',
-      birthDate: newTenant.birthDate ? new Date(newTenant.birthDate).toISOString().split('T')[0] || '' : '',
-      status: newTenant.status,
-    };
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
+watch(
+  () => props.tenant,
+  newTenant => {
+    console.log('[TenantFormModal] Tenant changed:', newTenant);
+    if (newTenant) {
+      formData.value = {
+        firstName: newTenant.firstName,
+        lastName: newTenant.lastName,
+        email: newTenant.email,
+        phone: newTenant.phone || '',
+        birthDate: newTenant.birthDate
+          ? new Date(newTenant.birthDate).toISOString().split('T')[0] || ''
+          : '',
+        status: newTenant.status,
+      };
+    } else {
+      resetForm();
+    }
+  },
+  { immediate: true }
+);
 
-watch(() => props.modelValue, (newValue) => {
-  console.log('[TenantFormModal] modelValue changed:', newValue);
-}, { immediate: true });
+watch(
+  () => props.modelValue,
+  newValue => {
+    console.log('[TenantFormModal] modelValue changed:', newValue);
+  },
+  { immediate: true }
+);
 
 function resetForm() {
   formData.value = {
@@ -81,9 +93,9 @@ function validateForm(): boolean {
     errors.value.lastName = 'Le nom est requis';
   }
   if (!formData.value.email.trim()) {
-    errors.value.email = 'L\'email est requis';
+    errors.value.email = "L'email est requis";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
-    errors.value.email = 'L\'email n\'est pas valide';
+    errors.value.email = "L'email n'est pas valide";
   }
 
   return Object.keys(errors.value).length === 0;
@@ -102,7 +114,7 @@ async function handleSubmit() {
       phone: formData.value.phone,
       status: formData.value.status,
     };
-    
+
     if (formData.value.birthDate) {
       data.birthDate = new Date(formData.value.birthDate);
     }
@@ -147,6 +159,7 @@ function handleClose() {
               label="Prénom"
               placeholder="Jean"
               :error="errors.firstName"
+              testId="tenant-firstName"
               required
             />
 
@@ -155,6 +168,7 @@ function handleClose() {
               label="Nom"
               placeholder="Dupont"
               :error="errors.lastName"
+              testId="tenant-lastName"
               required
             />
           </div>
@@ -163,6 +177,7 @@ function handleClose() {
             v-model="formData.birthDate"
             label="Date de naissance"
             type="date"
+            testId="tenant-birthDate"
           />
         </div>
 
@@ -176,6 +191,7 @@ function handleClose() {
             type="email"
             placeholder="jean.dupont@example.com"
             :error="errors.email"
+            testId="tenant-email"
             required
           />
 
@@ -184,6 +200,7 @@ function handleClose() {
             label="Téléphone"
             type="tel"
             placeholder="06 12 34 56 78"
+            testId="tenant-phone"
           />
         </div>
 
@@ -193,7 +210,7 @@ function handleClose() {
 
           <div class="field">
             <label class="field-label">Statut <span class="required">*</span></label>
-            <select v-model="formData.status" class="select">
+            <select v-model="formData.status" class="select" data-testid="tenant-status">
               <option value="candidate">Candidat</option>
               <option value="active">Locataire actif</option>
               <option value="former">Ancien locataire</option>
@@ -204,20 +221,9 @@ function handleClose() {
     </form>
 
     <template #footer>
-      <Button
-        variant="default"
-        @click="handleClose"
-        :disabled="isSubmitting"
-      >
-        Annuler
-      </Button>
-      <Button
-        variant="primary"
-        @click="handleSubmit"
-        :disabled="isSubmitting"
-        icon="check"
-      >
-        {{ isSubmitting ? 'Enregistrement...' : (isEditMode ? 'Enregistrer' : 'Créer') }}
+      <Button variant="default" @click="handleClose" :disabled="isSubmitting"> Annuler </Button>
+      <Button variant="primary" @click="handleSubmit" :disabled="isSubmitting" icon="check">
+        {{ isSubmitting ? 'Enregistrement...' : isEditMode ? 'Enregistrer' : 'Créer' }}
       </Button>
     </template>
   </Modal>
