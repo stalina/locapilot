@@ -82,6 +82,7 @@ const handleExportData = async () => {
       leases: await db.leases.toArray(),
       rents: await db.rents.toArray(),
       documents,
+      inventories: await db.inventories.toArray(),
       exportedAt: new Date().toISOString(),
       version: '1.0',
     };
@@ -137,6 +138,7 @@ const handleImportData = () => {
       await db.leases.clear();
       await db.rents.clear();
       await db.documents.clear();
+      await db.inventories.clear();
 
       // Import new data
       if (data.properties.length) await db.properties.bulkAdd(data.properties);
@@ -175,6 +177,9 @@ const handleImportData = () => {
         await db.documents.bulkAdd(docsToAdd);
       }
 
+      // Import inventories after documents so referenced document IDs remain valid
+      if (data.inventories?.length) await db.inventories.bulkAdd(data.inventories);
+
       alert('Données importées avec succès !');
       router.push('/');
     } catch (error) {
@@ -211,6 +216,7 @@ const handleClearData = async () => {
     await db.leases.clear();
     await db.rents.clear();
     await db.documents.clear();
+    await db.inventories.clear();
 
     alert('Toutes les données ont été supprimées');
     router.push('/');
