@@ -9,6 +9,7 @@ import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
 import RefusalModal from '../components/RefusalModal.vue';
+import CreateLeaseModal from '../../leases/components/CreateLeaseModal.vue';
 import TenantDocumentsList from '../components/TenantDocumentsList.vue';
 
 const route = useRoute();
@@ -25,6 +26,7 @@ const tenantId = computed(() => Number(route.params.id));
 const tenant = computed(() => tenantsStore.currentTenant);
 const showEditModal = ref(false);
 const showRefusalModal = ref(false);
+const showCreateLeaseModal = ref(false);
 
 const age = computed(() => {
   if (!tenant.value?.birthDate) return null;
@@ -86,7 +88,9 @@ watch(
 
 // Baux liés à ce locataire
 const tenantLeases = computed(() => {
-  return leasesStore.leasesByTenant(tenantId.value);
+  const id = tenantId.value;
+  if (!Number.isFinite(id)) return [];
+  return leasesStore.leasesByTenant(id);
 });
 
 // Bail actif
@@ -164,12 +168,21 @@ onMounted(async () => {
 
 async function validateApplicant() {
   if (!tenant.value?.id) return;
+  // Open the CreateLease modal to select a property and initialize a lease
+  await propertiesStore.fetchProperties();
+  showCreateLeaseModal.value = true;
+}
+
+async function handleLeaseCreated(newLease: any) {
+  // After creating the lease, set tenant status to active and navigate to lease
+  if (!tenant.value?.id) return;
   try {
-    await tenantsStore.setTenantStatusWithAudit(tenant.value.id, 'validated', {
-      actorId: null,
-    });
+    await tenantsStore.setTenantStatusWithAudit(tenant.value.id, 'active', { actorId: null });
+    if (newLease && newLease.id) {
+      goToLease(newLease.id);
+    }
   } catch (err) {
-    console.error('Failed to validate applicant', err);
+    console.error('Failed after lease creation:', err);
   }
 }
 
@@ -503,6 +516,12 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
       :tenantEmail="tenant?.email"
       @confirm="handleRefusalConfirm"
       @cancel="() => (showRefusalModal = false)"
+    />
+    <CreateLeaseModal
+      v-if="tenant"
+      v-model="showCreateLeaseModal"
+      :tenantId="tenant?.id"
+      @created="handleLeaseCreated"
     />
   </div>
 </template>

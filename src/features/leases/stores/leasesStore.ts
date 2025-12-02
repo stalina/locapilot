@@ -19,27 +19,27 @@ export const useLeasesStore = defineStore('leases', {
 
   getters: {
     // Baux actifs
-    activeLeases: (state) => state.leases.filter(l => l.status === 'active'),
+    activeLeases: state => state.leases.filter(l => l.status === 'active'),
 
     // Baux terminés
-    endedLeases: (state) => state.leases.filter(l => l.status === 'ended'),
+    endedLeases: state => state.leases.filter(l => l.status === 'ended'),
 
     // Baux en attente
-    pendingLeases: (state) => state.leases.filter(l => l.status === 'pending'),
+    pendingLeases: state => state.leases.filter(l => l.status === 'pending'),
 
     // Baux par propriété
-    leasesByProperty: (state) => (propertyId: number) =>
+    leasesByProperty: state => (propertyId: number) =>
       state.leases.filter(l => l.propertyId === propertyId),
 
-    // Baux par locataire
-    leasesByTenant: (state) => (tenantId: number) =>
-      state.leases.filter(l => l.tenantIds.includes(tenantId)),
+    // Baux par locataire (defensive: some leases may not have tenantIds)
+    leasesByTenant: state => (tenantId: number) =>
+      state.leases.filter(l => Array.isArray(l.tenantIds) && l.tenantIds.includes(tenantId)),
 
     // Baux expirant bientôt (dans les 30 jours)
-    expiringLeases: (state) => {
+    expiringLeases: state => {
       const today = new Date();
       const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
+
       return state.leases.filter(l => {
         if (l.status !== 'active' || !l.endDate) return false;
         const endDate = new Date(l.endDate);
@@ -48,14 +48,15 @@ export const useLeasesStore = defineStore('leases', {
     },
 
     // Durée moyenne des baux (en mois)
-    averageLeaseDuration: (state) => {
+    averageLeaseDuration: state => {
       const activeLeases = state.leases.filter(l => l.status === 'active' && l.endDate);
       if (activeLeases.length === 0) return 0;
 
       const totalMonths = activeLeases.reduce((sum, l) => {
         const start = new Date(l.startDate);
         const end = l.endDate ? new Date(l.endDate) : new Date();
-        const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+        const months =
+          (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
         return sum + months;
       }, 0);
 
