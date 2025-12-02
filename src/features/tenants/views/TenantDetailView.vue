@@ -476,8 +476,16 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
                 Validation de la candidature
               </h2>
               <div class="validation-actions">
-                <Button variant="success" @click="validateApplicant">Valider</Button>
-                <Button variant="error" @click="refuseApplicant">Refuser</Button>
+                <Button
+                  variant="success"
+                  size="lg"
+                  class="validation-btn"
+                  @click="validateApplicant"
+                  >Valider</Button
+                >
+                <Button variant="error" size="lg" class="validation-btn" @click="refuseApplicant"
+                  >Refuser</Button
+                >
               </div>
             </div>
           </div>
@@ -710,6 +718,23 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
 .view-lease-btn {
   width: 100%;
   margin-top: var(--space-2, 0.5rem);
+}
+
+/* Validation action buttons (accept/refuse) */
+.validation-actions {
+  display: flex;
+  gap: var(--space-3, 0.75rem);
+  margin-top: var(--space-3, 0.75rem);
+}
+
+.validation-actions .validation-btn {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .validation-actions {
+    flex-direction: column;
+  }
 }
 
 /* Leases List */
