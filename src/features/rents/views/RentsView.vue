@@ -7,7 +7,9 @@ import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Button from '@/shared/components/Button.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Badge from '@/shared/components/Badge.vue';
-import type { Rent } from '../../../db/types';
+import RentPaymentModal from '../components/RentPaymentModal.vue';
+import RentFormModal from '../components/RentFormModal.vue';
+import type { Rent, Lease } from '../../../db/types';
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
@@ -19,6 +21,140 @@ const statusFilter = ref<'all' | 'pending' | 'paid' | 'late'>('all');
 // const currentMonth = ref(new Date().getMonth());
 // const currentYear = ref(new Date().getFullYear());
 
+// Modals & selection
+const showPaymentModal = ref(false);
+const showEditModal = ref(false);
+const selectedRentForModal = ref<Rent | null>(null);
+
+// Helper: generate virtual pending rents for active leases when no rent exists for the month
+function generateVirtualRents(referenceDate = new Date()) {
+  const activeLeases = leasesStore.leases.filter(l => l.status === 'active');
+  const today = new Date(referenceDate);
+  today.setHours(0, 0, 0, 0);
+
+  return activeLeases
+    .map((lease: Lease) => {
+      const paymentDay = lease.paymentDay || 1;
+      const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
+      if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
+
+      // If existing rent for that lease/month exists, skip
+      const exists = rentsStore.rents.some(r => {
+        if (r.leaseId !== lease.id) return false;
+        const d = new Date(r.dueDate);
+        return d.getFullYear() === candidate.getFullYear() && d.getMonth() === candidate.getMonth();
+      });
+
+      if (exists) return null;
+
+      return {
+        id: `virtual-${lease.id}-${candidate.getFullYear()}-${candidate.getMonth()}`,
+        leaseId: lease.id,
+        dueDate: candidate,
+        amount: lease.rent,
+        charges: lease.charges || 0,
+        status: 'pending' as const,
+        isVirtual: true,
+      } as any;
+    })
+    .filter(Boolean) as any[];
+}
+
+const initialFormData = ref<any>(null);
+
+// edit flow handled via RentFormModal when needed
+
+function openPaymentModal(rent: Rent) {
+  selectedRentForModal.value = rent;
+  showPaymentModal.value = true;
+}
+
+function getPropertyNameForLease(lease: Lease) {
+  const property = propertiesStore.properties.find(p => p.id === lease.propertyId);
+  return property?.name || 'Propriété inconnue';
+}
+
+function getTenantNameForLease(lease: Lease) {
+  const tenant = tenantsStore.tenants.find(
+    t => lease.tenantIds?.[0] && t.id === lease.tenantIds[0]
+  );
+  return tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Locataire inconnu';
+}
+
+function getLeaseById(id: number) {
+  return leasesStore.leases.find(l => l.id === id) || null;
+}
+
+async function handleCreateAndOpenPayment(virtualRent: any) {
+  try {
+    // create actual rent
+    const created = await rentsStore.createRent({
+      leaseId: virtualRent.leaseId,
+      dueDate: new Date(virtualRent.dueDate),
+      amount: virtualRent.amount,
+      charges: virtualRent.charges || 0,
+      status: 'pending',
+    });
+
+    // refresh store and open payment modal on created rent
+    selectedRentForModal.value = created;
+    showPaymentModal.value = true;
+  } catch (err) {
+    console.error('Failed to create rent from virtual:', err);
+    alert('Erreur lors de la création du loyer');
+  }
+}
+
+// note: edit button removed; edit flow kept via RentFormModal where needed
+
+function handlePayClick(rent: any) {
+  if (rent.isVirtual) {
+    handleCreateAndOpenPayment(rent);
+  } else {
+    openPaymentModal(rent);
+  }
+}
+
+async function handleUpdateRent(payload: any) {
+  try {
+    if (payload.id) {
+      await rentsStore.updateRent(payload.id, {
+        leaseId: payload.leaseId,
+        dueDate: new Date(payload.dueDate),
+        amount: payload.amount,
+        charges: payload.charges,
+        status: 'pending',
+      });
+    } else {
+      await rentsStore.createRent({
+        leaseId: payload.leaseId,
+        dueDate: new Date(payload.dueDate),
+        amount: payload.amount,
+        charges: payload.charges,
+        status: 'pending',
+      });
+    }
+    showEditModal.value = false;
+    initialFormData.value = null;
+    selectedRentForModal.value = null;
+  } catch (err) {
+    console.error('Failed to save rent:', err);
+    alert("Erreur lors de l'enregistrement du loyer");
+  }
+}
+
+async function handlePayFromModal(data: any) {
+  if (!selectedRentForModal.value?.id) return;
+  try {
+    await rentsStore.payRent(selectedRentForModal.value.id, new Date(data.paymentDate));
+    showPaymentModal.value = false;
+    selectedRentForModal.value = null;
+  } catch (err) {
+    console.error('Payment error:', err);
+    alert('Erreur lors du paiement');
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     rentsStore.fetchRents(),
@@ -28,18 +164,21 @@ onMounted(async () => {
   ]);
 });
 
-const filteredRents = computed(() => {
-  let rents = rentsStore.rents;
+// Combine real rents with virtual pending rents for display
+const displayedRents = computed(() => {
+  const realRents = rentsStore.rents.map(r => ({ ...r, isVirtual: false }) as any);
+  const virtual = generateVirtualRents();
+
+  let rents = [...realRents, ...virtual];
 
   // Filter by status
   if (statusFilter.value !== 'all') {
-    rents = rents.filter(r => r.status === statusFilter.value);
+    rents = rents.filter((r: any) => r.status === statusFilter.value);
   }
 
-  return rents.sort((a, b) => {
-    // Sort by due date (most recent first)
-    return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
-  });
+  return rents.sort(
+    (a: any, b: any) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+  );
 });
 
 const stats = computed(() => ({
@@ -85,15 +224,7 @@ const statusConfig = (status: Rent['status']) => {
   return configs[status] || configs.pending;
 };
 
-const handleMarkAsPaid = async (rent: Rent) => {
-  if (!rent.id) return;
-  try {
-    await rentsStore.payRent(rent.id, new Date());
-  } catch (error) {
-    console.error('Failed to mark rent as paid:', error);
-    alert('Erreur lors du marquage du loyer comme payé');
-  }
-};
+// (mark as paid moved to payment modal flow)
 
 const handleGenerateReceipt = async (_rent: Rent) => {
   // TODO: Implémenter la génération de quittance
@@ -108,13 +239,11 @@ const handleGenerateReceipt = async (_rent: Rent) => {
       <div>
         <h1>Gestion des Loyers</h1>
         <div class="header-meta">
-          {{ filteredRents.length }} loyer{{ filteredRents.length > 1 ? 's' : '' }}
+          {{ displayedRents.length }} loyer{{ displayedRents.length > 1 ? 's' : '' }}
         </div>
       </div>
       <div class="header-actions">
-        <Button variant="primary" icon="calendar" to="/rents/calendar">
-          Calendrier
-        </Button>
+        <Button variant="primary" icon="calendar" to="/rents/calendar"> Calendrier </Button>
       </div>
     </header>
 
@@ -196,19 +325,16 @@ const handleGenerateReceipt = async (_rent: Rent) => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredRents.length === 0" class="empty-state">
+    <div v-else-if="displayedRents.length === 0" class="empty-state">
       <i class="mdi mdi-currency-eur"></i>
       <h3>Aucun loyer trouvé</h3>
-      <p v-if="statusFilter !== 'all'">
-        Essayez de modifier vos filtres de recherche
-      </p>
-      <p v-else>
-        Les loyers seront générés automatiquement à partir de vos baux actifs
-      </p>
+      <p v-if="statusFilter !== 'all'">Essayez de modifier vos filtres de recherche</p>
+      <p v-else>Les loyers seront générés automatiquement à partir de vos baux actifs</p>
     </div>
 
+    <!-- Suggested Rents (from active leases) -->
     <!-- Rents Table -->
-    <div v-else class="rents-table-container">
+    <div class="rents-table-container">
       <table class="rents-table">
         <thead>
           <tr>
@@ -222,10 +348,28 @@ const handleGenerateReceipt = async (_rent: Rent) => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="rent in filteredRents" :key="rent.id" class="rent-row">
+          <tr v-for="rent in displayedRents" :key="rent.id" class="rent-row">
             <td class="date-cell">{{ formatDate(rent.dueDate) }}</td>
-            <td class="property-cell">{{ getPropertyName(rent.leaseId) }}</td>
-            <td class="tenant-cell">{{ getTenantName(rent.leaseId) }}</td>
+            <td class="property-cell">
+              {{
+                (() => {
+                  const lease = getLeaseById(rent.leaseId);
+                  return rent.isVirtual && lease
+                    ? getPropertyNameForLease(lease)
+                    : getPropertyName(rent.leaseId);
+                })()
+              }}
+            </td>
+            <td class="tenant-cell">
+              {{
+                (() => {
+                  const lease = getLeaseById(rent.leaseId);
+                  return rent.isVirtual && lease
+                    ? getTenantNameForLease(lease)
+                    : getTenantName(rent.leaseId);
+                })()
+              }}
+            </td>
             <td class="amount-cell">{{ rent.amount.toLocaleString('fr-FR') }} €</td>
             <td class="status-cell">
               <Badge
@@ -244,28 +388,44 @@ const handleGenerateReceipt = async (_rent: Rent) => {
                   v-if="rent.status !== 'paid'"
                   variant="success"
                   size="sm"
-                  icon="check"
-                  @click="handleMarkAsPaid(rent)"
-                  data-testid="mark-paid-button"
+                  icon="currency-eur"
+                  @click="() => handlePayClick(rent)"
+                  >Payer</Button
                 >
-                  Marquer payé
-                </Button>
                 <Button
                   v-if="rent.status === 'paid'"
                   variant="default"
                   size="sm"
                   icon="receipt"
                   @click="handleGenerateReceipt(rent)"
-                  data-testid="generate-receipt-button"
+                  >Quittance</Button
                 >
-                  Quittance
-                </Button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Modals -->
+    <RentFormModal
+      v-if="showEditModal"
+      v-model="showEditModal"
+      :leases="leasesStore.leases"
+      :properties="propertiesStore.properties"
+      :tenants="tenantsStore.tenants"
+      :initial="initialFormData"
+      @submit="handleUpdateRent"
+    />
+
+    <RentPaymentModal
+      v-if="showPaymentModal && selectedRentForModal"
+      v-model="showPaymentModal"
+      :rent="selectedRentForModal"
+      :property-name="getPropertyName(selectedRentForModal?.leaseId)"
+      :tenant-name="getTenantName(selectedRentForModal?.leaseId)"
+      @submit="handlePayFromModal"
+    />
   </div>
 </template>
 

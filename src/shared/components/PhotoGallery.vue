@@ -51,9 +51,9 @@ async function loadPhotos() {
   });
 }
 
-function getPhotoUrl(photoId: number | undefined): string | null {
-  if (!photoId) return null;
-  return photoUrls.value.get(photoId) || null;
+function getPhotoUrl(photoId: number | undefined): string | undefined {
+  if (!photoId) return undefined;
+  return photoUrls.value.get(photoId) || undefined;
 }
 
 function triggerFileInput() {

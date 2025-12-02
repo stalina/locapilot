@@ -16,7 +16,10 @@ const emit = defineEmits<{
 const photoPreviewUrl = ref<string | null>(null);
 
 const isPhoto = computed(() => {
-  return props.document.type === 'photo' || props.document.mimeType?.startsWith('image/');
+  return (
+    props.document.type === 'photo' ||
+    (typeof props.document.mimeType === 'string' && props.document.mimeType.startsWith('image/'))
+  );
 });
 
 const typeConfig = computed(() => {
@@ -102,7 +105,7 @@ function handleDelete() {
 function loadPhotoPreview() {
   if (!isPhoto.value) return;
 
-  const data = props.document.data;
+  const data: unknown = props.document.data as unknown;
   try {
     if (!data) {
       photoPreviewUrl.value = null;

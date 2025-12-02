@@ -113,11 +113,13 @@ interface Props {
   leases: Lease[];
   properties: any[];
   tenants: any[];
+  // Optional initial data for editing an existing rent
+  initial?: Partial<RentFormData> & { id?: number };
 }
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void;
-  (e: 'submit', data: RentFormData): void;
+  (e: 'submit', data: RentFormData & { id?: number }): void;
 }
 
 interface RentFormData {
@@ -162,13 +164,22 @@ watch(
   () => props.modelValue,
   newValue => {
     if (newValue) {
-      // Reset form when modal opens
-      formData.value = {
-        leaseId: 0,
-        dueDate: getNextMonthFirstDay(),
-        amount: 0,
-        charges: 0,
-      };
+      // If initial data is provided (editing), prefill form
+      if (props.initial) {
+        formData.value = {
+          leaseId: props.initial.leaseId || 0,
+          dueDate: props.initial.dueDate || getNextMonthFirstDay(),
+          amount: props.initial.amount ?? 0,
+          charges: props.initial.charges ?? 0,
+        };
+      } else {
+        formData.value = {
+          leaseId: 0,
+          dueDate: getNextMonthFirstDay(),
+          amount: 0,
+          charges: 0,
+        };
+      }
     }
   }
 );
@@ -209,7 +220,11 @@ function handleClose() {
 function handleSubmit() {
   if (!isFormValid.value) return;
 
-  emit('submit', { ...formData.value });
+  // Include id when editing
+  const payload: RentFormData & { id?: number } = { ...formData.value };
+  if (props.initial && props.initial.id) payload.id = props.initial.id;
+
+  emit('submit', payload);
   handleClose();
 }
 </script>
