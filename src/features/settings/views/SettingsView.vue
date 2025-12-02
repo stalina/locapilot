@@ -22,7 +22,7 @@ onMounted(() => {
   }
 
   // Listen for install prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
+  window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
     canInstall.value = true;
@@ -40,11 +40,11 @@ const handleInstallPWA = async () => {
 
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
-  
+
   if (outcome === 'accepted') {
     console.log('PWA installed');
   }
-  
+
   deferredPrompt = null;
   canInstall.value = false;
 };
@@ -53,12 +53,35 @@ const handleExportData = async () => {
   isExporting.value = true;
   try {
     // Export all data from IndexedDB
+    // We need to serialize Blobs (document.data) to data URLs so JSON export includes images.
+    const documentsRaw = await db.documents.toArray();
+    const documents: any[] = await Promise.all(
+      documentsRaw.map(async d => {
+        const copy: any = { ...d };
+        try {
+          if (d.data instanceof Blob) {
+            const text = await d.data.arrayBuffer();
+            const uint8 = new Uint8Array(text);
+            const b64 = btoa(String.fromCharCode(...uint8));
+            copy.data = `data:${d.mimeType};base64,${b64}`;
+          } else if (typeof d.data === 'string') {
+            copy.data = d.data;
+          } else {
+            copy.data = null;
+          }
+        } catch (e) {
+          copy.data = null;
+        }
+        return copy;
+      })
+    );
+
     const data = {
       properties: await db.properties.toArray(),
       tenants: await db.tenants.toArray(),
       leases: await db.leases.toArray(),
       rents: await db.rents.toArray(),
-      documents: await db.documents.toArray(),
+      documents,
       exportedAt: new Date().toISOString(),
       version: '1.0',
     };
@@ -66,7 +89,7 @@ const handleExportData = async () => {
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `locapilot-export-${new Date().toISOString().split('T')[0]}.json`;
@@ -74,11 +97,11 @@ const handleExportData = async () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     alert('Données exportées avec succès !');
   } catch (error) {
     console.error('Export error:', error);
-    alert('Erreur lors de l\'export des données');
+    alert("Erreur lors de l'export des données");
   } finally {
     isExporting.value = false;
   }
@@ -88,7 +111,7 @@ const handleImportData = () => {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'application/json';
-  
+
   input.onchange = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -120,13 +143,43 @@ const handleImportData = () => {
       if (data.tenants.length) await db.tenants.bulkAdd(data.tenants);
       if (data.leases?.length) await db.leases.bulkAdd(data.leases);
       if (data.rents?.length) await db.rents.bulkAdd(data.rents);
-      if (data.documents?.length) await db.documents.bulkAdd(data.documents);
+      if (data.documents?.length) {
+        // Rebuild Blobs for documents that have data URLs
+        const docsToAdd = data.documents.map((d: any) => {
+          const copy = { ...d };
+          try {
+            if (typeof d.data === 'string' && d.data.startsWith('data:')) {
+              const matches = d.data.match(/^data:(.+);base64,(.*)$/);
+              if (matches) {
+                const mime = matches[1];
+                const b64 = matches[2];
+                const binary = atob(b64);
+                const len = binary.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+                copy.data = new Blob([bytes], { type: mime });
+                copy.mimeType = mime;
+                copy.size = bytes.length;
+              } else {
+                copy.data = null;
+              }
+            } else {
+              copy.data = null;
+            }
+          } catch (e) {
+            copy.data = null;
+          }
+          return copy;
+        });
+
+        await db.documents.bulkAdd(docsToAdd);
+      }
 
       alert('Données importées avec succès !');
       router.push('/');
     } catch (error) {
       console.error('Import error:', error);
-      alert('Erreur lors de l\'import des données: ' + (error as Error).message);
+      alert("Erreur lors de l'import des données: " + (error as Error).message);
     } finally {
       isImporting.value = false;
     }
@@ -136,11 +189,19 @@ const handleImportData = () => {
 };
 
 const handleClearData = async () => {
-  if (!confirm('⚠️ Cette action va supprimer TOUTES vos données de façon irréversible. Êtes-vous sûr ?')) {
+  if (
+    !confirm(
+      '⚠️ Cette action va supprimer TOUTES vos données de façon irréversible. Êtes-vous sûr ?'
+    )
+  ) {
     return;
   }
 
-  if (!confirm('Dernière confirmation : toutes les propriétés, locataires, baux et documents seront supprimés.')) {
+  if (
+    !confirm(
+      'Dernière confirmation : toutes les propriétés, locataires, baux et documents seront supprimés.'
+    )
+  ) {
     return;
   }
 
@@ -150,7 +211,7 @@ const handleClearData = async () => {
     await db.leases.clear();
     await db.rents.clear();
     await db.documents.clear();
-    
+
     alert('Toutes les données ont été supprimées');
     router.push('/');
   } catch (error) {
@@ -173,9 +234,7 @@ const goBack = () => {
         <div class="header-meta">Configuration de l'application</div>
       </div>
       <div class="header-actions">
-        <Button variant="outline" icon="arrow-left" @click="goBack">
-          Retour
-        </Button>
+        <Button variant="outline" icon="arrow-left" @click="goBack"> Retour </Button>
       </div>
     </header>
 
@@ -186,26 +245,17 @@ const goBack = () => {
           <i class="mdi mdi-application"></i>
           Application Progressive (PWA)
         </h2>
-        
+
         <div class="setting-card">
           <div class="setting-info">
             <h3>Installation</h3>
-            <p v-if="isPWAInstalled" class="status-text success">
-              ✓ Application installée
-            </p>
-            <p v-else-if="canInstall" class="status-text info">
-              Installation disponible
-            </p>
+            <p v-if="isPWAInstalled" class="status-text success">✓ Application installée</p>
+            <p v-else-if="canInstall" class="status-text info">Installation disponible</p>
             <p v-else class="status-text">
               Ouvrez l'application dans un navigateur compatible pour l'installer
             </p>
           </div>
-          <Button 
-            v-if="canInstall"
-            @click="handleInstallPWA"
-            variant="primary"
-            icon="download"
-          >
+          <Button v-if="canInstall" @click="handleInstallPWA" variant="primary" icon="download">
             Installer l'app
           </Button>
         </div>
@@ -231,7 +281,7 @@ const goBack = () => {
             <h3>Exporter les données</h3>
             <p>Téléchargez toutes vos données au format JSON</p>
           </div>
-          <Button 
+          <Button
             @click="handleExportData"
             :disabled="isExporting"
             variant="secondary"
@@ -246,7 +296,7 @@ const goBack = () => {
             <h3>Importer les données</h3>
             <p>Restaurez vos données depuis un fichier JSON</p>
           </div>
-          <Button 
+          <Button
             @click="handleImportData"
             :disabled="isImporting"
             variant="secondary"
@@ -261,13 +311,7 @@ const goBack = () => {
             <h3>Effacer toutes les données</h3>
             <p>⚠️ Cette action est irréversible</p>
           </div>
-          <Button 
-            @click="handleClearData"
-            variant="danger"
-            icon="delete"
-          >
-            Tout effacer
-          </Button>
+          <Button @click="handleClearData" variant="danger" icon="delete"> Tout effacer </Button>
         </div>
       </section>
 
@@ -283,7 +327,8 @@ const goBack = () => {
             <h3>Locapilot</h3>
             <p>Version 1.0.0</p>
             <p class="about-text">
-              Application de gestion locative offline-first développée avec Vue 3, TypeScript et Dexie.js
+              Application de gestion locative offline-first développée avec Vue 3, TypeScript et
+              Dexie.js
             </p>
           </div>
         </div>

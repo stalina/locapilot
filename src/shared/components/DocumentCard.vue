@@ -100,8 +100,48 @@ function handleDelete() {
 }
 
 function loadPhotoPreview() {
-  if (isPhoto.value && props.document.data) {
-    photoPreviewUrl.value = URL.createObjectURL(props.document.data);
+  if (!isPhoto.value) return;
+
+  const data = props.document.data;
+  try {
+    if (!data) {
+      photoPreviewUrl.value = null;
+      return;
+    }
+
+    // If already a data URL string
+    if (typeof data === 'string' && data.startsWith('data:')) {
+      photoPreviewUrl.value = data;
+      return;
+    }
+
+    // If it's a Blob-like object, use createObjectURL safely
+    if (data instanceof Blob) {
+      photoPreviewUrl.value = URL.createObjectURL(data);
+      return;
+    }
+
+    // If data is an object but not a Blob (some imports store {}), try to extract buffer
+    if (typeof data === 'object' && data !== null) {
+      // Some exported JSON might have an empty object for binary data.
+      // Avoid calling createObjectURL on plain objects.
+      // Try to handle ArrayBuffer-like shapes
+      // @ts-ignore
+      const buf = (data as any).buffer;
+      if (buf instanceof ArrayBuffer) {
+        const blob = new Blob([new Uint8Array(buf)], {
+          type: props.document.mimeType || 'application/octet-stream',
+        });
+        photoPreviewUrl.value = URL.createObjectURL(blob);
+        return;
+      }
+    }
+
+    // If we reach here, data is not usable
+    photoPreviewUrl.value = null;
+  } catch (err) {
+    console.error('Failed to create photo preview URL', err);
+    photoPreviewUrl.value = null;
   }
 }
 

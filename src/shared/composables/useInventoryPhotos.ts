@@ -176,10 +176,50 @@ export function useInventoryPhotos() {
   }
 
   /**
-   * Convertit un blob en URL pour affichage
+   * Convertit des données (Blob, ArrayBuffer, base64 string…) en URL pour affichage.
+   * Retourne une chaîne vide si les données ne sont pas utilisables.
    */
-  function createPhotoUrl(blob: Blob): string {
-    return URL.createObjectURL(blob);
+  function createPhotoUrl(data: unknown): string {
+    try {
+      if (!data) return '';
+
+      if (data instanceof Blob) return URL.createObjectURL(data);
+
+      if (data instanceof ArrayBuffer) {
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        return URL.createObjectURL(blob);
+      }
+
+      if (typeof data === 'object' && data !== null) {
+        // @ts-ignore
+        const maybeBuffer = (data as any).buffer;
+        if (maybeBuffer instanceof ArrayBuffer) {
+          const uint8 = new Uint8Array(maybeBuffer);
+          const blob = new Blob([uint8], { type: 'application/octet-stream' });
+          return URL.createObjectURL(blob);
+        }
+      }
+
+      if (typeof data === 'string') {
+        if (data.startsWith('data:')) return data;
+        try {
+          const binary = atob(data);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+          const blob = new Blob([bytes], { type: 'application/octet-stream' });
+          return URL.createObjectURL(blob);
+        } catch (e) {
+          console.error('createPhotoUrl error', e);
+          return '';
+        }
+      }
+
+      return '';
+    } catch (err) {
+      console.error('createPhotoUrl error', err);
+      return '';
+    }
   }
 
   /**

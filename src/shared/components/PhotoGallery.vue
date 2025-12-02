@@ -181,7 +181,8 @@ onUnmounted(() => {
         :class="{ 'is-primary': index === 0 }"
       >
         <img
-          :src="getPhotoUrl(photo.id) || ''"
+          v-if="getPhotoUrl(photo.id)"
+          :src="getPhotoUrl(photo.id)"
           :alt="photo.name"
           class="photo-image"
           @click="openLightbox(index)"
@@ -245,8 +246,8 @@ onUnmounted(() => {
 
         <div class="lightbox-content" @click.stop>
           <img
-            v-if="photos[selectedPhotoIndex]"
-            :src="getPhotoUrl(photos[selectedPhotoIndex]?.id) || ''"
+            v-if="photos[selectedPhotoIndex] && getPhotoUrl(photos[selectedPhotoIndex]?.id)"
+            :src="getPhotoUrl(photos[selectedPhotoIndex]?.id)"
             :alt="photos[selectedPhotoIndex]?.name || 'Photo'"
           />
           <div class="lightbox-info">{{ selectedPhotoIndex + 1 }} / {{ photos.length }}</div>
