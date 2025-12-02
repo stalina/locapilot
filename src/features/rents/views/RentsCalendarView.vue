@@ -24,22 +24,84 @@ const showCreateModal = ref(false);
 
 // Calendar events
 const calendarEvents = computed(() => {
-  return rentsStore.rents.map((rent: Rent) => {
+  // real rents
+  const real = rentsStore.rents.map((rent: Rent) => {
     const lease = leasesStore.leases.find(l => l.id === rent.leaseId);
     const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
 
-    // Map rent status to calendar status
     const calendarStatus =
       rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
 
+    const id = `${rent.id ?? 'r'}-${rent.leaseId}-${new Date(rent.dueDate).setHours(0, 0, 0, 0)}`;
+
     return {
-      id: rent.id?.toString() || '',
+      id,
+      rentId: rent.id,
+      leaseId: rent.leaseId,
       date: new Date(rent.dueDate),
       title: property?.name || 'Bien inconnu',
       status: calendarStatus as 'pending' | 'paid' | 'overdue',
       amount: rent.amount,
+      isVirtual: false,
     };
   });
+
+  // virtual rents generated from active leases
+  function generateVirtualRents(referenceDate = new Date()) {
+    const activeLeases = leasesStore.leases.filter(l => l.status === 'active');
+    const today = new Date(referenceDate);
+    today.setHours(0, 0, 0, 0);
+
+    return activeLeases
+      .map((lease: any) => {
+        const paymentDay = lease.paymentDay || 1;
+        const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
+        if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
+
+        const exists = rentsStore.rents.some((r: Rent) => {
+          if (r.leaseId !== lease.id) return false;
+          const d = new Date(r.dueDate);
+          return (
+            d.getFullYear() === candidate.getFullYear() && d.getMonth() === candidate.getMonth()
+          );
+        });
+
+        if (exists) return null;
+
+        return {
+          id: `virtual-${lease.id}-${candidate.getFullYear()}-${candidate.getMonth()}`,
+          leaseId: lease.id,
+          date: candidate,
+          dueDate: candidate,
+          amount: lease.rent,
+          status: 'pending',
+          isVirtual: true,
+        } as any;
+      })
+      .filter(Boolean) as any[];
+  }
+
+  const virtual = generateVirtualRents();
+
+  // Map virtual rents to the same event shape
+  const virtualEvents = virtual.map((v: any) => {
+    const lease = leasesStore.leases.find(l => l.id === v.leaseId);
+    const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
+    const id = `${String(v.id)}-${v.leaseId}-${new Date(v.dueDate).setHours(0, 0, 0, 0)}`;
+
+    return {
+      id,
+      rentId: undefined,
+      leaseId: v.leaseId,
+      date: new Date(v.dueDate),
+      title: property?.name || 'Bien inconnu',
+      status: 'pending' as const,
+      amount: v.amount,
+      isVirtual: true,
+    } as any;
+  });
+
+  return [...real, ...virtualEvents];
 });
 
 // Upcoming rents (next 30 days)
@@ -78,10 +140,51 @@ function handleDateClick(date: Date) {
 }
 
 function handleEventClick(event: any) {
-  const rent = rentsStore.rents.find((r: Rent) => r.id === Number(event.id));
-  if (rent) {
-    selectedRent.value = rent;
-    showPaymentModal.value = true;
+  // Prefer explicit rentId when available (we add it on event objects)
+  let rentId: number | undefined;
+
+  if (event && typeof event.rentId === 'number') {
+    rentId = event.rentId;
+  } else if (event && event.id != null) {
+    // Try to parse numeric id or a composite id like "r-<id>-<timestamp>"
+    const numeric = Number(event.id);
+    if (!Number.isNaN(numeric) && Number.isFinite(numeric)) {
+      rentId = numeric;
+    } else {
+      // try to extract the rent id from composite id (format: "<rentId>-<leaseId>-<timestamp>" or "r-<leaseId>-<timestamp>")
+      const match = String(event.id).match(/^(?:r-)?(\d+)-/);
+      if (match) rentId = Number(match[1]);
+    }
+  }
+
+  if (rentId != null) {
+    const rent = rentsStore.rents.find((r: Rent) => r.id === rentId);
+    if (rent) {
+      selectedRent.value = rent;
+      showPaymentModal.value = true;
+    }
+    return;
+  }
+
+  // If no numeric rentId found, check for virtual event (we added isVirtual/leaseId)
+  if (event && event.isVirtual && typeof event.leaseId === 'number') {
+    // create a rent for that lease and open payment modal
+    (async () => {
+      try {
+        const created = await rentsStore.createRent({
+          leaseId: event.leaseId,
+          dueDate: new Date(event.date || event.dueDate),
+          amount: event.amount || 0,
+          charges: 0,
+          status: 'pending',
+        });
+        selectedRent.value = created;
+        showPaymentModal.value = true;
+      } catch (err) {
+        console.error('Failed to create rent from virtual event:', err);
+      }
+    })();
+    return;
   }
 }
 
@@ -153,6 +256,10 @@ onMounted(async () => {
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
   ]);
+  // debug
+  console.log('RentsCalendarView mounted - rents:', rentsStore.rents.length);
+  console.log('Leases loaded:', leasesStore.leases.length);
+  console.log('Calendar events preview:', calendarEvents.value?.slice(0, 20));
 });
 </script>
 

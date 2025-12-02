@@ -32,7 +32,9 @@ const year = computed(() => currentDate.value.getFullYear());
 const month = computed(() => currentDate.value.getMonth());
 
 const monthName = computed(() => {
-  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(currentDate.value);
+  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(
+    currentDate.value
+  );
 });
 
 const daysInMonth = computed(() => {
@@ -64,13 +66,13 @@ const days = computed(() => {
 
 // Methods
 function getEventsForDate(date: Date): CalendarEvent[] {
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+
   return props.events.filter(event => {
     const eventDate = new Date(event.date);
-    return (
-      eventDate.getDate() === date.getDate() &&
-      eventDate.getMonth() === date.getMonth() &&
-      eventDate.getFullYear() === date.getFullYear()
-    );
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate.getTime() === target.getTime();
   });
 }
 
@@ -135,9 +137,7 @@ function isToday(date: Date | null): boolean {
       <button class="nav-button" @click="nextMonth">
         <i class="mdi mdi-chevron-right"></i>
       </button>
-      <button class="today-button" @click="today">
-        Aujourd'hui
-      </button>
+      <button class="today-button" @click="today">Aujourd'hui</button>
     </div>
 
     <!-- Weekday Headers -->
