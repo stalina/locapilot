@@ -85,7 +85,8 @@ watch(
   () => properties.value,
   val => {
     if (val && val.length > 0 && (!selectedPropertyId.value || selectedPropertyId.value === 0)) {
-      selectedPropertyId.value = val[0].id as number;
+      const first = val[0];
+      if (first && typeof first.id === 'number') selectedPropertyId.value = first.id;
     }
     // If a property is selected, initialize financials
     const sel = properties.value.find(p => p.id === selectedPropertyId.value);
