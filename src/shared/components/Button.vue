@@ -214,3 +214,7 @@ const isLink = computed(() => !!props.to && !props.disabled && !props.loading);
   }
 }
 </style>
+
+<script lang="ts">
+export default {};
+</script>

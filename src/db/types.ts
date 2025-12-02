@@ -9,6 +9,8 @@ export type {
   InventoryItem,
   Communication,
   Settings,
+  TenantDocument,
+  TenantAudit,
 } from './schema';
 
 // Application-specific settings type

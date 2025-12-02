@@ -94,6 +94,28 @@ export interface Document {
   updatedAt: Date;
 }
 
+export interface TenantDocument {
+  id?: number;
+  tenantId: number;
+  name: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: Date;
+  notes?: string;
+  data?: Blob; // optional - some exports may exclude blob
+  documentId?: number; // reference to main documents table
+}
+
+export interface TenantAudit {
+  id?: number;
+  tenantId: number;
+  action: 'validated' | 'refused' | 'created' | 'updated';
+  actorId?: number | null; // user id performing the action (optional)
+  timestamp: Date;
+  reason?: string;
+  documentIds?: number[]; // linked document ids used as evidence
+}
+
 export interface InventoryItem {
   room: string;
   item: string;
@@ -144,6 +166,8 @@ export class LocapilotDB extends Dexie {
   documents!: EntityTable<Document, 'id'>;
   inventories!: EntityTable<Inventory, 'id'>;
   communications!: EntityTable<Communication, 'id'>;
+  tenantDocuments!: EntityTable<TenantDocument, 'id'>;
+  tenantAudits!: EntityTable<TenantAudit, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
 
   constructor() {
@@ -216,6 +240,24 @@ export class LocapilotDB extends Dexie {
       communications: '++id, relatedEntityType, relatedEntityId, date, type',
       settings: '++id, &key',
     });
+
+    // Version 5: Add tenantDocuments and tenantAudits tables to support attaching documents to tenants
+    this.version(5)
+      .stores({
+        properties: '++id, name, address, type, surface, status, createdAt',
+        tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+        leases: '++id, propertyId, startDate, endDate, status, createdAt',
+        rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+        documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+        inventories: '++id, leaseId, type, date',
+        communications: '++id, relatedEntityType, relatedEntityId, date, type',
+        tenantDocuments: '++id, tenantId, uploadedAt, name',
+        tenantAudits: '++id, tenantId, action, timestamp',
+        settings: '++id, &key',
+      })
+      .upgrade(async () => {
+        // No data transformation necessary; ensure tables exist for future use.
+      });
   }
 }
 
@@ -251,6 +293,8 @@ export async function exportData(): Promise<string> {
     leases: await db.leases.toArray(),
     rents: await db.rents.toArray(),
     documents: await db.documents.toArray(),
+    tenantDocuments: await db.tenantDocuments.toArray(),
+    tenantAudits: await db.tenantAudits.toArray(),
     inventories: await db.inventories.toArray(),
     communications: await db.communications.toArray(),
     settings: await db.settings.toArray(),
@@ -285,6 +329,8 @@ export async function importData(jsonData: string): Promise<void> {
         db.leases.clear(),
         db.rents.clear(),
         db.documents.clear(),
+        db.tenantDocuments.clear(),
+        db.tenantAudits.clear(),
         db.inventories.clear(),
         db.communications.clear(),
         db.settings.clear(),
@@ -296,6 +342,8 @@ export async function importData(jsonData: string): Promise<void> {
       if (data.leases) await db.leases.bulkAdd(data.leases);
       if (data.rents) await db.rents.bulkAdd(data.rents);
       if (data.documents) await db.documents.bulkAdd(data.documents);
+      if (data.tenantDocuments) await db.tenantDocuments.bulkAdd(data.tenantDocuments);
+      if (data.tenantAudits) await db.tenantAudits.bulkAdd(data.tenantAudits);
       if (data.inventories) await db.inventories.bulkAdd(data.inventories);
       if (data.communications) await db.communications.bulkAdd(data.communications);
       if (data.settings) await db.settings.bulkAdd(data.settings);

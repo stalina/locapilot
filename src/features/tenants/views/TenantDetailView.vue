@@ -6,6 +6,8 @@ import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
+import TenantDocumentsUploader from '../components/TenantDocumentsUploader.vue';
+import TenantDocumentsList from '../components/TenantDocumentsList.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -98,22 +100,40 @@ onMounted(async () => {
     propertiesStore.fetchProperties(),
   ]);
 });
+
+async function validateApplicant() {
+  if (!tenant.value?.id) return;
+  try {
+    await tenantsStore.setTenantStatusWithAudit(tenant.value.id, 'validated', {
+      actorId: null,
+    });
+  } catch (err) {
+    console.error('Failed to validate applicant', err);
+  }
+}
+
+async function refuseApplicant() {
+  if (!tenant.value?.id) return;
+  const reason = prompt('Raison du refus (facultatif)');
+  try {
+    await tenantsStore.setTenantStatusWithAudit(tenant.value.id, 'refused', {
+      actorId: null,
+      reason: reason || undefined,
+    });
+  } catch (err) {
+    console.error('Failed to refuse applicant', err);
+  }
+}
 </script>
 
 <template>
   <div class="view-container tenant-detail-view">
     <!-- Header -->
     <header class="view-header">
-      <Button variant="ghost" icon="arrow-left" @click="handleBack">
-        Retour
-      </Button>
+      <Button variant="ghost" icon="arrow-left" @click="handleBack"> Retour </Button>
       <div class="header-actions">
-        <Button variant="default" icon="pencil" @click="handleEdit">
-          Modifier
-        </Button>
-        <Button variant="error" icon="delete" @click="handleDelete">
-          Supprimer
-        </Button>
+        <Button variant="default" icon="pencil" @click="handleEdit"> Modifier </Button>
+        <Button variant="error" icon="delete" @click="handleDelete"> Supprimer </Button>
       </div>
     </header>
 
@@ -192,7 +212,11 @@ onMounted(async () => {
               <div class="info-item">
                 <span class="info-label">Date de naissance</span>
                 <span class="info-value">
-                  {{ tenant.birthDate ? new Date(tenant.birthDate).toLocaleDateString('fr-FR') : 'Non renseignée' }}
+                  {{
+                    tenant.birthDate
+                      ? new Date(tenant.birthDate).toLocaleDateString('fr-FR')
+                      : 'Non renseignée'
+                  }}
                 </span>
               </div>
               <div class="info-item">
@@ -212,6 +236,15 @@ onMounted(async () => {
             </h2>
             <p class="notes-content">{{ tenant.notes }}</p>
           </div>
+
+          <!-- Documents Card (moved from right column) -->
+          <div class="card">
+            <h2 class="card-title">
+              <i class="mdi mdi-folder-multiple"></i>
+              Documents
+            </h2>
+            <TenantDocumentsList v-if="tenant && tenant.id" :tenantId="tenant.id" />
+          </div>
         </div>
 
         <!-- Right Column -->
@@ -222,7 +255,7 @@ onMounted(async () => {
               <i class="mdi mdi-home"></i>
               Bien occupé
             </h2>
-            <div 
+            <div
               class="property-item clickable"
               @click="currentProperty.id && goToProperty(currentProperty.id)"
             >
@@ -236,18 +269,26 @@ onMounted(async () => {
             <div class="lease-summary">
               <div class="summary-item">
                 <span class="label">Loyer mensuel</span>
-                <span class="value">{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span>
+                <span class="value"
+                  >{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span
+                >
               </div>
               <div class="summary-item">
                 <span class="label">Début</span>
-                <span class="value">{{ new Date(activeLease.startDate).toLocaleDateString('fr-FR') }}</span>
+                <span class="value">{{
+                  new Date(activeLease.startDate).toLocaleDateString('fr-FR')
+                }}</span>
               </div>
               <div class="summary-item">
                 <span class="label">Échéance</span>
-                <span class="value">{{ activeLease.endDate ? new Date(activeLease.endDate).toLocaleDateString('fr-FR') : 'Indéterminée' }}</span>
+                <span class="value">{{
+                  activeLease.endDate
+                    ? new Date(activeLease.endDate).toLocaleDateString('fr-FR')
+                    : 'Indéterminée'
+                }}</span>
               </div>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 size="sm"
                 @click="activeLease.id && goToLease(activeLease.id)"
                 class="view-lease-btn"
@@ -266,17 +307,25 @@ onMounted(async () => {
               <span class="badge">{{ tenantLeases.length }}</span>
             </h2>
             <div class="leases-list">
-              <div 
-                v-for="lease in tenantLeases" 
+              <div
+                v-for="lease in tenantLeases"
                 :key="lease.id"
                 :class="['lease-item clickable', lease.status]"
                 @click="lease.id && goToLease(lease.id)"
               >
                 <div class="lease-header">
                   <span :class="['status-badge', lease.status]">
-                    {{ lease.status === 'active' ? 'Actif' : lease.status === 'pending' ? 'En attente' : 'Terminé' }}
+                    {{
+                      lease.status === 'active'
+                        ? 'Actif'
+                        : lease.status === 'pending'
+                          ? 'En attente'
+                          : 'Terminé'
+                    }}
                   </span>
-                  <span class="lease-date">{{ new Date(lease.startDate).toLocaleDateString('fr-FR') }}</span>
+                  <span class="lease-date">{{
+                    new Date(lease.startDate).toLocaleDateString('fr-FR')
+                  }}</span>
                 </div>
                 <div class="lease-amount">{{ lease.rent.toLocaleString('fr-FR') }} € / mois</div>
                 <i class="mdi mdi-chevron-right"></i>
@@ -307,6 +356,18 @@ onMounted(async () => {
                 <i class="mdi mdi-clipboard-check"></i>
                 <span>États des lieux</span>
               </button>
+            </div>
+
+            <!-- Validation Actions for candidates -->
+            <div class="card" v-if="tenant && tenant.status === 'candidate'">
+              <h2 class="card-title">
+                <i class="mdi mdi-account-check"></i>
+                Validation de la candidature
+              </h2>
+              <div class="validation-actions">
+                <Button variant="success" @click="validateApplicant">Valider</Button>
+                <Button variant="error" @click="refuseApplicant">Refuser</Button>
+              </div>
             </div>
           </div>
 
