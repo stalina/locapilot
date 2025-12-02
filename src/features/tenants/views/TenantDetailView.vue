@@ -6,7 +6,6 @@ import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
-import TenantDocumentsUploader from '../components/TenantDocumentsUploader.vue';
 import TenantDocumentsList from '../components/TenantDocumentsList.vue';
 
 const route = useRoute();
