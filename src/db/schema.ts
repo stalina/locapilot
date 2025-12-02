@@ -35,7 +35,7 @@ export interface Tenant {
   employer?: string;
   income?: number;
   notes?: string;
-  status: 'active' | 'candidate' | 'former';
+  status: 'active' | 'candidate' | 'former' | 'candidature-refusee';
   createdAt: Date;
   updatedAt: Date;
 }

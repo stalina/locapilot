@@ -212,6 +212,7 @@ function handleClose() {
             <label class="field-label">Statut <span class="required">*</span></label>
             <select v-model="formData.status" class="select" data-testid="tenant-status">
               <option value="candidate">Candidat</option>
+              <option value="candidature-refusee">Candidature refusée</option>
               <option value="active">Locataire actif</option>
               <option value="former">Ancien locataire</option>
             </select>

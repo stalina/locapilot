@@ -149,6 +149,12 @@ onMounted(async () => {
         icon-color="accent"
       />
       <StatCard
+        label="Candidature refusée"
+        :value="tenantsStore.refusedTenants.length"
+        icon="account-remove"
+        icon-color="neutral"
+      />
+      <StatCard
         label="Anciens locataires"
         :value="tenantsStore.formerTenants.length"
         icon="account-off"
@@ -181,6 +187,13 @@ onMounted(async () => {
             @click="filterStatus = 'candidate'"
           >
             Candidats
+          </button>
+          <button
+            class="filter-button"
+            :class="{ active: filterStatus === 'candidature-refusee' }"
+            @click="filterStatus = 'candidature-refusee'"
+          >
+            Candidature refusée
           </button>
           <button
             class="filter-button"

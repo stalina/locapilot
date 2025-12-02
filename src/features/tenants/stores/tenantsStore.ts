@@ -18,6 +18,10 @@ export const useTenantsStore = defineStore('tenants', () => {
 
   const formerTenants = computed(() => tenants.value.filter(t => t.status === 'former'));
 
+  const refusedTenants = computed(() =>
+    tenants.value.filter(t => t.status === 'candidature-refusee')
+  );
+
   const tenantsCount = computed(() => tenants.value.length);
 
   // Actions
@@ -194,7 +198,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     try {
       const newStatus =
-        status === 'validated' ? 'active' : status === 'refused' ? 'candidate' : status;
+        status === 'validated' ? 'active' : status === 'refused' ? 'candidature-refusee' : status;
       // update tenant status
       await db.tenants.update(tenantId, { status: newStatus, updatedAt: new Date() });
       // add audit entry
@@ -230,6 +234,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     // Getters
     activeTenants,
     candidateTenants,
+    refusedTenants,
     formerTenants,
     tenantsCount,
     // Actions

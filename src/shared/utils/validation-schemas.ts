@@ -38,7 +38,7 @@ export const TenantSchema = z.object({
   birthDate: z.string().optional(),
   profession: z.string().optional(),
   income: z.number().min(0, 'Le revenu doit être >= 0').optional(),
-  status: z.enum(['active', 'candidate', 'former']),
+  status: z.enum(['active', 'candidate', 'former', 'candidature-refusee']),
   notes: z.string().optional(),
   createdAt: z.number().optional(),
   updatedAt: z.number().optional(),

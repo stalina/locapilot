@@ -36,6 +36,8 @@ const statusConfig = computed(() => {
       return { label: 'Actif', color: 'success' };
     case 'candidate':
       return { label: 'Candidat', color: 'accent' };
+    case 'candidature-refusee':
+      return { label: 'Candidature refusée', color: 'neutral' };
     case 'former':
       return { label: 'Ancien', color: 'error' };
     default:

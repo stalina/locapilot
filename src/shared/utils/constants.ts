@@ -9,13 +9,13 @@ export const PROPERTY_STATUS = {
   OCCUPIED: 'occupied',
   VACANT: 'vacant',
   MAINTENANCE: 'maintenance',
-} as const
+} as const;
 
 export const PROPERTY_STATUS_LABELS = {
   [PROPERTY_STATUS.OCCUPIED]: 'Occupé',
   [PROPERTY_STATUS.VACANT]: 'Vacant',
   [PROPERTY_STATUS.MAINTENANCE]: 'En maintenance',
-} as const
+} as const;
 
 /**
  * Types de propriétés
@@ -27,7 +27,7 @@ export const PROPERTY_TYPES = {
   COMMERCIAL: 'commercial',
   PARKING: 'parking',
   OTHER: 'other',
-} as const
+} as const;
 
 export const PROPERTY_TYPE_LABELS = {
   [PROPERTY_TYPES.APARTMENT]: 'Appartement',
@@ -36,7 +36,7 @@ export const PROPERTY_TYPE_LABELS = {
   [PROPERTY_TYPES.COMMERCIAL]: 'Commercial',
   [PROPERTY_TYPES.PARKING]: 'Parking',
   [PROPERTY_TYPES.OTHER]: 'Autre',
-} as const
+} as const;
 
 /**
  * Statuts des locataires
@@ -45,13 +45,15 @@ export const TENANT_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
   CANDIDATE: 'candidate',
-} as const
+  REFUSED: 'candidature-refusee',
+} as const;
 
 export const TENANT_STATUS_LABELS = {
   [TENANT_STATUS.ACTIVE]: 'Actif',
   [TENANT_STATUS.INACTIVE]: 'Inactif',
   [TENANT_STATUS.CANDIDATE]: 'Candidat',
-} as const
+  [TENANT_STATUS.REFUSED]: 'Candidature refusée',
+} as const;
 
 /**
  * Statuts des baux
@@ -60,13 +62,13 @@ export const LEASE_STATUS = {
   ACTIVE: 'active',
   PENDING: 'pending',
   ENDED: 'ended',
-} as const
+} as const;
 
 export const LEASE_STATUS_LABELS = {
   [LEASE_STATUS.ACTIVE]: 'Actif',
   [LEASE_STATUS.PENDING]: 'En attente',
   [LEASE_STATUS.ENDED]: 'Terminé',
-} as const
+} as const;
 
 /**
  * Statuts des loyers
@@ -76,14 +78,14 @@ export const RENT_STATUS = {
   PAID: 'paid',
   LATE: 'late',
   PARTIAL: 'partial',
-} as const
+} as const;
 
 export const RENT_STATUS_LABELS = {
   [RENT_STATUS.PENDING]: 'En attente',
   [RENT_STATUS.PAID]: 'Payé',
   [RENT_STATUS.LATE]: 'En retard',
   [RENT_STATUS.PARTIAL]: 'Partiel',
-} as const
+} as const;
 
 /**
  * Types de documents
@@ -95,16 +97,16 @@ export const DOCUMENT_TYPES = {
   INVENTORY: 'inventory',
   RECEIPT: 'receipt',
   OTHER: 'other',
-} as const
+} as const;
 
 export const DOCUMENT_TYPE_LABELS = {
-  [DOCUMENT_TYPES.IDENTITY]: 'Pièce d\'identité',
+  [DOCUMENT_TYPES.IDENTITY]: "Pièce d'identité",
   [DOCUMENT_TYPES.INCOME]: 'Justificatif de revenus',
   [DOCUMENT_TYPES.CONTRACT]: 'Contrat',
   [DOCUMENT_TYPES.INVENTORY]: 'État des lieux',
   [DOCUMENT_TYPES.RECEIPT]: 'Quittance',
   [DOCUMENT_TYPES.OTHER]: 'Autre',
-} as const
+} as const;
 
 /**
  * Types d'états des lieux
@@ -112,12 +114,12 @@ export const DOCUMENT_TYPE_LABELS = {
 export const INVENTORY_TYPES = {
   CHECKIN: 'checkin',
   CHECKOUT: 'checkout',
-} as const
+} as const;
 
 export const INVENTORY_TYPE_LABELS = {
   [INVENTORY_TYPES.CHECKIN]: 'Entrée',
   [INVENTORY_TYPES.CHECKOUT]: 'Sortie',
-} as const
+} as const;
 
 /**
  * Limites et seuils
@@ -132,7 +134,7 @@ export const LIMITS = {
   MAX_DEPOSIT_AMOUNT: 100000,
   PAYMENT_DAY_MIN: 1,
   PAYMENT_DAY_MAX: 31,
-} as const
+} as const;
 
 /**
  * Formats de date
@@ -142,7 +144,7 @@ export const DATE_FORMATS = {
   LONG: 'd MMMM yyyy',
   WITH_TIME: 'dd/MM/yyyy HH:mm',
   ISO: 'yyyy-MM-dd',
-} as const
+} as const;
 
 /**
  * Routes de l'application
@@ -159,7 +161,7 @@ export const ROUTES = {
   DOCUMENTS: '/documents',
   INVENTORIES: '/inventories',
   SETTINGS: '/settings',
-} as const
+} as const;
 
 /**
  * Clés de stockage local
@@ -168,7 +170,7 @@ export const STORAGE_KEYS = {
   THEME: 'locapilot_theme',
   LOCALE: 'locapilot_locale',
   LAST_BACKUP: 'locapilot_last_backup',
-} as const
+} as const;
 
 /**
  * Messages d'erreur
@@ -181,9 +183,10 @@ export const ERROR_MESSAGES = {
   INVALID_NUMBER: 'Nombre invalide',
   MIN_VALUE: (min: number) => `La valeur doit être supérieure ou égale à ${min}`,
   MAX_VALUE: (max: number) => `La valeur doit être inférieure ou égale à ${max}`,
-  FILE_TOO_LARGE: (maxSize: number) => `Le fichier est trop volumineux (max ${maxSize / 1024 / 1024} MB)`,
+  FILE_TOO_LARGE: (maxSize: number) =>
+    `Le fichier est trop volumineux (max ${maxSize / 1024 / 1024} MB)`,
   OPERATION_FAILED: 'Opération échouée. Veuillez réessayer.',
-} as const
+} as const;
 
 /**
  * Messages de succès
@@ -195,7 +198,7 @@ export const SUCCESS_MESSAGES = {
   SAVED: 'Enregistré avec succès',
   EXPORTED: 'Export réussi',
   IMPORTED: 'Import réussi',
-} as const
+} as const;
 
 /**
  * Temps d'attente et délais
@@ -205,4 +208,4 @@ export const DELAYS = {
   TOAST_DURATION: 3000, // ms
   LOADING_MIN: 500, // ms
   AUTO_SAVE: 2000, // ms
-} as const
+} as const;
