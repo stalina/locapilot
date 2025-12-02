@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
-import { db } from '@/db/schema';
+import { db } from '@/db/database';
 
 // Stats
 const stats = ref({
@@ -14,24 +14,28 @@ const stats = ref({
 });
 
 // Activities
-const recentActivities = ref<Array<{
-  id: string;
-  type: 'payment' | 'lease' | 'inventory' | 'message';
-  title: string;
-  description: string;
-  time: string;
-  badge?: { label: string; variant: 'success' | 'primary' | 'warning' };
-  icon: string;
-  iconColor: string;
-}>>([]);
+const recentActivities = ref<
+  Array<{
+    id: string;
+    type: 'payment' | 'lease' | 'inventory' | 'message';
+    title: string;
+    description: string;
+    time: string;
+    badge?: { label: string; variant: 'success' | 'primary' | 'warning' };
+    icon: string;
+    iconColor: string;
+  }>
+>([]);
 
 // Events
-const upcomingEvents = ref<Array<{
-  id: string;
-  date: string;
-  title: string;
-  description: string;
-}>>([]);
+const upcomingEvents = ref<
+  Array<{
+    id: string;
+    date: string;
+    title: string;
+    description: string;
+  }>
+>([]);
 
 onMounted(async () => {
   await loadDashboardData();
@@ -42,29 +46,27 @@ async function loadDashboardData() {
     // Load properties stats
     const properties = await db.properties.toArray();
     stats.value.totalProperties = properties.length;
-    
+
     const occupiedProperties = properties.filter(p => p.status === 'occupied');
-    stats.value.occupancyRate = properties.length > 0
-      ? Math.round((occupiedProperties.length / properties.length) * 100 * 10) / 10
-      : 0;
-    
+    stats.value.occupancyRate =
+      properties.length > 0
+        ? Math.round((occupiedProperties.length / properties.length) * 100 * 10) / 10
+        : 0;
+
     // Load rents stats
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const rents = await db.rents
       .where('dueDate')
-      .between(
-        new Date(currentYear, currentMonth, 1),
-        new Date(currentYear, currentMonth + 1, 0)
-      )
+      .between(new Date(currentYear, currentMonth, 1), new Date(currentYear, currentMonth + 1, 0))
       .toArray();
-    
+
     const paidRents = rents.filter(r => r.status === 'paid');
     const pendingRents = rents.filter(r => r.status === 'pending' || r.status === 'late');
-    
+
     stats.value.monthlyRevenue = paidRents.reduce((sum, r) => sum + r.amount, 0);
     stats.value.pendingRents = pendingRents.length;
-    
+
     // Load recent activities (mock data for now)
     recentActivities.value = [
       {
@@ -91,13 +93,13 @@ async function loadDashboardData() {
         id: '3',
         type: 'inventory',
         title: 'État des lieux complété',
-        description: '78 Boulevard Haussmann - État d\'entrée',
+        description: "78 Boulevard Haussmann - État d'entrée",
         time: 'Il y a 2 jours',
         icon: 'clipboard-check',
         iconColor: '#14b8a6',
       },
     ];
-    
+
     // Load upcoming events (mock data)
     upcomingEvents.value = [
       {
@@ -133,13 +135,18 @@ async function loadDashboardData() {
         <h1>Tableau de bord</h1>
         <div class="header-meta">
           <i class="mdi mdi-calendar"></i>
-          {{ new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}
+          {{
+            new Date().toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          }}
         </div>
       </div>
       <div class="header-actions">
-        <Button variant="outline" icon="bell">
-          3 notifications
-        </Button>
+        <Button variant="outline" icon="bell"> 3 notifications </Button>
       </div>
     </header>
 
@@ -198,12 +205,11 @@ async function loadDashboardData() {
         </div>
 
         <div class="activity-list">
-          <div
-            v-for="activity in recentActivities"
-            :key="activity.id"
-            class="activity-item"
-          >
-            <div class="activity-icon" :style="{ background: `${activity.iconColor}22`, color: activity.iconColor }">
+          <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
+            <div
+              class="activity-icon"
+              :style="{ background: `${activity.iconColor}22`, color: activity.iconColor }"
+            >
               <i :class="`mdi mdi-${activity.icon}`"></i>
             </div>
             <div class="activity-content">
@@ -211,10 +217,7 @@ async function loadDashboardData() {
               <div class="activity-meta">{{ activity.description }}</div>
               <div class="activity-time">{{ activity.time }}</div>
             </div>
-            <Badge
-              v-if="activity.badge"
-              :variant="activity.badge.variant"
-            >
+            <Badge v-if="activity.badge" :variant="activity.badge.variant">
               {{ activity.badge.label }}
             </Badge>
           </div>
@@ -231,11 +234,7 @@ async function loadDashboardData() {
         </div>
 
         <div class="event-list">
-          <div
-            v-for="event in upcomingEvents"
-            :key="event.id"
-            class="event-item"
-          >
+          <div v-for="event in upcomingEvents" :key="event.id" class="event-item">
             <div class="event-date">{{ event.date }}</div>
             <div class="event-title">{{ event.title }}</div>
             <div class="event-description">{{ event.description }}</div>
@@ -243,18 +242,10 @@ async function loadDashboardData() {
         </div>
 
         <div class="quick-actions">
-          <Button variant="outline" icon="plus" size="sm">
-            Nouvelle propriété
-          </Button>
-          <Button variant="outline" icon="account-plus" size="sm">
-            Nouveau locataire
-          </Button>
-          <Button variant="outline" icon="file-plus" size="sm">
-            Nouveau bail
-          </Button>
-          <Button variant="outline" icon="receipt" size="sm">
-            Générer quittance
-          </Button>
+          <Button variant="outline" icon="plus" size="sm"> Nouvelle propriété </Button>
+          <Button variant="outline" icon="account-plus" size="sm"> Nouveau locataire </Button>
+          <Button variant="outline" icon="file-plus" size="sm"> Nouveau bail </Button>
+          <Button variant="outline" icon="receipt" size="sm"> Générer quittance </Button>
         </div>
       </section>
     </div>

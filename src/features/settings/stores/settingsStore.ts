@@ -33,6 +33,12 @@ export const useSettingsStore = defineStore('settings', () => {
   });
   const autoSave = ref<boolean>(true);
   const compactMode = ref<boolean>(false);
+  const defaultRejectionMessage = ref<string>(`Bonjour Monsieur,
+
+J'ai recu énormément de réponse à mon'annonce et l'appartement a déjà été loué.  Je suis désolé de ne pas pouvoir satisfaire votre demande.
+j'espère que vous trouverez rapidement une location qui vous convient.
+
+Cordialement, `);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
@@ -57,6 +63,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const currentLanguage = computed(() => language.value);
   const currentCurrency = computed(() => currency.value);
   const notificationsEnabled = computed(() => notifications.value.enabled);
+  const currentDefaultRejectionMessage = computed(() => defaultRejectionMessage.value);
 
   // Helper to get setting from DB
   const getSetting = async <T>(key: string, defaultValue: T): Promise<T> => {
@@ -72,14 +79,21 @@ export const useSettingsStore = defineStore('settings', () => {
   // Helper to save setting to DB
   const setSetting = async (key: string, value: unknown): Promise<void> => {
     try {
-      await db.settings.put({
-        key,
-        value,
-        updatedAt: new Date(),
-      });
-    } catch (err) {
-      console.error(`Failed to save setting ${key}:`, err);
-      throw err;
+      // Try the simple put first - tests and many environments mock/expect this.
+      await db.settings.put({ key, value, updatedAt: new Date() });
+    } catch {
+      // If put failed (eg. edge cases with unique index), fallback to explicit upsert
+      try {
+        const existing = await db.settings.where('key').equals(key).first();
+        if (existing && existing.id) {
+          await db.settings.update(existing.id, { value, updatedAt: new Date() });
+        } else {
+          await db.settings.add({ key, value, updatedAt: new Date() });
+        }
+      } catch (err2) {
+        console.error(`Failed to save setting ${key}:`, err2);
+        throw err2;
+      }
     }
   };
 
@@ -97,6 +111,13 @@ export const useSettingsStore = defineStore('settings', () => {
       notifications.value = await getSetting('notifications', defaultSettings.notifications);
       autoSave.value = await getSetting('autoSave', defaultSettings.autoSave);
       compactMode.value = await getSetting('compactMode', defaultSettings.compactMode);
+
+      // Load default rejection message
+      defaultRejectionMessage.value = await getSetting(
+        'defaultRejectionMessage',
+        defaultRejectionMessage.value
+      );
+      console.log('[settingsStore] loaded defaultRejectionMessage:', defaultRejectionMessage.value);
 
       // Apply theme to document
       document.documentElement.setAttribute('data-theme', theme.value);
@@ -197,8 +218,25 @@ export const useSettingsStore = defineStore('settings', () => {
       dateFormat.value = defaultSettings.dateFormat;
       autoSave.value = defaultSettings.autoSave;
       compactMode.value = defaultSettings.compactMode;
+      // Load default rejection message if present
+      const loadedDefaultMsg = await getSetting(
+        'defaultRejectionMessage',
+        defaultRejectionMessage.value
+      );
+      defaultRejectionMessage.value = loadedDefaultMsg;
     } catch (err) {
       console.error('Failed to reset settings:', err);
+      throw err;
+    }
+  };
+
+  const updateDefaultRejectionMessage = async (message: string): Promise<void> => {
+    try {
+      console.log('[settingsStore] updateDefaultRejectionMessage called with:', message);
+      await setSetting('defaultRejectionMessage', message);
+      defaultRejectionMessage.value = message;
+    } catch (err) {
+      console.error('Failed to update default rejection message:', err);
       throw err;
     }
   };
@@ -231,5 +269,9 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleCompactMode,
     toggleAutoSave,
     resetToDefaults,
+    // Default message
+    defaultRejectionMessage,
+    currentDefaultRejectionMessage,
+    updateDefaultRejectionMessage,
   };
 });

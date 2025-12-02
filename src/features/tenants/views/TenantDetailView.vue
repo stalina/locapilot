@@ -1,23 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, unref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
-import { db } from '@/db/schema';
+import { useSettingsStore } from '../../settings/stores/settingsStore';
+import { db } from '@/db/database';
 import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
 import TenantFormModal from '../components/TenantFormModal.vue';
+import RefusalModal from '../components/RefusalModal.vue';
 import TenantDocumentsList from '../components/TenantDocumentsList.vue';
 
 const route = useRoute();
 const router = useRouter();
 const tenantsStore = useTenantsStore();
+const settingsStore = useSettingsStore();
+const settingsDefaultMsg = computed(
+  () => (unref(settingsStore.currentDefaultRejectionMessage) as any) || ''
+);
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 
 const tenantId = computed(() => Number(route.params.id));
 const tenant = computed(() => tenantsStore.currentTenant);
 const showEditModal = ref(false);
+const showRefusalModal = ref(false);
 
 const age = computed(() => {
   if (!tenant.value?.birthDate) return null;
@@ -168,14 +175,44 @@ async function validateApplicant() {
 
 async function refuseApplicant() {
   if (!tenant.value?.id) return;
-  const reason = prompt('Raison du refus (facultatif)');
+  // Open the refusal modal which separates stored reason and email proposal
+  // Load settings so default message is available from DB
+  console.log('[TenantDetailView] loading settings before refuseApplicant');
+  await settingsStore.loadSettings();
+  console.log(
+    '[TenantDetailView] settings loaded:',
+    unref(settingsStore.currentDefaultRejectionMessage)
+  );
+  showRefusalModal.value = true;
+}
+
+async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: string }) {
+  if (!tenant.value?.id) return;
   try {
+    // If there's an email and a message, ask the user now (synchronously)
+    // Asking before awaiting the DB write preserves the user gesture so the browser
+    // will allow opening the mail client (mailto:).
+    if (tenant.value.email && payload.emailMessage) {
+      const send = confirm('Souhaitez-vous envoyer ce message par email au locataire ?');
+      if (send) {
+        const subject = encodeURIComponent('Refus de candidature');
+        const body = encodeURIComponent(payload.emailMessage);
+        const mailto = `mailto:${tenant.value.email}?subject=${subject}&body=${body}`;
+        console.log('[TenantDetailView] opening mailto (new window):', mailto);
+        // Open mail client in a new window/tab to increase reliability
+        // Use window.open with target '_blank' and noopener to avoid being blocked
+        window.open(mailto, '_blank', 'noopener');
+      }
+    }
+
+    // Now persist the status change and audit
     await tenantsStore.setTenantStatusWithAudit(tenant.value.id, 'refused', {
       actorId: null,
-      reason: reason || undefined,
+      reason: payload.reason,
     });
   } catch (err) {
     console.error('Failed to refuse applicant', err);
+    alert('Erreur lors du refus de la candidature');
   }
 }
 </script>
@@ -459,6 +496,13 @@ async function refuseApplicant() {
       v-model="showEditModal"
       :tenant="tenant"
       @success="handleEditSuccess"
+    />
+    <RefusalModal
+      v-model="showRefusalModal"
+      :defaultEmailMessage="settingsDefaultMsg"
+      :tenantEmail="tenant?.email"
+      @confirm="handleRefusalConfirm"
+      @cancel="() => (showRefusalModal = false)"
     />
   </div>
 </template>

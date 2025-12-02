@@ -190,6 +190,18 @@ export const useTenantsStore = defineStore('tenants', () => {
     }
   }
 
+  // Default rejection message template
+  const DEFAULT_REJECTION_MESSAGE = `Bonjour Monsieur,
+
+J'ai recu énormément de réponse à mon annonce et l'appartement a déjà été loué.  Je suis désolé de ne pas pouvoir satisfaire votre demande.
+j'espère que vous trouverez rapidement une location qui vous convient.
+
+Cordialement, `;
+
+  function getDefaultRejectionMessage() {
+    return DEFAULT_REJECTION_MESSAGE;
+  }
+
   async function setTenantStatusWithAudit(
     tenantId: number,
     status: Tenant['status'] | 'validated' | 'refused',
@@ -249,6 +261,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     removeTenantDocument,
     addTenantAudit,
     setTenantStatusWithAudit,
+    getDefaultRejectionMessage,
     clearError,
   };
 });

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, unref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { db } from '@/db/database';
 import Button from '@/shared/components/Button.vue';
+import { useSettingsStore } from '../stores/settingsStore';
 
 const router = useRouter();
 
@@ -229,6 +230,35 @@ const handleClearData = async () => {
 const goBack = () => {
   router.push('/');
 };
+
+// Settings store for editable default message
+const settingsStore = useSettingsStore();
+const editingDefaultMsg = ref<string>('');
+
+onMounted(async () => {
+  await settingsStore.loadSettings();
+  // Use the store-computed string value to avoid pinia ref unwrapping issues
+  editingDefaultMsg.value = (unref(settingsStore.currentDefaultRejectionMessage) as any) || '';
+});
+
+const saveDefaultRejectionMessage = async () => {
+  try {
+    console.log('[SettingsView] saving defaultRejectionMessage:', editingDefaultMsg.value);
+    await settingsStore.updateDefaultRejectionMessage(editingDefaultMsg.value);
+    alert('Message de refus par défaut enregistré');
+  } catch (err) {
+    console.error('Failed to save default message:', err);
+    alert("Erreur lors de l'enregistrement du message");
+  }
+};
+
+// Keep the editor in sync if the store value changes elsewhere
+watch(
+  () => unref(settingsStore.currentDefaultRejectionMessage),
+  v => {
+    editingDefaultMsg.value = (v as any) || '';
+  }
+);
 </script>
 
 <template>
@@ -272,6 +302,31 @@ const goBack = () => {
             <p>L'application fonctionne entièrement hors ligne grâce au stockage local</p>
           </div>
           <span class="badge success">Activé</span>
+        </div>
+      </section>
+
+      <!-- Communications -->
+      <section class="settings-section">
+        <h2>
+          <i class="mdi mdi-email"></i>
+          Communications
+        </h2>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Message de refus par défaut</h3>
+            <p>Éditez le message standard proposé lors du refus d'une candidature</p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <textarea
+              v-model="editingDefaultMsg"
+              rows="6"
+              style="width: 100%; resize: vertical"
+            ></textarea>
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveDefaultRejectionMessage" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
         </div>
       </section>
 
