@@ -73,6 +73,20 @@ const filteredInventories = computed(() => {
     });
   }
 
+  // Filter by tenantId query param (if present)
+  const tenantQuery = route.query.tenantId;
+  const tenantId = Array.isArray(tenantQuery)
+    ? Number(tenantQuery[0])
+    : tenantQuery
+      ? Number(tenantQuery)
+      : null;
+  if (tenantId) {
+    result = result.filter(inventory => {
+      const lease = leasesStore.leases.find(l => l.id === inventory.leaseId);
+      return lease && Array.isArray(lease.tenantIds) && lease.tenantIds.includes(tenantId);
+    });
+  }
+
   return result.sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
