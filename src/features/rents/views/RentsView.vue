@@ -26,39 +26,7 @@ const showPaymentModal = ref(false);
 const showEditModal = ref(false);
 const selectedRentForModal = ref<Rent | null>(null);
 
-// Helper: generate virtual pending rents for active leases when no rent exists for the month
-function generateVirtualRents(referenceDate = new Date()) {
-  const activeLeases = leasesStore.leases.filter(l => l.status === 'active');
-  const today = new Date(referenceDate);
-  today.setHours(0, 0, 0, 0);
-
-  return activeLeases
-    .map((lease: Lease) => {
-      const paymentDay = lease.paymentDay || 1;
-      const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
-      if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
-
-      // If existing rent for that lease/month exists, skip
-      const exists = rentsStore.rents.some(r => {
-        if (r.leaseId !== lease.id) return false;
-        const d = new Date(r.dueDate);
-        return d.getFullYear() === candidate.getFullYear() && d.getMonth() === candidate.getMonth();
-      });
-
-      if (exists) return null;
-
-      return {
-        id: `virtual-${lease.id}-${candidate.getFullYear()}-${candidate.getMonth()}`,
-        leaseId: lease.id,
-        dueDate: candidate,
-        amount: lease.rent,
-        charges: lease.charges || 0,
-        status: 'pending' as const,
-        isVirtual: true,
-      } as any;
-    })
-    .filter(Boolean) as any[];
-}
+// virtual rents are generated via the rents store helper
 
 const initialFormData = ref<any>(null);
 
@@ -88,12 +56,11 @@ function getLeaseById(id: number) {
 async function handleCreateAndOpenPayment(virtualRent: any) {
   try {
     // create actual rent
-    const created = await rentsStore.createRent({
+    const created = await rentsStore.createRentFromVirtual({
       leaseId: virtualRent.leaseId,
       dueDate: new Date(virtualRent.dueDate),
       amount: virtualRent.amount,
       charges: virtualRent.charges || 0,
-      status: 'pending',
     });
 
     // refresh store and open payment modal on created rent
@@ -167,7 +134,7 @@ onMounted(async () => {
 // Combine real rents with virtual pending rents for display
 const displayedRents = computed(() => {
   const realRents = rentsStore.rents.map(r => ({ ...r, isVirtual: false }) as any);
-  const virtual = generateVirtualRents();
+  const virtual = rentsStore.generateVirtualRents(leasesStore.leases);
 
   let rents = [...realRents, ...virtual];
 

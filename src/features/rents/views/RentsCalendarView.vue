@@ -22,101 +22,13 @@ const selectedRent = ref<Rent | null>(null);
 const showPaymentModal = ref(false);
 const showCreateModal = ref(false);
 
-// Calendar events
-const calendarEvents = computed(() => {
-  // real rents
-  const real = rentsStore.rents.map((rent: Rent) => {
-    const lease = leasesStore.leases.find(l => l.id === rent.leaseId);
-    const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
+// Calendar events built by the store helper (includes virtual rents)
+const calendarEvents = computed(() =>
+  rentsStore.buildCalendarEvents(leasesStore.leases, propertiesStore.properties)
+);
 
-    const calendarStatus =
-      rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
-
-    const id = `${rent.id ?? 'r'}-${rent.leaseId}-${new Date(rent.dueDate).setHours(0, 0, 0, 0)}`;
-
-    return {
-      id,
-      rentId: rent.id,
-      leaseId: rent.leaseId,
-      date: new Date(rent.dueDate),
-      title: property?.name || 'Bien inconnu',
-      status: calendarStatus as 'pending' | 'paid' | 'overdue',
-      amount: rent.amount,
-      isVirtual: false,
-    };
-  });
-
-  // virtual rents generated from active leases
-  function generateVirtualRents(referenceDate = new Date()) {
-    const activeLeases = leasesStore.leases.filter(l => l.status === 'active');
-    const today = new Date(referenceDate);
-    today.setHours(0, 0, 0, 0);
-
-    return activeLeases
-      .map((lease: any) => {
-        const paymentDay = lease.paymentDay || 1;
-        const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
-        if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
-
-        const exists = rentsStore.rents.some((r: Rent) => {
-          if (r.leaseId !== lease.id) return false;
-          const d = new Date(r.dueDate);
-          return (
-            d.getFullYear() === candidate.getFullYear() && d.getMonth() === candidate.getMonth()
-          );
-        });
-
-        if (exists) return null;
-
-        return {
-          id: `virtual-${lease.id}-${candidate.getFullYear()}-${candidate.getMonth()}`,
-          leaseId: lease.id,
-          date: candidate,
-          dueDate: candidate,
-          amount: lease.rent,
-          status: 'pending',
-          isVirtual: true,
-        } as any;
-      })
-      .filter(Boolean) as any[];
-  }
-
-  const virtual = generateVirtualRents();
-
-  // Map virtual rents to the same event shape
-  const virtualEvents = virtual.map((v: any) => {
-    const lease = leasesStore.leases.find(l => l.id === v.leaseId);
-    const property = lease ? propertiesStore.properties.find(p => p.id === lease.propertyId) : null;
-    const id = `${String(v.id)}-${v.leaseId}-${new Date(v.dueDate).setHours(0, 0, 0, 0)}`;
-
-    return {
-      id,
-      rentId: undefined,
-      leaseId: v.leaseId,
-      date: new Date(v.dueDate),
-      title: property?.name || 'Bien inconnu',
-      status: 'pending' as const,
-      amount: v.amount,
-      isVirtual: true,
-    } as any;
-  });
-
-  return [...real, ...virtualEvents];
-});
-
-// Upcoming rents (next 30 days)
-const upcomingRents = computed(() => {
-  const today = new Date();
-  const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  return rentsStore.rents
-    .filter((rent: Rent) => {
-      const dueDate = new Date(rent.dueDate);
-      return dueDate >= today && dueDate <= next30Days && rent.status !== 'paid';
-    })
-    .sort((a: Rent, b: Rent) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, 5);
-});
+// Upcoming rents (next 30 days) via store getter
+const upcomingRents = computed(() => rentsStore.upcomingRents(30, 5));
 
 // Methods
 function getPropertyName(leaseId: number): string {
