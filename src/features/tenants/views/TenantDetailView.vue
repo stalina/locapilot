@@ -101,6 +101,27 @@ const goToProperty = (propertyId: number) => {
   router.push(`/properties/${propertyId}`);
 };
 
+// Quick actions navigation (filtered)
+const goToLeasesList = () => {
+  // filter by tenantId
+  router.push({ path: '/leases', query: { tenantId: String(tenantId.value) } });
+};
+
+const goToRents = () => {
+  router.push({ path: '/rents', query: { tenantId: String(tenantId.value) } });
+};
+
+const goToDocuments = () => {
+  router.push({
+    path: '/documents',
+    query: { relatedEntityType: 'tenant', relatedEntityId: String(tenantId.value) },
+  });
+};
+
+const goToInventories = () => {
+  router.push({ path: '/inventories', query: { tenantId: String(tenantId.value) } });
+};
+
 function handleBack() {
   router.push('/tenants');
 }
@@ -380,19 +401,19 @@ async function refuseApplicant() {
               Actions rapides
             </h2>
             <div class="quick-actions">
-              <button class="action-button">
+              <button class="action-button" @click="goToLeasesList">
                 <i class="mdi mdi-file-document"></i>
                 <span>Baux</span>
               </button>
-              <button class="action-button">
+              <button class="action-button" @click="goToRents">
                 <i class="mdi mdi-currency-eur"></i>
                 <span>Loyers</span>
               </button>
-              <button class="action-button">
+              <button class="action-button" @click="goToDocuments">
                 <i class="mdi mdi-folder"></i>
                 <span>Documents</span>
               </button>
-              <button class="action-button">
+              <button class="action-button" @click="goToInventories">
                 <i class="mdi mdi-clipboard-check"></i>
                 <span>États des lieux</span>
               </button>

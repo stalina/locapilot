@@ -39,6 +39,16 @@ onMounted(async () => {
 const filteredLeases = computed(() => {
   let leases = leasesStore.leases;
 
+  // Apply route query filters if present
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  const tenantIdQuery = route.query.tenantId ? Number(route.query.tenantId) : null;
+  if (propertyIdQuery) {
+    leases = leases.filter(l => l.propertyId === propertyIdQuery);
+  }
+  if (tenantIdQuery) {
+    leases = leases.filter(l => Array.isArray(l.tenantIds) && l.tenantIds.includes(tenantIdQuery));
+  }
+
   // Filter by status
   if (statusFilter.value !== 'all') {
     leases = leases.filter(l => l.status === statusFilter.value);

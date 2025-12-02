@@ -155,6 +155,15 @@ const displayedRents = computed(() => {
     });
   }
 
+  // Filter by tenantId from route query if provided
+  const tenantIdQuery = route.query.tenantId ? Number(route.query.tenantId) : null;
+  if (tenantIdQuery) {
+    rents = rents.filter((r: any) => {
+      const lease = leasesStore.leases.find(l => l.id === r.leaseId);
+      return lease && Array.isArray(lease.tenantIds) && lease.tenantIds.includes(tenantIdQuery);
+    });
+  }
+
   // Filter by status
   if (statusFilter.value !== 'all') {
     rents = rents.filter((r: any) => r.status === statusFilter.value);

@@ -22,9 +22,26 @@ const filteredDocuments = computed(() => {
   // If route query asks for a specific related entity, filter by it
   const relatedEntityType = route.query.relatedEntityType as string | undefined;
   const relatedEntityId = route.query.relatedEntityId ? Number(route.query.relatedEntityId) : null;
+  // Support legacy propertyId / tenantId query params
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  const tenantIdQuery = route.query.tenantId ? Number(route.query.tenantId) : null;
   if (relatedEntityType && relatedEntityId) {
     result = result.filter(
       d => d.relatedEntityType === relatedEntityType && d.relatedEntityId === relatedEntityId
+    );
+  }
+
+  // If propertyId passed directly, filter documents related to that property
+  if (propertyIdQuery) {
+    result = result.filter(
+      d => d.relatedEntityType === 'property' && d.relatedEntityId === propertyIdQuery
+    );
+  }
+
+  // If tenantId passed, filter documents related to that tenant
+  if (tenantIdQuery) {
+    result = result.filter(
+      d => d.relatedEntityType === 'tenant' && d.relatedEntityId === tenantIdQuery
     );
   }
 
