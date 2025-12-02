@@ -14,6 +14,7 @@ export interface Property {
   rent: number; // base rent amount
   charges?: number;
   deposit?: number;
+  annonce?: string; // Default announcement HTML/text for listings
   description?: string;
   features?: string[];
   photos?: number[]; // Document IDs for property photos
@@ -203,6 +204,18 @@ export class LocapilotDB extends Dexie {
           )
         );
       });
+
+    // Version 4: Add `annonce` field to properties (rich text). Backward compatible: existing records keep their data.
+    this.version(4).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      settings: '++id, &key',
+    });
   }
 }
 

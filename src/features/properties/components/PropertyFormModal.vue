@@ -6,6 +6,7 @@ import Input from '@/shared/components/Input.vue';
 import Button from '@/shared/components/Button.vue';
 import RichTextEditor from '@/shared/components/RichTextEditor.vue';
 import type { Property } from '@/db/types';
+import { defaultAnnonceTemplate } from '@/shared/utils/annonceTemplate';
 
 interface Props {
   modelValue: boolean;
@@ -37,6 +38,7 @@ const formData = ref({
   deposit: null as number | null,
   status: 'vacant' as Property['status'],
   description: '',
+  annonce: '',
 });
 
 const errors = ref<Record<string, string>>({});
@@ -63,6 +65,7 @@ watch(
         deposit: newProperty.deposit ?? null,
         status: newProperty.status,
         description: newProperty.description || '',
+        annonce: (newProperty as any).annonce || '',
       };
     } else {
       resetForm();
@@ -85,6 +88,7 @@ function resetForm() {
     deposit: null,
     status: 'vacant',
     description: '',
+    annonce: defaultAnnonceTemplate(),
   };
   errors.value = {};
 }
@@ -131,6 +135,7 @@ async function handleSubmit() {
       deposit: formData.value.deposit || undefined,
       status: formData.value.status,
       description: formData.value.description,
+      annonce: formData.value.annonce,
     };
 
     if (isEditMode.value && props.property?.id) {

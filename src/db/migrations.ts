@@ -66,6 +66,17 @@ export const migrations: Migration[] = [
   //     // Pas besoin de code ici sauf pour migration de données
   //   },
   // },
+
+  {
+    version: 4,
+    description:
+      "Ajout du champ 'annonce' (rich text) aux propriétés - champ optionnel, backward compatible",
+    upgrade: async () => {
+      // Le schéma est défini dans schema.ts version 4.
+      // Aucun changement de données requis: les propriétés existantes conservent leurs valeurs et
+      // le champ `annonce` restera vide sauf pour les nouvelles propriétés.
+    },
+  },
 ];
 
 /**

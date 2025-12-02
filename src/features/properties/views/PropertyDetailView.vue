@@ -9,6 +9,9 @@ import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
 import PhotoGallery from '@/shared/components/PhotoGallery.vue';
 import RichTextDisplay from '@/shared/components/RichTextDisplay.vue';
+import RichTextEditor from '@/shared/components/RichTextEditor.vue';
+import { formatAnnoncePlaceholders, defaultAnnonceTemplate } from '@/shared/utils/annonceTemplate';
+import { useNotification } from '@/shared/composables/useNotification';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 import type { Property } from '@/db/types';
 
@@ -20,6 +23,9 @@ const tenantsStore = useTenantsStore();
 
 const propertyId = computed(() => Number(route.params.id));
 const showEditModal = ref(false);
+const isAnnonceEditing = ref(false);
+const annonceDraft = ref('');
+const { success: notifySuccess, error: notifyError } = useNotification();
 
 const typeLabels: Record<Property['type'], string> = {
   apartment: 'Appartement',
@@ -93,7 +99,75 @@ onMounted(async () => {
     leasesStore.fetchLeases(),
     tenantsStore.fetchTenants(),
   ]);
+  // initialize annonceDraft
+  annonceDraft.value = propertiesStore.currentProperty?.annonce || '';
 });
+
+function startAnnonceEdit() {
+  annonceDraft.value = propertiesStore.currentProperty?.annonce || '';
+  isAnnonceEditing.value = true;
+}
+
+async function saveAnnonce() {
+  if (!propertiesStore.currentProperty?.id) return;
+  await propertiesStore.updateProperty(propertiesStore.currentProperty.id, {
+    annonce: annonceDraft.value,
+  });
+  isAnnonceEditing.value = false;
+}
+
+function cancelAnnonceEdit() {
+  annonceDraft.value = propertiesStore.currentProperty?.annonce || '';
+  isAnnonceEditing.value = false;
+}
+
+async function copyAnnonce() {
+  try {
+    // Get source HTML or default template
+    const rawHtml = propertiesStore.currentProperty?.annonce ?? defaultAnnonceTemplate();
+    // Replace placeholders first
+    const withPlaceholders = formatAnnoncePlaceholders(rawHtml, {
+      LOYER: propertiesStore.currentProperty?.rent,
+      CHARGES: propertiesStore.currentProperty?.charges,
+      GARANTIE: propertiesStore.currentProperty?.deposit,
+    });
+
+    // Convert HTML to plain text while preserving line breaks
+    function htmlToPlainText(html: string) {
+      if (!html) return '';
+      // remove script/style blocks
+      const cleaned = html
+        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '');
+      // replace <br> and closing block tags with newlines
+      const withBreaks = cleaned
+        .replace(/<br\s*\/*>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6]|li|ul|ol|tr|table|section|article)>/gi, '\n')
+        .replace(/<(\/)?td[^>]*>/gi, '\t');
+      // strip remaining tags
+      const stripped = withBreaks.replace(/<[^>]+>/g, '');
+      // decode HTML entities
+      const txt = document.createElement('textarea');
+      txt.innerHTML = stripped;
+      let decoded = txt.value;
+      // Normalize line endings and collapse multiple blank lines
+      decoded = decoded
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(l => l.trimEnd())
+        .join('\n');
+      decoded = decoded.replace(/\n{3,}/g, '\n\n').trim();
+      return decoded;
+    }
+
+    const plain = htmlToPlainText(withPlaceholders);
+    await navigator.clipboard.writeText(plain);
+    notifySuccess('Annonce copiée dans le presse-papier');
+  } catch (err) {
+    console.error('Clipboard copy failed', err);
+    notifyError?.("Impossible de copier l'annonce");
+  }
+}
 </script>
 
 <template>
@@ -213,6 +287,54 @@ onMounted(async () => {
               </h2>
             </div>
             <RichTextDisplay :content="propertiesStore.currentProperty.description" />
+          </Card>
+
+          <!-- Annonce Type -->
+          <Card>
+            <div class="card-header annonce-header">
+              <h2>
+                <i class="mdi mdi-bullhorn"></i>
+                Annonce type
+              </h2>
+              <div class="annonce-actions">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="content-copy"
+                  @click="copyAnnonce"
+                  title="Copier l'annonce"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  @click="startAnnonceEdit"
+                  v-if="!isAnnonceEditing"
+                >
+                  Modifier
+                </Button>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div v-if="isAnnonceEditing">
+                <RichTextEditor v-model="annonceDraft" placeholder="Rédigez l'annonce type..." />
+                <div class="actions-row">
+                  <Button variant="outline" size="sm" @click="cancelAnnonceEdit">Annuler</Button>
+                  <Button variant="primary" size="sm" @click="saveAnnonce">Enregistrer</Button>
+                </div>
+              </div>
+              <div v-else>
+                <RichTextDisplay
+                  :content="
+                    formatAnnoncePlaceholders(propertiesStore.currentProperty.annonce || '', {
+                      LOYER: propertiesStore.currentProperty.rent,
+                      CHARGES: propertiesStore.currentProperty.charges,
+                      GARANTIE: propertiesStore.currentProperty.deposit,
+                    })
+                  "
+                />
+              </div>
+            </div>
           </Card>
 
           <!-- Photos Gallery -->
@@ -376,3 +498,30 @@ onMounted(async () => {
     />
   </div>
 </template>
+
+<style scoped>
+.detail-view .annonce-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.detail-view .annonce-header h2 {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.detail-view .annonce-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.detail-view .actions-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+</style>
