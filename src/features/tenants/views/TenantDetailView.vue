@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
+import { db } from '@/db/schema';
 import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
@@ -37,13 +38,40 @@ const statusConfig = computed(() => {
     case 'candidate':
       return { label: 'Candidat', color: 'accent' };
     case 'candidature-refusee':
-      return { label: 'Candidature refusée', color: 'neutral' };
+      return { label: 'Candidature refusée', color: 'error' };
     case 'former':
       return { label: 'Ancien', color: 'error' };
     default:
       return { label: 'Inconnu', color: 'default' };
   }
 });
+
+// Refusal reason (loaded from tenantAudits)
+const refusalReason = ref<string | null>(null);
+
+async function loadRefusalReason(id: number | undefined) {
+  refusalReason.value = null;
+  if (!id) return;
+  try {
+    const audits = await db.tenantAudits
+      .where({ tenantId: id, action: 'refused' })
+      .sortBy('timestamp');
+    if (audits && audits.length > 0) {
+      const last = audits[audits.length - 1];
+      refusalReason.value = last.reason || null;
+    }
+  } catch (err) {
+    console.error('Failed to load refusal reason:', err);
+  }
+}
+
+watch(
+  () => tenant.value?.id,
+  id => {
+    loadRefusalReason(id as number | undefined);
+  },
+  { immediate: true }
+);
 
 // Baux liés à ce locataire
 const tenantLeases = computed(() => {
@@ -225,6 +253,13 @@ async function refuseApplicant() {
                 <span class="badge" :class="`badge-${statusConfig.color}`">
                   {{ statusConfig.label }}
                 </span>
+                <div
+                  v-if="tenant && tenant.status === 'candidature-refusee' && refusalReason"
+                  class="info-value"
+                  style="color: var(--error-700, #b91c1c); margin-top: 8px"
+                >
+                  <strong>Motif du refus:</strong> {{ refusalReason }}
+                </div>
               </div>
             </div>
           </div>

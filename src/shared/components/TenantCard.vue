@@ -21,13 +21,23 @@ const statusConfig = computed(() => {
     active: { variant: 'success' as const, label: 'Actif', icon: 'check-circle' },
     candidate: { variant: 'info' as const, label: 'Candidat', icon: 'account-clock' },
     former: { variant: 'error' as const, label: 'Ancien', icon: 'account-off' },
+    'candidature-refusee': {
+      variant: 'error' as const,
+      label: 'Candidature refusée',
+      icon: 'account-remove',
+    },
   };
-  return configs[props.tenant.status];
+  // Fallback to a default config if status unknown
+  return (
+    configs[props.tenant.status] ?? {
+      variant: 'default' as const,
+      label: 'Inconnu',
+      icon: 'account',
+    }
+  );
 });
 
-const fullName = computed(() => 
-  `${props.tenant.firstName} ${props.tenant.lastName}`
-);
+const fullName = computed(() => `${props.tenant.firstName} ${props.tenant.lastName}`);
 
 const age = computed(() => {
   if (!props.tenant.birthDate) return null;
@@ -49,19 +59,11 @@ function handleClick() {
 </script>
 
 <template>
-  <div 
-    class="tenant-card" 
-    :class="{ 'is-clickable': clickable }"
-    @click="handleClick"
-  >
+  <div class="tenant-card" :class="{ 'is-clickable': clickable }" @click="handleClick">
     <!-- Avatar -->
     <div class="tenant-avatar">
       <i class="mdi mdi-account-circle"></i>
-      <Badge 
-        :variant="statusConfig.variant" 
-        :icon="statusConfig.icon"
-        class="status-badge"
-      >
+      <Badge :variant="statusConfig.variant" :icon="statusConfig.icon" class="status-badge">
         {{ statusConfig.label }}
       </Badge>
     </div>
