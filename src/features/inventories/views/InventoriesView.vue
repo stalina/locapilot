@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useInventoriesStore } from '../stores/inventoriesStore';
 import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
@@ -12,6 +12,7 @@ import InventoryFormModal from '../components/InventoryFormModal.vue';
 import type { Inventory } from '../../../db/types';
 
 const router = useRouter();
+const route = useRoute();
 const inventoriesStore = useInventoriesStore();
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
@@ -50,10 +51,25 @@ const filteredInventories = computed(() => {
       if (!lease) return false;
 
       const property = propertiesStore.properties.find(p => p.id === lease.propertyId);
-      const propertyMatch = property?.name.toLowerCase().includes(query) ||
-                           property?.address.toLowerCase().includes(query);
+      const propertyMatch =
+        property?.name.toLowerCase().includes(query) ||
+        property?.address.toLowerCase().includes(query);
 
       return propertyMatch;
+    });
+  }
+
+  // Filter by propertyId query param (if present)
+  const propQuery = route.query.propertyId;
+  const propId = Array.isArray(propQuery)
+    ? Number(propQuery[0])
+    : propQuery
+      ? Number(propQuery)
+      : null;
+  if (propId) {
+    result = result.filter(inventory => {
+      const lease = leasesStore.leases.find(l => l.id === inventory.leaseId);
+      return lease?.propertyId === propId;
     });
   }
 
@@ -92,7 +108,7 @@ const formatDate = (date: Date | string) => {
 
 const typeConfig = (type: Inventory['type']) => {
   const configs = {
-    checkin: { variant: 'success' as const, label: 'État d\'entrée', icon: 'home-import-outline' },
+    checkin: { variant: 'success' as const, label: "État d'entrée", icon: 'home-import-outline' },
     checkout: { variant: 'warning' as const, label: 'État de sortie', icon: 'home-export-outline' },
   };
   return configs[type];
@@ -114,12 +130,13 @@ const handleDeleteInventory = async (id: number) => {
       await inventoriesStore.deleteInventory(id);
     } catch (error) {
       console.error('Failed to delete inventory:', error);
-      alert('Erreur lors de la suppression de l\'état des lieux');
+      alert("Erreur lors de la suppression de l'état des lieux");
     }
   }
 };
 
-const handleViewDetails = (id: number) => {
+const handleViewDetails = (id?: number) => {
+  if (!id) return;
   router.push(`/inventories/${id}`);
 };
 
@@ -136,11 +153,17 @@ const handleFormSuccess = () => {
       <div>
         <h1>États des lieux</h1>
         <div class="header-meta">
-          {{ filteredInventories.length }} état{{ filteredInventories.length > 1 ? 's' : '' }} des lieux
+          {{ filteredInventories.length }} état{{ filteredInventories.length > 1 ? 's' : '' }} des
+          lieux
         </div>
       </div>
       <div class="header-actions">
-        <Button variant="primary" icon="plus" @click="handleNewInventory" data-testid="new-inventory-button">
+        <Button
+          variant="primary"
+          icon="plus"
+          @click="handleNewInventory"
+          data-testid="new-inventory-button"
+        >
           Nouvel état des lieux
         </Button>
       </div>
@@ -148,12 +171,7 @@ const handleFormSuccess = () => {
 
     <!-- Stats -->
     <div class="stats-grid">
-      <StatCard
-        label="Total"
-        :value="stats.total"
-        icon="clipboard-list"
-        icon-color="primary"
-      />
+      <StatCard label="Total" :value="stats.total" icon="clipboard-list" icon-color="primary" />
       <StatCard
         label="États d'entrée"
         :value="stats.checkIn"
@@ -223,12 +241,8 @@ const handleFormSuccess = () => {
     <div v-else-if="filteredInventories.length === 0" class="empty-state">
       <i class="mdi mdi-clipboard-list-outline"></i>
       <h3>Aucun état des lieux trouvé</h3>
-      <p v-if="searchQuery || typeFilter !== 'all'">
-        Essayez de modifier vos filtres de recherche
-      </p>
-      <p v-else>
-        Commencez par créer votre premier état des lieux
-      </p>
+      <p v-if="searchQuery || typeFilter !== 'all'">Essayez de modifier vos filtres de recherche</p>
+      <p v-else>Commencez par créer votre premier état des lieux</p>
       <Button variant="primary" icon="plus" @click="handleNewInventory">
         Nouvel état des lieux
       </Button>
@@ -236,11 +250,7 @@ const handleFormSuccess = () => {
 
     <!-- Inventories Grid -->
     <div v-else class="inventories-grid">
-      <div
-        v-for="inventory in filteredInventories"
-        :key="inventory.id"
-        class="inventory-card"
-      >
+      <div v-for="inventory in filteredInventories" :key="inventory.id" class="inventory-card">
         <div class="inventory-header">
           <Badge
             :variant="typeConfig(inventory.type).variant"
@@ -260,7 +270,8 @@ const handleFormSuccess = () => {
 
           <div v-if="inventory.observations" class="observations">
             <i class="mdi mdi-text"></i>
-            {{ inventory.observations.substring(0, 100) }}{{ inventory.observations.length > 100 ? '...' : '' }}
+            {{ inventory.observations.substring(0, 100)
+            }}{{ inventory.observations.length > 100 ? '...' : '' }}
           </div>
 
           <div v-if="inventory.photos && inventory.photos.length > 0" class="photos-count">
@@ -274,7 +285,7 @@ const handleFormSuccess = () => {
             variant="default"
             size="sm"
             icon="eye"
-            @click="handleViewDetails(inventory.id!)"
+            @click="handleViewDetails(inventory.id)"
             data-testid="view-inventory-button"
           >
             Voir

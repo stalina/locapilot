@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useDocumentsStore } from '../stores/documentsStore';
 import DocumentCard from '@/shared/components/DocumentCard.vue';
 import UploadZone from '@/shared/components/UploadZone.vue';
@@ -10,12 +11,22 @@ import type { Document } from '@/db/types';
 const documentsStore = useDocumentsStore();
 
 // Filters
+const route = useRoute();
 const searchQuery = ref('');
 const filterType = ref<Document['type'] | 'all'>('all');
 
 // Filtered documents
 const filteredDocuments = computed(() => {
   let result = [...documentsStore.documents];
+
+  // If route query asks for a specific related entity, filter by it
+  const relatedEntityType = route.query.relatedEntityType as string | undefined;
+  const relatedEntityId = route.query.relatedEntityId ? Number(route.query.relatedEntityId) : null;
+  if (relatedEntityType && relatedEntityId) {
+    result = result.filter(
+      d => d.relatedEntityType === relatedEntityType && d.relatedEntityId === relatedEntityId
+    );
+  }
 
   // Search
   if (searchQuery.value) {
@@ -69,6 +80,11 @@ function handleSearch(query: string) {
 // Lifecycle
 onMounted(async () => {
   await documentsStore.fetchDocuments();
+  // If a propertyId was passed as query param, map it to relatedEntityType/property
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  if (propertyIdQuery) {
+    // Prefill search to limit visible documents to this property by applying the query filter above
+  }
 });
 </script>
 

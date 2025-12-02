@@ -77,10 +77,24 @@ const activeLease = computed(() => {
   return propertyLeases.value.find(l => l.status === 'active');
 });
 
-// Locataires actuels
+// Locataires actuels (agrégés depuis tous les baux actifs de la propriété)
 const currentTenants = computed(() => {
-  if (!activeLease.value) return [];
-  return activeLease.value.tenantIds
+  // Collect all active leases for the property
+  const activeLeases = propertyLeases.value.filter(l => l.status === 'active');
+  if (activeLeases.length === 0) return [];
+
+  // Aggregate tenantIds from all active leases and deduplicate
+  const ids: number[] = [];
+  activeLeases.forEach(l => {
+    if (Array.isArray(l.tenantIds)) {
+      l.tenantIds.forEach(id => {
+        if (!ids.includes(id)) ids.push(id);
+      });
+    }
+  });
+
+  // Map to tenant records from tenantsStore
+  return ids
     .map(id => tenantsStore.tenants.find(t => t.id === id))
     .filter((tenant): tenant is NonNullable<typeof tenant> => tenant !== undefined);
 });
@@ -91,6 +105,26 @@ const goToLease = (leaseId: number) => {
 
 const goToTenant = (tenantId: number) => {
   router.push(`/tenants/${tenantId}`);
+};
+
+// Quick actions navigation
+const goToLeasesList = () => {
+  router.push({ path: '/leases', query: { propertyId: String(propertyId.value) } });
+};
+
+const goToRents = () => {
+  router.push({ path: '/rents', query: { propertyId: String(propertyId.value) } });
+};
+
+const goToDocuments = () => {
+  router.push({
+    path: '/documents',
+    query: { relatedEntityType: 'property', relatedEntityId: String(propertyId.value) },
+  });
+};
+
+const goToInventories = () => {
+  router.push({ path: '/inventories', query: { propertyId: String(propertyId.value) } });
 };
 
 onMounted(async () => {
@@ -380,41 +414,19 @@ async function copyAnnonce() {
                 <i class="mdi mdi-chevron-right"></i>
               </div>
             </div>
-            <div class="lease-summary" v-if="activeLease">
-              <div class="summary-item">
-                <span class="label">Loyer mensuel</span>
-                <span class="value"
-                  >{{ (activeLease.rent + activeLease.charges).toLocaleString('fr-FR') }} €</span
-                >
-              </div>
-              <div class="summary-item">
-                <span class="label">Échéance</span>
-                <span class="value">{{
-                  activeLease.endDate
-                    ? new Date(activeLease.endDate).toLocaleDateString('fr-FR')
-                    : 'Indéterminée'
-                }}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                icon="file-document"
-                @click="activeLease.id && goToLease(activeLease.id)"
-                class="view-lease-btn"
-              >
-                Voir le bail
-              </Button>
-            </div>
+            <!-- lease-summary removed: duplicate of Leases History below -->
           </Card>
 
           <!-- Leases History -->
           <Card v-if="propertyLeases.length > 0">
-            <div class="card-header">
+            <div class="card-header leases-header">
               <h2>
                 <i class="mdi mdi-file-document-multiple"></i>
                 Historique des baux
               </h2>
-              <Badge variant="info">{{ propertyLeases.length }}</Badge>
+              <div class="leases-count">
+                <Badge variant="info">{{ propertyLeases.length }}</Badge>
+              </div>
             </div>
             <div class="leases-list">
               <div
@@ -460,14 +472,16 @@ async function copyAnnonce() {
               </h2>
             </div>
             <div class="quick-actions">
-              <Button variant="outline" icon="file-document" @click="() => {}">
+              <Button variant="outline" icon="file-document" @click="goToLeasesList">
                 Voir les baux
               </Button>
-              <Button variant="outline" icon="currency-eur" @click="() => {}">
+              <Button variant="outline" icon="currency-eur" @click="goToRents">
                 Voir les loyers
               </Button>
-              <Button variant="outline" icon="file-multiple" @click="() => {}"> Documents </Button>
-              <Button variant="outline" icon="clipboard-check" @click="() => {}">
+              <Button variant="outline" icon="file-multiple" @click="goToDocuments">
+                Documents
+              </Button>
+              <Button variant="outline" icon="clipboard-check" @click="goToInventories">
                 États des lieux
               </Button>
             </div>
@@ -523,5 +537,21 @@ async function copyAnnonce() {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+/* Align lease count badge to the right of the leases header */
+.leases-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.leases-header h2 {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.leases-count {
+  flex: 0 0 auto;
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useRentsStore } from '../stores/rentsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
@@ -17,6 +18,7 @@ const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
 
 // Filters
+const route = useRoute();
 const statusFilter = ref<'all' | 'pending' | 'paid' | 'late'>('all');
 // const currentMonth = ref(new Date().getMonth());
 // const currentYear = ref(new Date().getFullYear());
@@ -129,6 +131,12 @@ onMounted(async () => {
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
   ]);
+  // Apply propertyId filter if present in query
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  if (propertyIdQuery) {
+    // Filter displayed rents by leases that belong to the property
+    // We don't persist the filter state, just let computed displayedRents read route.query
+  }
 });
 
 // Combine real rents with virtual pending rents for display
@@ -137,6 +145,15 @@ const displayedRents = computed(() => {
   const virtual = rentsStore.generateVirtualRents(leasesStore.leases);
 
   let rents = [...realRents, ...virtual];
+
+  // Filter by propertyId from route query if provided
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  if (propertyIdQuery) {
+    rents = rents.filter((r: any) => {
+      const lease = leasesStore.leases.find(l => l.id === r.leaseId);
+      return lease && lease.propertyId === propertyIdQuery;
+    });
+  }
 
   // Filter by status
   if (statusFilter.value !== 'all') {

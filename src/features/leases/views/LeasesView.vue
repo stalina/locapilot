@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useLeasesStore } from '../stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
@@ -14,6 +15,7 @@ const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
 
+const route = useRoute();
 const searchQuery = ref('');
 const statusFilter = ref<'all' | 'active' | 'pending' | 'ended'>('all');
 const showLeaseForm = ref(false);
@@ -25,6 +27,13 @@ onMounted(async () => {
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
   ]);
+  // If route query contains propertyId, pre-fill search to that property filter
+  const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
+  if (propertyIdQuery) {
+    // Narrow results by propertyId by setting searchQuery to property name
+    const prop = propertiesStore.properties.find(p => p.id === propertyIdQuery);
+    if (prop) searchQuery.value = prop.name;
+  }
 });
 
 const filteredLeases = computed(() => {
@@ -44,14 +53,15 @@ const filteredLeases = computed(() => {
         .map(id => tenantsStore.tenants.find(t => t.id === id))
         .filter(Boolean);
 
-      const propertyMatch = property?.name.toLowerCase().includes(query) ||
-                           property?.address.toLowerCase().includes(query);
-      const tenantMatch = tenants.some(t => 
-        t && (
-          t.firstName.toLowerCase().includes(query) ||
-          t.lastName.toLowerCase().includes(query) ||
-          t.email.toLowerCase().includes(query)
-        )
+      const propertyMatch =
+        property?.name.toLowerCase().includes(query) ||
+        property?.address.toLowerCase().includes(query);
+      const tenantMatch = tenants.some(
+        t =>
+          t &&
+          (t.firstName.toLowerCase().includes(query) ||
+            t.lastName.toLowerCase().includes(query) ||
+            t.email.toLowerCase().includes(query))
       );
 
       return propertyMatch || tenantMatch;
@@ -86,7 +96,7 @@ const getTenantNames = (tenantIds: number[]) => {
   if (!tenantIds || !Array.isArray(tenantIds)) {
     return [];
   }
-  
+
   return tenantIds
     .map(id => {
       const tenant = tenantsStore.tenants.find(t => t.id === id);
@@ -135,42 +145,22 @@ const handleFormSuccess = async () => {
         </div>
       </div>
       <div class="header-actions">
-        <SearchBox
-          v-model="searchQuery"
-          placeholder="Rechercher par propriété, locataire..."
-        />
-        <Button variant="primary" icon="plus" @click="handleNewLease">
-          Nouveau bail
-        </Button>
+        <SearchBox v-model="searchQuery" placeholder="Rechercher par propriété, locataire..." />
+        <Button variant="primary" icon="plus" @click="handleNewLease"> Nouveau bail </Button>
       </div>
     </header>
 
     <!-- Stats -->
     <div class="stats-grid">
-      <StatCard
-        label="Total"
-        :value="stats.total"
-        icon="file-document"
-        icon-color="primary"
-      />
-      <StatCard
-        label="Actifs"
-        :value="stats.active"
-        icon="check-circle"
-        icon-color="success"
-      />
+      <StatCard label="Total" :value="stats.total" icon="file-document" icon-color="primary" />
+      <StatCard label="Actifs" :value="stats.active" icon="check-circle" icon-color="success" />
       <StatCard
         label="En attente"
         :value="stats.pending"
         icon="clock-outline"
         icon-color="warning"
       />
-      <StatCard
-        label="Terminés"
-        :value="stats.ended"
-        icon="close-circle"
-        icon-color="error"
-      />
+      <StatCard label="Terminés" :value="stats.ended" icon="close-circle" icon-color="error" />
     </div>
 
     <!-- Filters -->
@@ -229,10 +219,13 @@ const handleFormSuccess = async () => {
       <p v-if="searchQuery || statusFilter !== 'all'">
         Essayez de modifier vos filtres de recherche
       </p>
-      <p v-else>
-        Commencez par créer votre premier bail
-      </p>
-      <Button variant="primary" icon="plus" @click="handleNewLease" v-if="!searchQuery && statusFilter === 'all'">
+      <p v-else>Commencez par créer votre premier bail</p>
+      <Button
+        variant="primary"
+        icon="plus"
+        @click="handleNewLease"
+        v-if="!searchQuery && statusFilter === 'all'"
+      >
         Nouveau bail
       </Button>
     </div>
