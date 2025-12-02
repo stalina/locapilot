@@ -142,7 +142,7 @@ describe('Database Migrations', () => {
 
   describe('Database version', () => {
     it('should be at version 3', () => {
-      expect(db.verno).toBe(4);
+      expect(db.verno).toBe(5);
     });
 
     it('should have all required tables', () => {
@@ -155,6 +155,8 @@ describe('Database Migrations', () => {
       expect(tableNames).toContain('documents');
       expect(tableNames).toContain('inventories');
       expect(tableNames).toContain('communications');
+      expect(tableNames).toContain('tenantDocuments');
+      expect(tableNames).toContain('tenantAudits');
       expect(tableNames).toContain('settings');
     });
 

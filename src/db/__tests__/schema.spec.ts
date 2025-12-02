@@ -12,6 +12,8 @@ describe('Database Schema', () => {
     await db.documents.clear();
     await db.inventories.clear();
     await db.communications.clear();
+    await db.tenantDocuments.clear();
+    await db.tenantAudits.clear();
     await db.settings.clear();
   });
 
@@ -21,7 +23,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(4);
+      expect(db.verno).toBe(5);
     });
 
     it('should have all required tables', async () => {
@@ -34,9 +36,11 @@ describe('Database Schema', () => {
       expect(tables).toContain('documents');
       expect(tables).toContain('inventories');
       expect(tables).toContain('communications');
+      expect(tables).toContain('tenantDocuments');
+      expect(tables).toContain('tenantAudits');
       expect(tables).toContain('settings');
 
-      expect(tables).toHaveLength(8);
+      expect(tables).toHaveLength(10);
     });
   });
 
