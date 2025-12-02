@@ -58,7 +58,11 @@ async function loadRefusalReason(id: number | undefined) {
       .sortBy('timestamp');
     if (audits && audits.length > 0) {
       const last = audits[audits.length - 1];
-      refusalReason.value = last.reason || null;
+      if (last && typeof last.reason === 'string') {
+        refusalReason.value = last.reason || null;
+      } else {
+        refusalReason.value = null;
+      }
     }
   } catch (err) {
     console.error('Failed to load refusal reason:', err);

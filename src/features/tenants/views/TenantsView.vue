@@ -18,7 +18,7 @@ const tenantToEdit = ref<Tenant | null>(null);
 
 // Filters
 const searchQuery = ref('');
-const filterStatus = ref<'all' | 'active' | 'candidate' | 'former'>('all');
+const filterStatus = ref<'all' | 'active' | 'candidate' | 'former' | 'candidature-refusee'>('all');
 const sortBy = ref<'name' | 'email'>('name');
 
 // Computed
@@ -152,7 +152,7 @@ onMounted(async () => {
         label="Candidature refusée"
         :value="tenantsStore.refusedTenants.length"
         icon="account-remove"
-        icon-color="neutral"
+        icon-color="error"
       />
       <StatCard
         label="Anciens locataires"
