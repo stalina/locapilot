@@ -33,3 +33,6 @@ test-results
 test-output
 .nyc_output
 data
+
+# Local editor backup
+*.ok
