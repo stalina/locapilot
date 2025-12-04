@@ -8,6 +8,7 @@ import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
+import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
 import type { Tenant } from '@/db/schema';
 
 const route = useRoute();
@@ -261,6 +262,11 @@ const goToTenant = (tenantId: number) => {
                 <span class="info-value"> {{ lease.deposit.toLocaleString('fr-FR') }} € </span>
               </div>
             </div>
+          </Card>
+
+          <!-- Charges adjustment table -->
+          <Card>
+            <ChargesAdjustmentTable v-if="lease?.id" :leaseId="lease.id" />
           </Card>
 
           <Card v-if="lease?.documentId">

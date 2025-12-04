@@ -16,6 +16,7 @@ export default defineConfig({
   // Inject package version at build time so runtime can access it via `import.meta.env.__APP_VERSION__`
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.1'),
+    __BUILD_SECRET_KEY__: JSON.stringify(process.env.BUILD_SECRET_KEY || ''),
   },
   base: basePath,
   plugins: [

@@ -7,6 +7,7 @@ interface LeasesState {
   currentLease: Lease | null;
   isLoading: boolean;
   error: string | null;
+  chargesAdjustments: Record<number, import('@/db/types').ChargesAdjustmentRow[]>; // leaseId -> rows
 }
 
 export const useLeasesStore = defineStore('leases', {
@@ -15,6 +16,7 @@ export const useLeasesStore = defineStore('leases', {
     currentLease: null,
     isLoading: false,
     error: null,
+    chargesAdjustments: {},
   }),
 
   getters: {
@@ -93,6 +95,59 @@ export const useLeasesStore = defineStore('leases', {
         console.error('Failed to fetch lease:', error);
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    // Charges adjustments management
+    async fetchChargesAdjustments(leaseId: number) {
+      try {
+        const rows = await db.chargesAdjustments.where({ leaseId }).sortBy('year');
+        this.chargesAdjustments = { ...this.chargesAdjustments, [leaseId]: rows };
+        return rows;
+      } catch (error) {
+        console.error('Failed to fetch charges adjustments:', error);
+        throw error;
+      }
+    },
+
+    async upsertChargesAdjustment(
+      row: Partial<import('@/db/types').ChargesAdjustmentRow> & { leaseId: number; year: number }
+    ) {
+      try {
+        const now = new Date();
+        const existing = await db.chargesAdjustments
+          .where({ leaseId: row.leaseId, year: row.year })
+          .first();
+        if (existing) {
+          const updates = { ...row, updatedAt: now } as Partial<
+            import('@/db/types').ChargesAdjustmentRow
+          >;
+          await db.chargesAdjustments.update(existing.id!, updates);
+          const updated = await db.chargesAdjustments.get(existing.id!);
+          if (updated) {
+            await this.fetchChargesAdjustments(row.leaseId);
+            return updated;
+          }
+        } else {
+          const toAdd: import('@/db/types').ChargesAdjustmentRow = {
+            leaseId: row.leaseId,
+            year: row.year,
+            monthlyRent: row.monthlyRent ?? 0,
+            chargesProvisionPaid: row.chargesProvisionPaid ?? 0,
+            rentsPaidCount: row.rentsPaidCount ?? 0,
+            rentsPaidTotal: row.rentsPaidTotal ?? 0,
+            customCharges: row.customCharges ?? {},
+            createdAt: now,
+            updatedAt: now,
+          };
+          const id = await db.chargesAdjustments.add(toAdd);
+          const created = await db.chargesAdjustments.get(id);
+          await this.fetchChargesAdjustments(row.leaseId);
+          return created;
+        }
+      } catch (error) {
+        console.error('Failed to upsert charges adjustment:', error);
+        throw error;
       }
     },
 

@@ -156,6 +156,21 @@ export interface Settings {
   updatedAt: Date;
 }
 
+export interface ChargesAdjustmentRow {
+  id?: number;
+  leaseId: number;
+  year: number;
+  monthlyRent: number; // rent amount for that year
+  annualCharges?: number; // montant des charges pour l'année (total)
+  chargesProvisionPaid: number; // total provision paid for the year
+  rentsPaidCount: number; // number of rents paid in that year
+  rentsPaidTotal: number; // total amount of rents paid in that year
+  // Custom charges stored as a key->number map, keys are column labels
+  customCharges?: Record<string, number>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ========== Database Class ==========
 
 export class LocapilotDB extends Dexie {
@@ -169,6 +184,7 @@ export class LocapilotDB extends Dexie {
   tenantDocuments!: EntityTable<TenantDocument, 'id'>;
   tenantAudits!: EntityTable<TenantAudit, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
+  chargesAdjustments!: EntityTable<ChargesAdjustmentRow, 'id'>;
 
   constructor() {
     super('locapilot');
@@ -183,6 +199,8 @@ export class LocapilotDB extends Dexie {
       inventories: '++id, leaseId, type, date',
       communications: '++id, relatedEntityType, relatedEntityId, date, type',
       settings: '++id, &key',
+      // charges adjustments table
+      chargesAdjustments: '++id, leaseId, year',
     });
 
     // Version 2 - Ajout du support des photos pour les propriétés
@@ -254,10 +272,26 @@ export class LocapilotDB extends Dexie {
         tenantDocuments: '++id, tenantId, uploadedAt, name',
         tenantAudits: '++id, tenantId, action, timestamp',
         settings: '++id, &key',
+        chargesAdjustments: '++id, leaseId, year',
       })
       .upgrade(async () => {
         // No data transformation necessary; ensure tables exist for future use.
       });
+
+    // Version 6: Add chargesAdjustments table to store yearly breakdowns and custom charge columns
+    this.version(6).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year',
+    });
   }
 }
 
