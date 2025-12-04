@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, unref, watch } from 'vue';
+import { ref, onMounted, unref, watch, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { db } from '@/db/database';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
-import Peer from 'peerjs';
+import PeerSyncService from '../services/peerSyncService';
 // Read version injected by Vite define into import.meta.env
 // @ts-ignore - injected by Vite via `define`
 const rawAppVersion = (import.meta as any).__APP_VERSION__ || '0.0.1';
@@ -27,8 +27,7 @@ const isHosting = ref(false);
 const hostId = ref<string | null>(null);
 const peerStatus = ref('');
 const connectId = ref('');
-let peer: any = null;
-let conn: any = null;
+let peerService: PeerSyncService | null = null;
 
 onMounted(() => {
   // Check if running as installed PWA
@@ -141,37 +140,44 @@ const buildPeerId = () => {
 
 const startHosting = async () => {
   if (isHosting.value) return;
+  isHosting.value = true;
+  peerStatus.value = 'Creating peer...';
+
+  // Create service with handlers
+  peerService = new PeerSyncService(
+    async (data: any) => {
+      // host shouldn't receive data in normal flow, but handle defensively
+      console.log('Host received data:', data);
+    },
+    (status, info) => {
+      peerStatus.value = String(status) + (info ? ` - ${info}` : '');
+      if (status === 'hosting') {
+        hostId.value = String(info || '');
+        isHosting.value = true;
+      }
+      if (status === 'connection-open') {
+        // a client connected and channel is open - send export
+        (async () => {
+          try {
+            peerStatus.value = 'Connection open - sending export payload';
+            const { json } = await buildExportPayload();
+            peerService?.sendExport(json);
+          } catch (e) {
+            console.error('Failed to send export from host', e);
+            peerStatus.value = 'Failed to send export';
+          }
+        })();
+      }
+      if (status === 'stopped') {
+        isHosting.value = false;
+        hostId.value = null;
+      }
+    }
+  );
+
   try {
-    isHosting.value = true;
-    peerStatus.value = 'Creating peer...';
     const id = buildPeerId();
-    peer = new Peer(id, { debug: 2 });
-    hostId.value = id;
-
-    peer.on('open', (id: string) => {
-      peerStatus.value = `Hosting as ${id}`;
-    });
-
-    peer.on('connection', async (c: any) => {
-      conn = c;
-      peerStatus.value = 'Client connected';
-
-      conn.on('open', async () => {
-        peerStatus.value = 'Connection open - sending export payload';
-        const { json } = await buildExportPayload();
-        // send payload as string
-        conn.send({ type: 'export', payload: json });
-      });
-
-      conn.on('close', () => {
-        peerStatus.value = 'Client disconnected';
-      });
-    });
-
-    peer.on('error', (err: any) => {
-      console.error('Peer error', err);
-      peerStatus.value = 'Peer error: ' + (err?.type || err?.message || String(err));
-    });
+    await peerService.startHosting(id);
   } catch (e) {
     console.error('startHosting error', e);
     peerStatus.value = 'Failed to host';
@@ -180,22 +186,12 @@ const startHosting = async () => {
 };
 
 const stopHosting = () => {
-  if (conn) {
-    try {
-      conn.close();
-    } catch (e) {
-      console.warn('conn.close failed', e);
-    }
-    conn = null;
+  try {
+    peerService?.stopHosting();
+  } catch (e) {
+    console.warn('stopHosting failed', e);
   }
-  if (peer) {
-    try {
-      peer.destroy();
-    } catch (e) {
-      console.warn('peer.destroy failed', e);
-    }
-    peer = null;
-  }
+  peerService = null;
   isHosting.value = false;
   hostId.value = null;
   peerStatus.value = '';
@@ -219,18 +215,9 @@ const connectToHost = async () => {
 
   try {
     peerStatus.value = 'Connecting...';
-    // create anonymous peer (let server assign id)
-    peer = new Peer(undefined as any, { debug: 2 });
-    peer.on('open', (id: string) => {
-      peerStatus.value = `Hosting as ${id}`;
 
-      conn = peer.connect(connectId.value);
-
-      conn.on('open', () => {
-        peerStatus.value = 'Connected - waiting for data';
-      });
-
-      conn.on('data', async (data: any) => {
+    peerService = new PeerSyncService(
+      async (data: any) => {
         if (!data || data.type !== 'export' || !data.payload) return;
         try {
           const parsed = JSON.parse(data.payload);
@@ -247,28 +234,32 @@ const connectToHost = async () => {
           await performImportFromObject(parsed);
           alert('Données synchronisées avec succès !');
           peerStatus.value = 'Import complete';
-          // close connection
+          // cleanup
           try {
-            conn.close();
+            peerService?.disconnect();
           } catch (e) {
-            console.warn('conn.close failed', e);
-          }
-          try {
-            peer.destroy();
-          } catch (e) {
-            console.warn('peer.destroy failed', e);
+            console.warn('disconnect failed', e);
           }
         } catch (err) {
           console.error('Failed to process incoming data', err);
           alert('Erreur lors de la réception des données');
         }
-      });
+      },
+      (status, info) => {
+        peerStatus.value = String(status) + (info ? ` - ${info}` : '');
+        if (status === 'connection-open') {
+          peerStatus.value = 'Connected - waiting for data';
+        }
+        if (status === 'error') {
+          console.error('Peer error', info);
+        }
+        if (status === 'stopped') {
+          peerService = null;
+        }
+      }
+    );
 
-      conn.on('error', (err: any) => {
-        console.error('Connection error', err);
-        peerStatus.value = 'Connection error';
-      });
-    });
+    await peerService.connect(connectId.value);
   } catch (e) {
     console.error('connectToHost error', e);
     peerStatus.value = 'Failed to connect';
@@ -446,6 +437,19 @@ const handleClearData = async () => {
     alert('Erreur lors de la suppression des données');
   }
 };
+
+onBeforeUnmount(() => {
+  try {
+    peerService?.stopHosting();
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    peerService?.disconnect();
+  } catch (e) {
+    /* ignore */
+  }
+});
 
 const goBack = () => {
   router.push('/');
