@@ -13,6 +13,10 @@ const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV
 const basePath = isPWABuild ? '/locapilot/' : '/';
 
 export default defineConfig({
+  // Inject package version at build time so runtime can access it via `import.meta.env.__APP_VERSION__`
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.1'),
+  },
   base: basePath,
   plugins: [
     vue(),
