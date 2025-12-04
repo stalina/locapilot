@@ -220,7 +220,7 @@ const connectToHost = async () => {
   try {
     peerStatus.value = 'Connecting...';
     // create anonymous peer (let server assign id)
-    peer = new Peer(undefined, { debug: 2 });
+    peer = new Peer(undefined as any, { debug: 2 });
     peer.on('open', (id: string) => {
       peerStatus.value = `Hosting as ${id}`;
 
