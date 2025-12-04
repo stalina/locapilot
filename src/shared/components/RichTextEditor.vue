@@ -50,25 +50,24 @@ const modules = {
 onMounted(() => {
   // Poll briefly for Quill's toolbar DOM to appear. If found, mark
   // `quillDetected` true and add a stable class used by tests.
-  try {
-    let attempts = 0;
-    const timer = setInterval(() => {
-      const toolbar = document.querySelector('.rich-text-editor .ql-toolbar');
-      if (toolbar) {
-        if (!toolbar.classList.contains('editor-toolbar')) {
-          toolbar.classList.add('editor-toolbar');
-        }
-        quillDetected.value = true;
-        clearInterval(timer);
+  // Ensure `document` is available (tests may run in environments without a DOM)
+  if (typeof document === 'undefined') return;
+
+  let attempts = 0;
+  const timer = setInterval(() => {
+    const toolbar = document.querySelector('.rich-text-editor .ql-toolbar');
+    if (toolbar) {
+      if (!toolbar.classList.contains('editor-toolbar')) {
+        toolbar.classList.add('editor-toolbar');
       }
-      attempts += 1;
-      if (attempts > 10) {
-        clearInterval(timer);
-      }
-    }, 50);
-  } catch (e) {
-    // ignore in non-browser environments (unit test JSDOM)
-  }
+      quillDetected.value = true;
+      clearInterval(timer);
+    }
+    attempts += 1;
+    if (attempts > 10) {
+      clearInterval(timer);
+    }
+  }, 50);
 });
 </script>
 
