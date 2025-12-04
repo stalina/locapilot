@@ -55,6 +55,14 @@ onMounted(() => {
 
   let attempts = 0;
   const timer = setInterval(() => {
+    if (typeof document === 'undefined') {
+      attempts += 1;
+      if (attempts > 10) {
+        clearInterval(timer);
+      }
+      return;
+    }
+
     const toolbar = document.querySelector('.rich-text-editor .ql-toolbar');
     if (toolbar) {
       if (!toolbar.classList.contains('editor-toolbar')) {
