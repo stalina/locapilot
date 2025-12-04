@@ -23,6 +23,7 @@
     "dexie": "4.2.1",
     "dompurify": "3.3.0",
     "pinia": "3.0.4",
+    "peerjs": "1.5.5",
     "primeicons": "7.0.0",
     "primevue": "4.4.1",
     "quill": "2.0.3",

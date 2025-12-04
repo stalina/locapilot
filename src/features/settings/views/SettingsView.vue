@@ -4,6 +4,12 @@ import { useRouter } from 'vue-router';
 import { db } from '@/db/database';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
+import Peer from 'peerjs';
+// Read version injected by Vite define into import.meta.env
+// @ts-ignore - injected by Vite via `define`
+const rawAppVersion = (import.meta as any).__APP_VERSION__ || '0.0.1';
+// PeerJS ids can't contain dots, remove them for id portion
+const appVersion = String(rawAppVersion).replace(/\./g, '');
 
 const router = useRouter();
 
@@ -15,6 +21,14 @@ let deferredPrompt: any = null;
 // Export/Import
 const isExporting = ref(false);
 const isImporting = ref(false);
+
+// PeerJS sync
+const isHosting = ref(false);
+const hostId = ref<string | null>(null);
+const peerStatus = ref('');
+const connectId = ref('');
+let peer: any = null;
+let conn: any = null;
 
 onMounted(() => {
   // Check if running as installed PWA
@@ -53,42 +67,8 @@ const handleInstallPWA = async () => {
 const handleExportData = async () => {
   isExporting.value = true;
   try {
-    // Export all data from IndexedDB
-    // We need to serialize Blobs (document.data) to data URLs so JSON export includes images.
-    const documentsRaw = await db.documents.toArray();
-    const documents: any[] = await Promise.all(
-      documentsRaw.map(async d => {
-        const copy: any = { ...d };
-        try {
-          if (d.data instanceof Blob) {
-            const text = await d.data.arrayBuffer();
-            const uint8 = new Uint8Array(text);
-            const b64 = btoa(String.fromCharCode(...uint8));
-            copy.data = `data:${d.mimeType};base64,${b64}`;
-          } else if (typeof d.data === 'string') {
-            copy.data = d.data;
-          } else {
-            copy.data = null;
-          }
-        } catch (e) {
-          copy.data = null;
-        }
-        return copy;
-      })
-    );
+    const { json } = await buildExportPayload();
 
-    const data = {
-      properties: await db.properties.toArray(),
-      tenants: await db.tenants.toArray(),
-      leases: await db.leases.toArray(),
-      rents: await db.rents.toArray(),
-      documents,
-      inventories: await db.inventories.toArray(),
-      exportedAt: new Date().toISOString(),
-      version: '1.0',
-    };
-
-    const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 
@@ -107,6 +87,246 @@ const handleExportData = async () => {
   } finally {
     isExporting.value = false;
   }
+};
+
+// Build export JSON payload for reuse (returns string JSON and parsed data)
+const buildExportPayload = async () => {
+  const documentsRaw = await db.documents.toArray();
+  const documents: any[] = await Promise.all(
+    documentsRaw.map(async d => {
+      const copy: any = { ...d };
+      try {
+        if (d.data instanceof Blob) {
+          const text = await d.data.arrayBuffer();
+          const uint8 = new Uint8Array(text);
+          const b64 = btoa(String.fromCharCode(...uint8));
+          copy.data = `data:${d.mimeType};base64,${b64}`;
+        } else if (typeof d.data === 'string') {
+          copy.data = d.data;
+        } else {
+          copy.data = null;
+        }
+      } catch (e) {
+        copy.data = null;
+      }
+      return copy;
+    })
+  );
+
+  const data = {
+    properties: await db.properties.toArray(),
+    tenants: await db.tenants.toArray(),
+    leases: await db.leases.toArray(),
+    rents: await db.rents.toArray(),
+    documents,
+    inventories: await db.inventories.toArray(),
+    exportedAt: new Date().toISOString(),
+    version: rawAppVersion,
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  return { json, data };
+};
+
+// Build PeerJS channel id: lcp-<version>-<hh-mm-sss>-<random3>
+const buildPeerId = () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const now = new Date();
+  const hh = pad(now.getHours());
+  const mm = pad(now.getMinutes());
+  const ss = pad(now.getSeconds());
+  const rand = Math.floor(Math.random() * 900) + 100; // 100-999
+  return `lcp-${appVersion}-${hh}-${mm}-${ss}-${rand}`;
+};
+
+const startHosting = async () => {
+  if (isHosting.value) return;
+  try {
+    isHosting.value = true;
+    peerStatus.value = 'Creating peer...';
+    const id = buildPeerId();
+    peer = new Peer(id, { debug: 2 });
+    hostId.value = id;
+
+    peer.on('open', (id: string) => {
+      peerStatus.value = `Hosting as ${id}`;
+    });
+
+    peer.on('connection', async (c: any) => {
+      conn = c;
+      peerStatus.value = 'Client connected';
+
+      conn.on('open', async () => {
+        peerStatus.value = 'Connection open - sending export payload';
+        const { json } = await buildExportPayload();
+        // send payload as string
+        conn.send({ type: 'export', payload: json });
+      });
+
+      conn.on('close', () => {
+        peerStatus.value = 'Client disconnected';
+      });
+    });
+
+    peer.on('error', (err: any) => {
+      console.error('Peer error', err);
+      peerStatus.value = 'Peer error: ' + (err?.type || err?.message || String(err));
+    });
+  } catch (e) {
+    console.error('startHosting error', e);
+    peerStatus.value = 'Failed to host';
+    isHosting.value = false;
+  }
+};
+
+const stopHosting = () => {
+  if (conn) {
+    try {
+      conn.close();
+    } catch (e) {
+      console.warn('conn.close failed', e);
+    }
+    conn = null;
+  }
+  if (peer) {
+    try {
+      peer.destroy();
+    } catch (e) {
+      console.warn('peer.destroy failed', e);
+    }
+    peer = null;
+  }
+  isHosting.value = false;
+  hostId.value = null;
+  peerStatus.value = '';
+};
+
+const connectToHost = async () => {
+  if (!connectId.value) return alert('Entrez un ID de session');
+
+  // validate version in id: expect lcp-<version>-...
+  const parts = connectId.value.split('-');
+  if (parts.length < 3 || parts[0] !== 'lcp') {
+    return alert('ID invalide');
+  }
+  const remoteVersion = parts[1];
+  const localVersion = appVersion;
+  if (remoteVersion !== localVersion) {
+    return alert(
+      `Version mismatch: remote=${remoteVersion} local=${localVersion}. Merci de mettre à jour l'application.`
+    );
+  }
+
+  try {
+    peerStatus.value = 'Connecting...';
+    // create anonymous peer (let server assign id)
+    peer = new Peer(undefined, { debug: 2 });
+    peer.on('open', (id: string) => {
+      peerStatus.value = `Hosting as ${id}`;
+
+      conn = peer.connect(connectId.value);
+
+      conn.on('open', () => {
+        peerStatus.value = 'Connected - waiting for data';
+      });
+
+      conn.on('data', async (data: any) => {
+        if (!data || data.type !== 'export' || !data.payload) return;
+        try {
+          const parsed = JSON.parse(data.payload);
+          // confirm with user
+          const ok = confirm(
+            'Recevoir des données depuis un autre appareil va remplacer vos données locales. Continuer ?'
+          );
+          if (!ok) {
+            peerStatus.value = 'Import cancelled by user';
+            return;
+          }
+
+          // perform import using existing logic
+          await performImportFromObject(parsed);
+          alert('Données synchronisées avec succès !');
+          peerStatus.value = 'Import complete';
+          // close connection
+          try {
+            conn.close();
+          } catch (e) {
+            console.warn('conn.close failed', e);
+          }
+          try {
+            peer.destroy();
+          } catch (e) {
+            console.warn('peer.destroy failed', e);
+          }
+        } catch (err) {
+          console.error('Failed to process incoming data', err);
+          alert('Erreur lors de la réception des données');
+        }
+      });
+
+      conn.on('error', (err: any) => {
+        console.error('Connection error', err);
+        peerStatus.value = 'Connection error';
+      });
+    });
+  } catch (e) {
+    console.error('connectToHost error', e);
+    peerStatus.value = 'Failed to connect';
+  }
+};
+
+// Reuse import logic but from an object (parsed JSON)
+const performImportFromObject = async (data: any) => {
+  // Basic validation
+  if (!data.properties || !data.tenants) {
+    throw new Error('Format de fichier invalide');
+  }
+
+  // Clear existing data
+  await db.properties.clear();
+  await db.tenants.clear();
+  await db.leases.clear();
+  await db.rents.clear();
+  await db.documents.clear();
+  await db.inventories.clear();
+
+  if (data.properties.length) await db.properties.bulkAdd(data.properties);
+  if (data.tenants.length) await db.tenants.bulkAdd(data.tenants);
+  if (data.leases?.length) await db.leases.bulkAdd(data.leases);
+  if (data.rents?.length) await db.rents.bulkAdd(data.rents);
+
+  if (data.documents?.length) {
+    const docsToAdd = data.documents.map((d: any) => {
+      const copy = { ...d };
+      try {
+        if (typeof d.data === 'string' && d.data.startsWith('data:')) {
+          const matches = d.data.match(/^data:(.+);base64,(.*)$/);
+          if (matches) {
+            const mime = matches[1];
+            const b64 = matches[2];
+            const binary = atob(b64);
+            const len = binary.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+            copy.data = new Blob([bytes], { type: mime });
+            copy.mimeType = mime;
+            copy.size = bytes.length;
+          } else {
+            copy.data = null;
+          }
+        } else {
+          copy.data = null;
+        }
+      } catch (e) {
+        copy.data = null;
+      }
+      return copy;
+    });
+
+    await db.documents.bulkAdd(docsToAdd);
+  }
+
+  if (data.inventories?.length) await db.inventories.bulkAdd(data.inventories);
 };
 
 const handleImportData = () => {
@@ -365,6 +585,39 @@ watch(
           >
             {{ isImporting ? 'Import...' : 'Importer' }}
           </Button>
+        </div>
+
+        <!-- Peer-to-peer Sync -->
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Synchronisation Peer-to-peer</h3>
+            <p>Transférez vos données directement entre deux navigateurs via une connexion P2P.</p>
+            <p style="margin-top: 8px">
+              Status: <strong>{{ peerStatus }}</strong>
+            </p>
+            <p v-if="hostId">
+              Share this ID to the other device: <code>{{ hostId }}</code>
+            </p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 260px">
+            <div style="display: flex; gap: 8px">
+              <Button v-if="!isHosting" @click="startHosting" variant="secondary">Héberger</Button>
+              <Button v-else @click="stopHosting" variant="outline">Arrêter</Button>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <input
+                v-model="connectId"
+                placeholder="Entrez l'ID d'hôte"
+                style="
+                  flex: 1;
+                  padding: 8px;
+                  border-radius: 6px;
+                  border: 1px solid var(--color-border);
+                "
+              />
+              <Button @click="connectToHost" variant="secondary">Se connecter</Button>
+            </div>
+          </div>
         </div>
 
         <div class="setting-card danger">
