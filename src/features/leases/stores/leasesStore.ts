@@ -119,9 +119,12 @@ export const useLeasesStore = defineStore('leases', {
           .where({ leaseId: row.leaseId, year: row.year })
           .first();
         if (existing) {
-          const updates = { ...row, updatedAt: now } as Partial<
+          // Serialize to ensure no Vue reactivity or non-clonable properties
+          const updates = JSON.parse(JSON.stringify({ ...row, updatedAt: now })) as Partial<
             import('@/db/types').ChargesAdjustmentRow
           >;
+          // Restore Date object after JSON serialization
+          updates.updatedAt = now;
           await db.chargesAdjustments.update(existing.id!, updates);
           const updated = await db.chargesAdjustments.get(existing.id!);
           if (updated) {
@@ -129,17 +132,23 @@ export const useLeasesStore = defineStore('leases', {
             return updated;
           }
         } else {
-          const toAdd: import('@/db/types').ChargesAdjustmentRow = {
-            leaseId: row.leaseId,
-            year: row.year,
-            monthlyRent: row.monthlyRent ?? 0,
-            chargesProvisionPaid: row.chargesProvisionPaid ?? 0,
-            rentsPaidCount: row.rentsPaidCount ?? 0,
-            rentsPaidTotal: row.rentsPaidTotal ?? 0,
-            customCharges: row.customCharges ?? {},
-            createdAt: now,
-            updatedAt: now,
-          };
+          // Serialize to ensure no Vue reactivity or non-clonable properties
+          const toAdd = JSON.parse(
+            JSON.stringify({
+              leaseId: row.leaseId,
+              year: row.year,
+              monthlyRent: row.monthlyRent ?? 0,
+              chargesProvisionPaid: row.chargesProvisionPaid ?? 0,
+              rentsPaidCount: row.rentsPaidCount ?? 0,
+              rentsPaidTotal: row.rentsPaidTotal ?? 0,
+              customCharges: row.customCharges ?? {},
+              createdAt: now,
+              updatedAt: now,
+            })
+          ) as import('@/db/types').ChargesAdjustmentRow;
+          // Restore Date objects after JSON serialization
+          toAdd.createdAt = now;
+          toAdd.updatedAt = now;
           const id = await db.chargesAdjustments.add(toAdd);
           const created = await db.chargesAdjustments.get(id);
           await this.fetchChargesAdjustments(row.leaseId);

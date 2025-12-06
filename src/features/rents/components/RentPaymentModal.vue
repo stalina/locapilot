@@ -28,7 +28,12 @@
           </div>
           <div class="info-row highlight">
             <span class="info-label">Montant dû</span>
-            <span class="info-value amount">{{ rent.amount.toLocaleString('fr-FR') }} €</span>
+            <span class="info-value amount"
+              >{{
+                (Number(rent.amount) + Number(rent.charges || 0)).toLocaleString('fr-FR')
+              }}
+              €</span
+            >
           </div>
         </div>
 
@@ -59,15 +64,15 @@
                 type="number"
                 step="0.01"
                 min="0"
-                :max="rent.amount"
+                :max="totalDue"
                 class="form-input"
                 placeholder="0.00"
                 required
               />
               <span class="input-suffix">€</span>
             </div>
-            <small v-if="formData.amount < rent.amount" class="form-hint warning">
-              Paiement partiel : {{ (rent.amount - formData.amount).toFixed(2) }} € restant
+            <small v-if="formData.amount < totalDue" class="form-hint warning">
+              Paiement partiel : {{ (totalDue - formData.amount).toFixed(2) }} € restant
             </small>
           </div>
 
@@ -91,9 +96,7 @@
           </div>
 
           <div class="form-group">
-            <label for="payment-reference" class="form-label">
-              Référence (optionnel)
-            </label>
+            <label for="payment-reference" class="form-label"> Référence (optionnel) </label>
             <input
               id="payment-reference"
               v-model="formData.reference"
@@ -104,9 +107,7 @@
           </div>
 
           <div class="form-group">
-            <label for="payment-notes" class="form-label">
-              Notes (optionnel)
-            </label>
+            <label for="payment-notes" class="form-label"> Notes (optionnel) </label>
             <textarea
               id="payment-notes"
               v-model="formData.notes"
@@ -118,9 +119,7 @@
 
           <!-- Submit Buttons -->
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" @click="handleClose">
-              Annuler
-            </button>
+            <button type="button" class="btn btn-default" @click="handleClose">Annuler</button>
             <button type="submit" class="btn btn-success" :disabled="!isFormValid">
               <i class="mdi mdi-check"></i>
               Valider le paiement
@@ -159,9 +158,11 @@ interface PaymentData {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+const totalDue = computed(() => Number(props.rent.amount) + Number(props.rent.charges || 0));
+
 const formData = ref<PaymentData>({
   paymentDate: new Date().toISOString().split('T')[0]!,
-  amount: props.rent.amount,
+  amount: totalDue.value,
   paymentMethod: '',
   reference: '',
   notes: '',
@@ -175,23 +176,26 @@ const isFormValid = computed(() => {
   return (
     formData.value.paymentDate &&
     formData.value.amount > 0 &&
-    formData.value.amount <= props.rent.amount &&
+    formData.value.amount <= totalDue.value &&
     formData.value.paymentMethod
   );
 });
 
-watch(() => props.modelValue, (newValue) => {
-  if (newValue) {
-    // Reset form when modal opens
-    formData.value = {
-      paymentDate: new Date().toISOString().split('T')[0]!,
-      amount: props.rent.amount,
-      paymentMethod: '',
-      reference: '',
-      notes: '',
-    };
+watch(
+  () => props.modelValue,
+  newValue => {
+    if (newValue) {
+      // Reset form when modal opens
+      formData.value = {
+        paymentDate: new Date().toISOString().split('T')[0]!,
+        amount: totalDue.value,
+        paymentMethod: '',
+        reference: '',
+        notes: '',
+      };
+    }
   }
-});
+);
 
 function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('fr-FR', {
@@ -207,7 +211,7 @@ function handleClose() {
 
 function handleSubmit() {
   if (!isFormValid.value) return;
-  
+
   emit('submit', { ...formData.value });
   handleClose();
 }

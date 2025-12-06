@@ -141,8 +141,8 @@ describe('Database Migrations', () => {
   });
 
   describe('Database version', () => {
-    it('should be at version 3', () => {
-      expect(db.verno).toBe(5);
+    it('should be at version 6', () => {
+      expect(db.verno).toBe(6);
     });
 
     it('should have all required tables', () => {

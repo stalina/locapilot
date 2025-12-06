@@ -135,12 +135,24 @@ async function confirmAddColumn() {
   for (const r of rows.value) {
     const custom = { ...(r.customCharges ?? {}) };
     if (!(label in custom)) custom[label] = 0;
-    r.customCharges = custom;
-    await leasesStore.upsertChargesAdjustment({
+    // Nettoyer customCharges pour ne garder que des nombres
+    r.customCharges = JSON.parse(
+      JSON.stringify(
+        Object.fromEntries(Object.entries(custom).map(([k, v]) => [k, Number(v) || 0]))
+      )
+    );
+    const payload = {
       leaseId: r.leaseId,
       year: r.year,
+      monthlyRent: r.monthlyRent ?? 0,
+      annualCharges: r.annualCharges ?? 0,
+      chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
+      rentsPaidCount: r.rentsPaidCount ?? 0,
+      rentsPaidTotal: r.rentsPaidTotal ?? 0,
       customCharges: r.customCharges,
-    });
+    };
+    console.log('Upsert charges adjustment (add column):', payload);
+    await leasesStore.upsertChargesAdjustment(payload);
   }
 
   showAddColumnModal.value = false;
@@ -158,12 +170,25 @@ function computeRegulation(r: ChargesAdjustmentRow) {
 
 async function onCellChange(r: ChargesAdjustmentRow, key: string, value: number) {
   if (!r.customCharges) r.customCharges = {};
-  r.customCharges[key] = value;
-  await leasesStore.upsertChargesAdjustment({
+  r.customCharges[key] = Number(value) || 0;
+  // Nettoyer customCharges pour ne garder que des nombres et forcer la sérialisation
+  r.customCharges = JSON.parse(
+    JSON.stringify(
+      Object.fromEntries(Object.entries(r.customCharges).map(([k, v]) => [k, Number(v) || 0]))
+    )
+  );
+  const payload = {
     leaseId: r.leaseId,
     year: r.year,
+    monthlyRent: r.monthlyRent ?? 0,
+    annualCharges: r.annualCharges ?? 0,
+    chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
+    rentsPaidCount: r.rentsPaidCount ?? 0,
+    rentsPaidTotal: r.rentsPaidTotal ?? 0,
     customCharges: r.customCharges,
-  });
+  };
+  console.log('Upsert charges adjustment (cell change):', payload);
+  await leasesStore.upsertChargesAdjustment(payload);
 }
 
 function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
@@ -172,16 +197,18 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
 }
 
 async function onRowUpdate(r: ChargesAdjustmentRow) {
-  await leasesStore.upsertChargesAdjustment({
+  const payload = {
     leaseId: r.leaseId,
     year: r.year,
-    monthlyRent: r.monthlyRent,
-    annualCharges: r.annualCharges,
-    chargesProvisionPaid: r.chargesProvisionPaid,
-    rentsPaidCount: r.rentsPaidCount,
-    rentsPaidTotal: r.rentsPaidTotal,
+    monthlyRent: r.monthlyRent ?? 0,
+    annualCharges: r.annualCharges ?? 0,
+    chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
+    rentsPaidCount: r.rentsPaidCount ?? 0,
+    rentsPaidTotal: r.rentsPaidTotal ?? 0,
     customCharges: r.customCharges,
-  });
+  };
+  console.log('Upsert charges adjustment (row update):', payload);
+  await leasesStore.upsertChargesAdjustment(payload);
 }
 </script>
 
@@ -240,7 +267,7 @@ async function onRowUpdate(r: ChargesAdjustmentRow) {
               type="number"
               class="input-small"
               :value="(r.customCharges && r.customCharges[col]) || 0"
-              @input="e => handleInput(e, r, col)"
+              @change="e => handleInput(e, r, col)"
             />
           </td>
 

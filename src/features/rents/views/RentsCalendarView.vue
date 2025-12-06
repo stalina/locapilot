@@ -272,7 +272,9 @@ onMounted(async () => {
                   <span class="rent-date">{{ formatDate(rent.dueDate) }}</span>
                 </div>
               </div>
-              <div class="rent-amount">{{ rent.amount.toLocaleString('fr-FR') }}€</div>
+              <div class="rent-amount">
+                {{ (Number(rent.amount) + Number(rent.charges || 0)).toLocaleString('fr-FR') }}€
+              </div>
             </div>
           </div>
         </div>

@@ -290,7 +290,7 @@ export class LocapilotDB extends Dexie {
       tenantDocuments: '++id, tenantId, uploadedAt, name',
       tenantAudits: '++id, tenantId, action, timestamp',
       settings: '++id, &key',
-      chargesAdjustments: '++id, leaseId, year',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
     });
   }
 }

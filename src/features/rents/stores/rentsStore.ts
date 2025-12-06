@@ -242,7 +242,7 @@ export const useRentsStore = defineStore('rents', {
           date: new Date(rent.dueDate),
           title: property?.name || 'Bien inconnu',
           status: calendarStatus as 'pending' | 'paid' | 'overdue',
-          amount: rent.amount,
+          amount: (Number(rent.amount) || 0) + (Number((rent as any).charges) || 0),
           isVirtual: false,
         } as any;
       });
@@ -259,7 +259,7 @@ export const useRentsStore = defineStore('rents', {
           date: new Date(v.dueDate),
           title: property?.name || 'Bien inconnu',
           status: 'pending' as const,
-          amount: v.amount,
+          amount: (Number(v.amount) || 0) + (Number(v.charges) || 0),
           isVirtual: true,
         } as any;
       });

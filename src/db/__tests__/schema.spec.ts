@@ -23,7 +23,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(5);
+      expect(db.verno).toBe(6);
     });
 
     it('should have all required tables', async () => {
@@ -39,8 +39,9 @@ describe('Database Schema', () => {
       expect(tables).toContain('tenantDocuments');
       expect(tables).toContain('tenantAudits');
       expect(tables).toContain('settings');
+      expect(tables).toContain('chargesAdjustments');
 
-      expect(tables).toHaveLength(10);
+      expect(tables).toHaveLength(11);
     });
   });
 
@@ -95,6 +96,16 @@ describe('Database Schema', () => {
 
       expect(schema.primKey.name).toBe('id');
       expect(schema.primKey.auto).toBe(true);
+    });
+
+    it('should have correct indexes for chargesAdjustments table', () => {
+      const schema = db.chargesAdjustments.schema;
+
+      expect(schema.primKey.name).toBe('id');
+      expect(schema.primKey.auto).toBe(true);
+      expect(schema.indexes.map(i => i.name)).toContain('leaseId');
+      expect(schema.indexes.map(i => i.name)).toContain('year');
+      expect(schema.indexes.map(i => i.name)).toContain('[leaseId+year]');
     });
   });
 
