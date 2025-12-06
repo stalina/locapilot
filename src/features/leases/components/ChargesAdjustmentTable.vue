@@ -214,73 +214,99 @@ async function onRowUpdate(r: ChargesAdjustmentRow) {
 
 <template>
   <div class="charges-adjustment">
-    <div class="card-header small">
+    <div class="card-header small flex-row-between">
       <h3>
         <i class="mdi mdi-scale-balance"></i>
         Régularisation des charges
       </h3>
-      <div class="header-actions">
-        <Button variant="outline" icon="plus" @click="startAddColumn">Ajouter une colonne</Button>
-      </div>
+      <Button variant="outline" icon="plus" @click="startAddColumn">Ajouter une charge</Button>
     </div>
 
     <div v-if="isLoading" class="loading-state">Chargement...</div>
 
-    <table class="charges-table" v-else>
-      <thead>
-        <tr>
-          <th>Année</th>
-          <th>Loyer</th>
-          <th>Charge</th>
-          <th>Provision de charges payée</th>
-          <th v-for="col in columns" :key="col">{{ col }}</th>
-          <th>Total charges</th>
-          <th>Régulation</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="r in rows" :key="r.year">
-          <td>{{ r.year }}</td>
-          <td>
-            <span>{{ (Number(r.monthlyRent) || 0).toLocaleString('fr-FR') }} €</span>
-          </td>
-          <td>
-            <span>
-              {{
-                (
-                  Number(
-                    r.annualCharges
-                      ? r.annualCharges / 12
-                      : (leasesStore.currentLease?.charges ?? 0)
-                  ) || 0
-                ).toLocaleString('fr-FR')
-              }}
-              €
-            </span>
-          </td>
-          <td>
-            <span>{{ (Number(r.chargesProvisionPaid) || 0).toLocaleString('fr-FR') }} €</span>
-          </td>
+    <div class="charges-table-wrapper" v-else>
+      <table class="charges-table">
+        <thead>
+          <tr>
+            <th class="compact-th info-th">Année</th>
+            <th class="compact-th info-th">Loyer</th>
+            <th class="compact-th info-th">Charge</th>
+            <th class="compact-th total-th">Provision<br />de charges<br />payée</th>
+            <th v-for="col in columns" :key="col" class="compact-th custom-col">{{ col }}</th>
+            <th class="compact-th total-th">Total<br />charges</th>
+            <th class="compact-th reg-th">Régularisation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in rows" :key="r.year">
+            <td class="info-td">{{ r.year }}</td>
+            <td class="info-td">
+              <span class="nowrap"
+                >{{ (Number(r.monthlyRent) || 0).toLocaleString('fr-FR') }}&nbsp;€</span
+              >
+            </td>
+            <td class="info-td">
+              <span class="nowrap">
+                {{
+                  (
+                    Number(
+                      r.annualCharges
+                        ? r.annualCharges / 12
+                        : (leasesStore.currentLease?.charges ?? 0)
+                    ) || 0
+                  ).toLocaleString('fr-FR')
+                }}&nbsp;€
+              </span>
+            </td>
+            <td class="total-td">
+              <span class="nowrap"
+                >{{ (Number(r.chargesProvisionPaid) || 0).toLocaleString('fr-FR') }}&nbsp;€</span
+              >
+            </td>
 
-          <td v-for="col in columns" :key="col">
-            <input
-              type="number"
-              class="input-small"
-              :value="(r.customCharges && r.customCharges[col]) || 0"
-              @change="e => handleInput(e, r, col)"
-            />
-          </td>
+            <td v-for="col in columns" :key="col">
+              <input
+                type="number"
+                class="input charge-input"
+                :value="(r.customCharges && r.customCharges[col]) || 0"
+                @change="e => handleInput(e, r, col)"
+                min="0"
+                step="1"
+                :aria-label="col + ' pour ' + r.year"
+              />
+            </td>
 
-          <td>{{ computeCustomTotal(r).toLocaleString('fr-FR') }} €</td>
-          <td>{{ computeRegulation(r).toLocaleString('fr-FR') }} €</td>
-        </tr>
-      </tbody>
-    </table>
+            <td class="total-td">
+              <span class="nowrap">{{ computeCustomTotal(r).toLocaleString('fr-FR') }}&nbsp;€</span>
+            </td>
+            <td class="reg-td">
+              <span
+                class="nowrap reg-badge"
+                :class="{
+                  'reg-pos': computeRegulation(r) > 0,
+                  'reg-neg': computeRegulation(r) < 0,
+                  'reg-zero': computeRegulation(r) === 0,
+                }"
+              >
+                {{ computeRegulation(r).toLocaleString('fr-FR') }}&nbsp;€
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <Modal v-model="showAddColumnModal" title="Ajouter une colonne" size="sm">
       <div class="form-row">
-        <label>Libellé de la colonne</label>
-        <input v-model="newColumnLabel" type="text" />
+        <label for="charge-label-input">Libellé de la colonne</label>
+        <input
+          id="charge-label-input"
+          v-model="newColumnLabel"
+          type="text"
+          class="input charge-input"
+          placeholder="Ex : Eau, Électricité..."
+          maxlength="32"
+        />
       </div>
       <template #footer>
         <Button variant="outline" @click="() => (showAddColumnModal = false)">Annuler</Button>
@@ -291,18 +317,201 @@ async function onRowUpdate(r: ChargesAdjustmentRow) {
 </template>
 
 <style scoped>
+.info-th {
+  color: var(--text-muted, #8a99b3);
+  font-weight: 400;
+  font-style: italic;
+}
+.info-td {
+  color: var(--text-muted, #8a99b3);
+  font-style: italic;
+}
+.total-th,
+.total-td {
+  font-weight: 600;
+  color: var(--primary-color, #2563eb);
+  background: var(--surface-alt, #f3f6fa);
+}
+.reg-th {
+  font-weight: 600;
+  color: var(--text-color, #222);
+}
+.reg-td {
+  text-align: center;
+}
+.reg-badge {
+  display: inline-block;
+  min-width: 60px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 1em;
+  background: #f4f4f4;
+  color: #222;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.reg-pos {
+  background: #e6fbe8;
+  color: #15803d;
+}
+.reg-neg {
+  background: #fbeaea;
+  color: #b91c1c;
+}
+.reg-zero {
+  background: #f3f6fa;
+  color: #64748b;
+}
+.th-help {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--primary-color, #2563eb);
+  font-size: 0.9em;
+  cursor: help;
+  border-radius: 50%;
+  width: 1.1em;
+  height: 1.1em;
+  text-align: center;
+  line-height: 1.1em;
+  background: #eaf1fb;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.charges-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.charges-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.charges-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border-color, #e2e8f0);
+  border-radius: 4px;
+}
 .charges-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 700px;
+  font-size: 1rem;
+  background: var(--surface-color, #fff);
 }
 .charges-table th,
 .charges-table td {
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
   text-align: left;
   vertical-align: middle;
+  font-family: inherit;
 }
-.charges-table .input-small {
-  width: 100px;
+.charges-table th {
+  font-weight: 600;
+  font-size: 1.05em;
+  background: var(--surface-alt, #f8fafc);
+  max-width: 120px;
+  min-width: 70px;
+  white-space: pre-line;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  hyphens: none;
+  text-align: center;
+  font-size: 0.97em;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.compact-th {
+  max-width: 110px;
+  min-width: 60px;
+  white-space: pre-line;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  hyphens: none;
+  text-align: center;
+  font-size: 0.97em;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.custom-col {
+  background: var(--surface-alt, #f3f6fa);
+  font-variant: small-caps;
+}
+.charge-input {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  font-size: 1em;
+  background: var(--input-bg, #fff);
+  color: var(--text-color, #222);
+  transition: border-color 0.2s;
+  outline: none;
+}
+.charge-input:focus {
+  border-color: var(--primary-color, #3b82f6);
+  background: var(--input-focus-bg, #f0f6ff);
+}
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.form-row label {
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: var(--text-color, #222);
+}
+.form-row .charge-input {
+  width: 100%;
+  max-width: 320px;
+}
+.flex-row-between {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+@media (max-width: 900px) {
+  .charges-table {
+    font-size: 0.95em;
+    min-width: 500px;
+  }
+  .charge-input {
+    width: 70px;
+    font-size: 0.95em;
+  }
+}
+@media (max-width: 600px) {
+  .charges-table-wrapper {
+    margin-bottom: 8px;
+    max-width: 100vw;
+    padding-bottom: 8px;
+  }
+  .charges-table {
+    font-size: 0.92em;
+    min-width: 350px;
+  }
+  .charge-input {
+    width: 50px;
+    font-size: 0.9em;
+    padding: 4px 6px;
+  }
+  .charges-table th,
+  .charges-table td {
+    padding: 7px 6px;
+  }
+  .form-row .charge-input {
+    max-width: 100vw;
+  }
+}
+
+.flex-row-between {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 </style>
