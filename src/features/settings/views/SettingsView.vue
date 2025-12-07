@@ -476,6 +476,27 @@ const saveDefaultRejectionMessage = async () => {
   }
 };
 
+// Sender address editing
+const editingSenderAddress = ref<string>('');
+onMounted(async () => {
+  try {
+    const s = await db.settings.where('key').equals('senderAddress').first();
+    editingSenderAddress.value = s && s.value ? String(s.value) : '';
+  } catch (e) {
+    editingSenderAddress.value = '';
+  }
+});
+
+const saveSenderAddress = async () => {
+  try {
+    await settingsStore.updateSenderAddress(editingSenderAddress.value);
+    alert("Adresse d'expéditeur sauvegardée");
+  } catch (e) {
+    console.error('Failed to save sender address', e);
+    alert('Erreur lors de la sauvegarde');
+  }
+};
+
 // Keep the editor in sync if the store value changes elsewhere
 watch(
   () => unref(settingsStore.currentDefaultRejectionMessage),
@@ -521,6 +542,8 @@ watch(
         </div>
 
         <div class="setting-card">
+          <!-- (removed - communications moved into dedicated Communications section below) -->
+
           <div class="setting-info">
             <h3>Mode hors ligne</h3>
             <p>L'application fonctionne entièrement hors ligne grâce au stockage local</p>
@@ -535,6 +558,23 @@ watch(
           <i class="mdi mdi-email"></i>
           Communications
         </h2>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Adresse d'expéditeur</h3>
+            <p>Éditez l'adresse d'expéditeur utilisée pour les communications</p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <textarea
+              v-model="editingSenderAddress"
+              rows="5"
+              style="width: 100%; resize: vertical"
+            ></textarea>
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveSenderAddress" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
+        </div>
 
         <div class="setting-card">
           <div class="setting-info">

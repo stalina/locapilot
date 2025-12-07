@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
+import Test from './test.vue';
 import { db } from '@/db/database';
 
 // Stats
@@ -188,6 +189,8 @@ async function loadDashboardData() {
         :trend="{ value: 3, direction: 'down' }"
       />
     </div>
+
+    <Test />
 
     <!-- Content Grid -->
     <div class="content-grid">

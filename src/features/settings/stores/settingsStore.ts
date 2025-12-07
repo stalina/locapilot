@@ -17,6 +17,7 @@ interface AppSettingsData {
   notifications: NotificationSettings;
   autoSave: boolean;
   compactMode: boolean;
+  senderAddress?: string;
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -56,6 +57,7 @@ Cordialement, `);
     },
     autoSave: true,
     compactMode: false,
+    senderAddress: '',
   };
 
   // Getters
@@ -111,6 +113,8 @@ Cordialement, `);
       notifications.value = await getSetting('notifications', defaultSettings.notifications);
       autoSave.value = await getSetting('autoSave', defaultSettings.autoSave);
       compactMode.value = await getSetting('compactMode', defaultSettings.compactMode);
+
+      // senderAddress is managed on demand via helper action
 
       // Load default rejection message
       defaultRejectionMessage.value = await getSetting(
@@ -241,6 +245,11 @@ Cordialement, `);
     }
   };
 
+  // Persist sender address under settings.key = 'senderAddress'
+  async function updateSenderAddress(addr: string): Promise<void> {
+    await setSetting('senderAddress', addr);
+  }
+
   return {
     // State
     theme,
@@ -269,6 +278,7 @@ Cordialement, `);
     toggleCompactMode,
     toggleAutoSave,
     resetToDefaults,
+    updateSenderAddress,
     // Default message
     defaultRejectionMessage,
     currentDefaultRejectionMessage,

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import { saveAs } from 'file-saver';
 import Modal from '@/shared/components/Modal.vue';
 import Button from '@/shared/components/Button.vue';
 import { useLeasesStore } from '../stores/leasesStore';
@@ -168,6 +171,53 @@ function computeRegulation(r: ChargesAdjustmentRow) {
   return (Number(r.chargesProvisionPaid) || 0) - computeCustomTotal(r);
 }
 
+// Utilitaire pour charger un fichier en binaire
+function loadBinary(url: string) {
+  return fetch(url).then(res => res.arrayBuffer());
+}
+
+async function generateRegulLetter(r: ChargesAdjustmentRow) {
+  try {
+    const content = await loadBinary('/templateRegulCharge.docx');
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    // Charger des données additionnelles depuis la table settings (clé: 'senderAddress')
+    let ownerAddress = '';
+    try {
+      const s = await db.settings.where('key').equals('senderAddress').first();
+      if (s && s.value) ownerAddress = String(s.value || '');
+    } catch (e) {
+      // ignore si la clé n'existe pas
+    }
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_courrierInfoRegulCharge.docx`;
+
+    // Remplir les données du template
+    doc.render({
+      year: r.year,
+      provisionPaid: Number(r.chargesProvisionPaid) || 0,
+      totalCharges: computeCustomTotal(r),
+      regulation: computeRegulation(r),
+      ownerAddress,
+      date: new Date().toLocaleDateString('fr-FR'),
+    });
+
+    const out = doc
+      .getZip()
+      .generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    saveAs(out, filename);
+  } catch (error) {
+    console.error('Erreur génération courrier régularisation :', error);
+  }
+}
+
 async function onCellChange(r: ChargesAdjustmentRow, key: string, value: number) {
   if (!r.customCharges) r.customCharges = {};
   r.customCharges[key] = Number(value) || 0;
@@ -196,20 +246,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   void onCellChange(r, key, v);
 }
 
-async function onRowUpdate(r: ChargesAdjustmentRow) {
-  const payload = {
-    leaseId: r.leaseId,
-    year: r.year,
-    monthlyRent: r.monthlyRent ?? 0,
-    annualCharges: r.annualCharges ?? 0,
-    chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
-    rentsPaidCount: r.rentsPaidCount ?? 0,
-    rentsPaidTotal: r.rentsPaidTotal ?? 0,
-    customCharges: r.customCharges,
-  };
-  console.log('Upsert charges adjustment (row update):', payload);
-  await leasesStore.upsertChargesAdjustment(payload);
-}
+// (onRowUpdate removed - not used)
 </script>
 
 <template>
@@ -280,16 +317,25 @@ async function onRowUpdate(r: ChargesAdjustmentRow) {
               <span class="nowrap">{{ computeCustomTotal(r).toLocaleString('fr-FR') }}&nbsp;€</span>
             </td>
             <td class="reg-td">
-              <span
-                class="nowrap reg-badge"
-                :class="{
-                  'reg-pos': computeRegulation(r) > 0,
-                  'reg-neg': computeRegulation(r) < 0,
-                  'reg-zero': computeRegulation(r) === 0,
-                }"
-              >
-                {{ computeRegulation(r).toLocaleString('fr-FR') }}&nbsp;€
-              </span>
+              <div style="display: flex; align-items: center; gap: 8px; justify-content: center">
+                <span
+                  class="nowrap reg-badge"
+                  :class="{
+                    'reg-pos': computeRegulation(r) > 0,
+                    'reg-neg': computeRegulation(r) < 0,
+                    'reg-zero': computeRegulation(r) === 0,
+                  }"
+                >
+                  {{ computeRegulation(r).toLocaleString('fr-FR') }}&nbsp;€
+                </span>
+                <button
+                  class="icon-button"
+                  title="Générer le courrier"
+                  @click.prevent="() => generateRegulLetter(r)"
+                >
+                  <i class="mdi mdi-email-outline" aria-hidden="true"></i>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -406,6 +452,20 @@ async function onRowUpdate(r: ChargesAdjustmentRow) {
   text-align: left;
   vertical-align: middle;
   font-family: inherit;
+}
+.icon-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--primary-color, #2563eb);
+}
+.icon-button:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+.icon-button i {
+  font-size: 1.15em;
 }
 .charges-table th {
   font-weight: 600;
