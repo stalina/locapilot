@@ -197,6 +197,40 @@ async function generateRegulLetter(r: ChargesAdjustmentRow) {
     const filename = `${filenameDate}_courrierInfoRegulCharge.docx`;
 
     // Remplir les données du template
+    // Try to build tenantFullName: "M. Last First" or "Mme Last First"
+    let tenantFullName = '';
+    let tenantName = '';
+    let propertyName = '';
+    let propertyAddress = '';
+    try {
+      const lease = await db.leases.get(r.leaseId);
+      if (lease && Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
+        const tenantId = (lease as any).tenantIds[0];
+        const tenant = await db.tenants.get(tenantId);
+        if (tenant) {
+          const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
+          tenantFullName =
+            `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
+          tenantName = `${civLabel ? civLabel + ' ' : ''}${tenant.lastName}`.trim();
+        }
+      }
+      // Also resolve property details
+      if (lease && (lease as any).propertyId) {
+        try {
+          const prop = await db.properties.get((lease as any).propertyId);
+          if (prop) {
+            propertyName = prop.name || '';
+            propertyAddress = prop.address || '';
+          }
+        } catch (e) {
+          // ignore property lookup errors
+        }
+      }
+    } catch (err) {
+      // ignore tenant lookup errors
+      console.error('Unable to resolve tenant for document generation', err);
+    }
+
     doc.render({
       year: r.year,
       provisionPaid: Number(r.chargesProvisionPaid) || 0,
@@ -204,14 +238,16 @@ async function generateRegulLetter(r: ChargesAdjustmentRow) {
       regulation: computeRegulation(r),
       ownerAddress,
       date: new Date().toLocaleDateString('fr-FR'),
+      tenantFullName,
+      tenantName,
+      propertyName,
+      propertyAddress,
     });
 
-    const out = doc
-      .getZip()
-      .generate({
-        type: 'blob',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      });
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
     saveAs(out, filename);
   } catch (error) {
     console.error('Erreur génération courrier régularisation :', error);

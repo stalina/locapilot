@@ -210,6 +210,7 @@ describe('Database Schema', () => {
     describe('Tenants table', () => {
       it('should create a tenant', async () => {
         const tenant = {
+          civility: 'mr' as const,
           firstName: 'John',
           lastName: 'Doe',
           email: 'john@example.com',
@@ -233,6 +234,7 @@ describe('Database Schema', () => {
           {
             firstName: 'Active',
             lastName: 'Tenant',
+            civility: 'mr' as const,
             email: 'active@example.com',
             phone: '+33612345678',
             status: 'active' as const,
@@ -242,6 +244,7 @@ describe('Database Schema', () => {
           {
             firstName: 'Candidate',
             lastName: 'Tenant',
+            civility: 'mme' as const,
             email: 'candidate@example.com',
             phone: '+33612345679',
             status: 'candidate' as const,
@@ -446,6 +449,7 @@ describe('Database Schema', () => {
 
     it('should link tenant to multiple leases', async () => {
       const tenantId = await db.tenants.add({
+        civility: 'mr' as const,
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',

@@ -37,7 +37,15 @@ const statusConfig = computed(() => {
   );
 });
 
-const fullName = computed(() => `${props.tenant.firstName} ${props.tenant.lastName}`);
+const civilityLabel = computed(() => {
+  if (!props.tenant.civility) return '';
+  return props.tenant.civility === 'mr' ? 'M.' : props.tenant.civility === 'mme' ? 'Mme' : '';
+});
+
+const fullName = computed(
+  () =>
+    `${civilityLabel.value ? civilityLabel.value + ' ' : ''}${props.tenant.firstName} ${props.tenant.lastName}`
+);
 
 const age = computed(() => {
   if (!props.tenant.birthDate) return null;

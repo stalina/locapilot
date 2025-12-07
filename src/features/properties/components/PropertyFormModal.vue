@@ -172,23 +172,29 @@ function handleClose() {
         <div class="form-section">
           <h4 class="section-title">Informations générales</h4>
 
-          <Input
-            v-model="formData.name"
-            label="Nom du bien"
-            placeholder="Ex: Appartement Paris 15ème"
-            :error="errors.name"
-            test-id="property-name"
-            required
-          />
+          <div class="field">
+            <label class="field-label">Nom du bien <span class="required">*</span></label>
+            <textarea
+              v-model="formData.name"
+              class="textarea"
+              rows="2"
+              placeholder="Ex: Appartement Paris 15ème"
+              data-testid="property-name"
+            />
+            <div v-if="errors.name" class="field-error">{{ errors.name }}</div>
+          </div>
 
-          <Input
-            v-model="formData.address"
-            label="Adresse"
-            placeholder="123 Rue de la République, 75015 Paris"
-            :error="errors.address"
-            test-id="property-address"
-            required
-          />
+          <div class="field">
+            <label class="field-label">Adresse <span class="required">*</span></label>
+            <textarea
+              v-model="formData.address"
+              class="textarea"
+              rows="2"
+              placeholder="123 Rue de la République, 75015 Paris"
+              data-testid="property-address"
+            />
+            <div v-if="errors.address" class="field-error">{{ errors.address }}</div>
+          </div>
 
           <div class="field">
             <label class="field-label">Type de bien <span class="required">*</span></label>

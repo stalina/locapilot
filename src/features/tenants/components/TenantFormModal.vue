@@ -24,6 +24,7 @@ const tenantsStore = useTenantsStore();
 
 // Form data
 const formData = ref({
+  civility: 'mr' as 'mr' | 'mme',
   firstName: '',
   lastName: '',
   email: '',
@@ -47,6 +48,7 @@ watch(
     console.log('[TenantFormModal] Tenant changed:', newTenant);
     if (newTenant) {
       formData.value = {
+        civility: newTenant.civility || 'mr',
         firstName: newTenant.firstName,
         lastName: newTenant.lastName,
         email: newTenant.email,
@@ -73,6 +75,7 @@ watch(
 
 function resetForm() {
   formData.value = {
+    civility: 'mr',
     firstName: '',
     lastName: '',
     email: '',
@@ -98,6 +101,11 @@ function validateForm(): boolean {
     errors.value.email = "L'email n'est pas valide";
   }
 
+  // civility optional but ensure value is allowed
+  if (formData.value.civility && !['mr', 'mme'].includes(formData.value.civility)) {
+    errors.value.civility = 'Civilité invalide';
+  }
+
   return Object.keys(errors.value).length === 0;
 }
 
@@ -108,6 +116,7 @@ async function handleSubmit() {
 
   try {
     const data: any = {
+      civility: formData.value.civility,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       email: formData.value.email,
@@ -154,6 +163,14 @@ function handleClose() {
           <h4 class="section-title">Informations personnelles</h4>
 
           <div class="field-row">
+            <div class="field">
+              <label class="field-label">Civilité</label>
+              <select v-model="formData.civility" class="select" data-testid="tenant-civility">
+                <option value="mr">M.</option>
+                <option value="mme">Mme</option>
+              </select>
+            </div>
+
             <Input
               v-model="formData.firstName"
               label="Prénom"

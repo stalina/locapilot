@@ -25,6 +25,8 @@ export interface Property {
 
 export interface Tenant {
   id?: number;
+  // Civilité: 'mr' pour Monsieur, 'mme' pour Madame
+  civility?: 'mr' | 'mme';
   firstName: string;
   lastName: string;
   email: string;

@@ -57,11 +57,7 @@ describe('tenantsStore', () => {
 
     it('should count tenants correctly', () => {
       const store = useTenantsStore();
-      store.tenants = [
-        { id: 1 } as Tenant,
-        { id: 2 } as Tenant,
-        { id: 3 } as Tenant,
-      ];
+      store.tenants = [{ id: 1 } as Tenant, { id: 2 } as Tenant, { id: 3 } as Tenant];
       expect(store.tenantsCount).toBe(3);
     });
   });
@@ -71,6 +67,7 @@ describe('tenantsStore', () => {
       const mockTenants: Tenant[] = [
         {
           id: 1,
+          civility: 'mr',
           firstName: 'John',
           lastName: 'Doe',
           email: 'john@example.com',
@@ -93,6 +90,7 @@ describe('tenantsStore', () => {
 
     it('should create tenant successfully', async () => {
       const newTenant = {
+        civility: 'mme',
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane@example.com',
@@ -102,6 +100,7 @@ describe('tenantsStore', () => {
 
       const createdTenant = {
         id: 1,
+        civility: 'mme',
         ...newTenant,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -121,6 +120,7 @@ describe('tenantsStore', () => {
     it('should update tenant successfully', async () => {
       const existingTenant = {
         id: 1,
+        civility: 'mr',
         firstName: 'Old Name',
         lastName: 'Doe',
         email: 'old@example.com',
@@ -143,15 +143,18 @@ describe('tenantsStore', () => {
 
       await store.updateTenant(1, { firstName: 'New Name' });
 
-      expect(db.tenants.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        firstName: 'New Name',
-      }));
+      expect(db.tenants.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          firstName: 'New Name',
+        })
+      );
       expect(store.tenants[0]!.firstName).toBe('New Name');
     });
 
     it('should delete tenant successfully', async () => {
-      const tenant1 = { id: 1, firstName: 'Tenant 1' } as Tenant;
-      const tenant2 = { id: 2, firstName: 'Tenant 2' } as Tenant;
+      const tenant1 = { id: 1, firstName: 'Tenant 1', civility: 'mr' } as Tenant;
+      const tenant2 = { id: 2, firstName: 'Tenant 2', civility: 'mme' } as Tenant;
 
       const store = useTenantsStore();
       store.tenants = [tenant1, tenant2];
@@ -171,7 +174,7 @@ describe('tenantsStore', () => {
 
       const store = useTenantsStore();
       await store.fetchTenants();
-      
+
       expect(store.error).toBe('Fetch failed');
       expect(store.tenants).toEqual([]);
     });
@@ -188,7 +191,7 @@ describe('tenantsStore', () => {
       vi.mocked(db.tenants.add).mockRejectedValue(new Error('Create failed'));
 
       const store = useTenantsStore();
-      
+
       await expect(store.createTenant(newTenant)).rejects.toThrow('Create failed');
       expect(store.error).toBe('Create failed');
     });
@@ -197,7 +200,7 @@ describe('tenantsStore', () => {
       vi.mocked(db.tenants.update).mockRejectedValue(new Error('Update failed'));
 
       const store = useTenantsStore();
-      
+
       await expect(store.updateTenant(1, { firstName: 'New' })).rejects.toThrow('Update failed');
       expect(store.error).toBe('Update failed');
     });
@@ -206,7 +209,7 @@ describe('tenantsStore', () => {
       vi.mocked(db.tenants.delete).mockRejectedValue(new Error('Delete failed'));
 
       const store = useTenantsStore();
-      
+
       await expect(store.deleteTenant(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Delete failed');
     });
@@ -214,6 +217,7 @@ describe('tenantsStore', () => {
     it('should fetch tenant by id successfully', async () => {
       const mockTenant: Tenant = {
         id: 1,
+        civility: 'mr',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -254,6 +258,7 @@ describe('tenantsStore', () => {
     it('should update currentTenant when updating the current tenant', async () => {
       const mockTenant: Tenant = {
         id: 1,
+        civility: 'mr',
         firstName: 'Original',
         lastName: 'Name',
         email: 'original@example.com',
@@ -280,6 +285,7 @@ describe('tenantsStore', () => {
     it('should clear currentTenant when deleting it', async () => {
       const mockTenant: Tenant = {
         id: 1,
+        civility: 'mr',
         firstName: 'To Delete',
         lastName: 'Name',
         email: 'delete@example.com',
