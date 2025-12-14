@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
-import { saveAs } from 'file-saver';
 import Modal from '@/shared/components/Modal.vue';
 import Button from '@/shared/components/Button.vue';
 import { useLeasesStore } from '../stores/leasesStore';
 import { db } from '@/db/database';
 import type { ChargesAdjustmentRow } from '@/db/types';
+import {
+  prepareRegulationLetterData,
+  generateRegulationLetter,
+} from '@/shared/services/documentGenerator';
 
 const props = withDefaults(defineProps<{ leaseId: number }>(), { leaseId: 0 });
 const emit = defineEmits<{}>();
@@ -171,84 +172,10 @@ function computeRegulation(r: ChargesAdjustmentRow) {
   return (Number(r.chargesProvisionPaid) || 0) - computeCustomTotal(r);
 }
 
-// Utilitaire pour charger un fichier en binaire
-function loadBinary(url: string) {
-  return fetch(url).then(res => res.arrayBuffer());
-}
-
 async function generateRegulLetter(r: ChargesAdjustmentRow) {
   try {
-    const content = await loadBinary('/templateRegulCharge.docx');
-    const zip = new PizZip(content as any);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    // Charger des données additionnelles depuis la table settings (clé: 'senderAddress')
-    let ownerAddress = '';
-    try {
-      const s = await db.settings.where('key').equals('senderAddress').first();
-      if (s && s.value) ownerAddress = String(s.value || '');
-    } catch (e) {
-      // ignore si la clé n'existe pas
-    }
-
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-    const filename = `${filenameDate}_courrierInfoRegulCharge.docx`;
-
-    // Remplir les données du template
-    // Try to build tenantFullName: "M. Last First" or "Mme Last First"
-    let tenantFullName = '';
-    let tenantName = '';
-    let propertyName = '';
-    let propertyAddress = '';
-    try {
-      const lease = await db.leases.get(r.leaseId);
-      if (lease && Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
-        const tenantId = (lease as any).tenantIds[0];
-        const tenant = await db.tenants.get(tenantId);
-        if (tenant) {
-          const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
-          tenantFullName =
-            `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
-          tenantName = `${civLabel ? civLabel + ' ' : ''}${tenant.lastName}`.trim();
-        }
-      }
-      // Also resolve property details
-      if (lease && (lease as any).propertyId) {
-        try {
-          const prop = await db.properties.get((lease as any).propertyId);
-          if (prop) {
-            propertyName = prop.name || '';
-            propertyAddress = prop.address || '';
-          }
-        } catch (e) {
-          // ignore property lookup errors
-        }
-      }
-    } catch (err) {
-      // ignore tenant lookup errors
-      console.error('Unable to resolve tenant for document generation', err);
-    }
-
-    doc.render({
-      year: r.year,
-      provisionPaid: Number(r.chargesProvisionPaid) || 0,
-      totalCharges: computeCustomTotal(r),
-      regulation: computeRegulation(r),
-      ownerAddress,
-      date: new Date().toLocaleDateString('fr-FR'),
-      tenantFullName,
-      tenantName,
-      propertyName,
-      propertyAddress,
-    });
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
-    saveAs(out, filename);
+    const data = await prepareRegulationLetterData(r, computeCustomTotal, computeRegulation);
+    await generateRegulationLetter(data);
   } catch (error) {
     console.error('Erreur génération courrier régularisation :', error);
   }
