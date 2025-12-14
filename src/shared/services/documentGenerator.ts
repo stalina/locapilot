@@ -21,6 +21,7 @@ export interface RegulationLetterData {
   totalCharges: number;
   regulation: number;
   ownerAddress: string;
+  ownerFullName: string;
   date: string;
   tenantFullName: string;
   tenantName: string;
