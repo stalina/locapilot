@@ -156,7 +156,11 @@ const handleGoBack = () => {
             </div>
             <div class="info-value">{{ property?.name || 'Non renseignée' }}</div>
             <div v-if="property?.address" class="info-sub">
-              {{ property.address }}
+              <span v-if="property.postalCode || property.town">
+                {{ property.address }}<template v-if="property.address">, </template
+                >{{ property.postalCode }} {{ property.town }}
+              </span>
+              <span v-else>{{ property.address }}</span>
             </div>
           </div>
 

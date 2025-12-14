@@ -116,7 +116,11 @@ onUnmounted(() => {
 
       <div class="property-address" :data-testid="`property-address-${property.id}`">
         <i class="mdi mdi-map-marker"></i>
-        {{ property.address }}
+        <span v-if="property.postalCode || property.town">
+          {{ property.address }}<template v-if="property.address">, </template
+          >{{ property.postalCode }} {{ property.town }}
+        </span>
+        <span v-else>{{ property.address }}</span>
       </div>
 
       <div class="property-stats">

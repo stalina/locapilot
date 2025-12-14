@@ -10,6 +10,10 @@ import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
 import type { Tenant } from '@/db/schema';
+import {
+  prepareKeyHandoverAttestationData,
+  generateKeyHandoverAttestation,
+} from '@/shared/services/documentGenerator';
 
 const route = useRoute();
 const router = useRouter();
@@ -128,6 +132,17 @@ const goToProperty = () => {
 const goToTenant = (tenantId: number) => {
   router.push(`/tenants/${tenantId}`);
 };
+
+const handleGenerateKeyAttestation = async () => {
+  if (!lease.value?.id) return;
+
+  try {
+    const data = await prepareKeyHandoverAttestationData(lease.value.id);
+    await generateKeyHandoverAttestation(data);
+  } catch (error) {
+    console.error('Failed to generate key handover attestation:', error);
+  }
+};
 </script>
 
 <template>
@@ -181,7 +196,11 @@ const goToTenant = (tenantId: number) => {
           </div>
           <div class="subtitle">
             <i class="mdi mdi-map-marker"></i>
-            {{ property?.address || 'Adresse non renseignée' }}
+            <span v-if="property?.postalCode || property?.town">
+              {{ property.address }}<template v-if="property.address">, </template
+              >{{ property.postalCode }} {{ property.town }}
+            </span>
+            <span v-else>{{ property?.address || 'Adresse non renseignée' }}</span>
           </div>
           <div class="hero-meta">
             <span>
@@ -299,7 +318,11 @@ const goToTenant = (tenantId: number) => {
                 <strong>{{ property.name }}</strong>
                 <span class="property-subtitle">
                   <i class="mdi mdi-map-marker"></i>
-                  {{ property.address }}
+                  <span v-if="property.postalCode || property.town">
+                    {{ property.address }}<template v-if="property.address">, </template
+                    >{{ property.postalCode }} {{ property.town }}
+                  </span>
+                  <span v-else>{{ property.address }}</span>
                 </span>
               </div>
               <div class="info-grid">
@@ -373,6 +396,9 @@ const goToTenant = (tenantId: number) => {
                 @click="handleTerminate"
               >
                 Terminer le bail
+              </Button>
+              <Button variant="outline" icon="key" @click="handleGenerateKeyAttestation">
+                Attestation remise des clés
               </Button>
             </div>
           </Card>

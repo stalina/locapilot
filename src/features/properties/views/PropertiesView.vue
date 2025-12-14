@@ -30,7 +30,11 @@ const filteredProperties = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(
-      p => p.name.toLowerCase().includes(query) || p.address.toLowerCase().includes(query)
+      p =>
+        p.name.toLowerCase().includes(query) ||
+        p.address.toLowerCase().includes(query) ||
+        ((p as any).postalCode && (p as any).postalCode.toLowerCase().includes(query)) ||
+        ((p as any).town && (p as any).town.toLowerCase().includes(query))
     );
   }
 

@@ -47,23 +47,18 @@ const errors = ref({
 });
 
 onMounted(async () => {
-  await Promise.all([
-    propertiesStore.fetchProperties(),
-    tenantsStore.fetchTenants(),
-  ]);
+  await Promise.all([propertiesStore.fetchProperties(), tenantsStore.fetchTenants()]);
 });
 
 const isEditMode = computed(() => !!props.lease);
 
-const modalTitle = computed(() => 
-  isEditMode.value ? 'Modifier le bail' : 'Nouveau bail'
-);
+const modalTitle = computed(() => (isEditMode.value ? 'Modifier le bail' : 'Nouveau bail'));
 
-const availableProperties = computed(() => 
+const availableProperties = computed(() =>
   propertiesStore.properties.filter(p => p.status === 'vacant' || p.id === props.lease?.propertyId)
 );
 
-const availableTenants = computed(() => 
+const availableTenants = computed(() =>
   tenantsStore.tenants.filter(t => t.status === 'active' || t.status === 'candidate')
 );
 
@@ -79,7 +74,7 @@ const resetForm = () => {
     paymentDay: 1,
     status: 'pending',
   };
-  
+
   errors.value = {
     propertyId: '',
     tenantIds: '',
@@ -90,23 +85,29 @@ const resetForm = () => {
   };
 };
 
-watch(() => props.lease, (newLease) => {
-  if (newLease) {
-    formData.value = {
-      propertyId: newLease.propertyId,
-      tenantIds: [...newLease.tenantIds],
-      startDate: new Date(newLease.startDate).toISOString().split('T')[0] || '',
-      endDate: newLease.endDate ? new Date(newLease.endDate).toISOString().split('T')[0] || '' : '',
-      rent: newLease.rent,
-      charges: newLease.charges,
-      deposit: newLease.deposit,
-      paymentDay: newLease.paymentDay,
-      status: newLease.status,
-    };
-  } else {
-    resetForm();
-  }
-}, { immediate: true });
+watch(
+  () => props.lease,
+  newLease => {
+    if (newLease) {
+      formData.value = {
+        propertyId: newLease.propertyId,
+        tenantIds: [...newLease.tenantIds],
+        startDate: new Date(newLease.startDate).toISOString().split('T')[0] || '',
+        endDate: newLease.endDate
+          ? new Date(newLease.endDate).toISOString().split('T')[0] || ''
+          : '',
+        rent: newLease.rent,
+        charges: newLease.charges,
+        deposit: newLease.deposit,
+        paymentDay: newLease.paymentDay,
+        status: newLease.status,
+      };
+    } else {
+      resetForm();
+    }
+  },
+  { immediate: true }
+);
 
 const validateForm = (): boolean => {
   let isValid = true;
@@ -213,7 +214,7 @@ const handleSubmit = async () => {
       inner: error?.inner,
       stack: error?.stack,
       formData: formData.value,
-      leaseData
+      leaseData,
     });
   }
 };
@@ -259,7 +260,10 @@ const toggleTenant = (tenantId: number) => {
                   :key="property.id"
                   :value="property.id"
                 >
-                  {{ property.name }} · {{ property.address }}
+                  {{ property.name }} · {{ property.address
+                  }}<template v-if="property.postalCode || property.town"
+                    >, {{ property.postalCode }} {{ property.town }}</template
+                  >
                 </option>
               </select>
               <p v-if="errors.propertyId" class="error-message">{{ errors.propertyId }}</p>
@@ -275,7 +279,10 @@ const toggleTenant = (tenantId: number) => {
                 <label
                   v-for="tenant in availableTenants"
                   :key="tenant.id"
-                  :class="['tenant-card', { selected: tenant.id && formData.tenantIds.includes(tenant.id) }]"
+                  :class="[
+                    'tenant-card',
+                    { selected: tenant.id && formData.tenantIds.includes(tenant.id) },
+                  ]"
                 >
                   <input
                     type="checkbox"
@@ -283,7 +290,9 @@ const toggleTenant = (tenantId: number) => {
                     @change="tenant.id && toggleTenant(tenant.id)"
                   />
                   <div class="tenant-card__info">
-                    <span class="tenant-card__name">{{ tenant.firstName }} {{ tenant.lastName }}</span>
+                    <span class="tenant-card__name"
+                      >{{ tenant.firstName }} {{ tenant.lastName }}</span
+                    >
                     <span class="tenant-card__email">{{ tenant.email }}</span>
                   </div>
                 </label>
@@ -374,9 +383,7 @@ const toggleTenant = (tenantId: number) => {
 
     <template #footer>
       <div class="modal-actions">
-        <Button @click="handleCancel" variant="secondary" type="button">
-          Annuler
-        </Button>
+        <Button @click="handleCancel" variant="secondary" type="button"> Annuler </Button>
         <Button @click="handleSubmit" variant="primary" type="button">
           {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
         </Button>

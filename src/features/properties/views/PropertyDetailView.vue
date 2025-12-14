@@ -252,7 +252,17 @@ async function copyAnnonce() {
           </div>
           <div class="subtitle">
             <i class="mdi mdi-map-marker"></i>
-            {{ propertiesStore.currentProperty.address }}
+            <span
+              v-if="
+                propertiesStore.currentProperty.postalCode || propertiesStore.currentProperty.town
+              "
+            >
+              {{ propertiesStore.currentProperty.address
+              }}<template v-if="propertiesStore.currentProperty.address">, </template
+              >{{ propertiesStore.currentProperty.postalCode }}
+              {{ propertiesStore.currentProperty.town }}
+            </span>
+            <span v-else>{{ propertiesStore.currentProperty.address }}</span>
           </div>
           <div class="type-label">
             {{ typeLabels[propertiesStore.currentProperty.type] }}

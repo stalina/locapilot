@@ -250,6 +250,11 @@ Cordialement, `);
     await setSetting('senderAddress', addr);
   }
 
+  // Persist sender name under settings.key = 'senderName'
+  async function updateSenderName(name: string): Promise<void> {
+    await setSetting('senderName', name);
+  }
+
   return {
     // State
     theme,
@@ -279,6 +284,7 @@ Cordialement, `);
     toggleAutoSave,
     resetToDefaults,
     updateSenderAddress,
+    updateSenderName,
     // Default message
     defaultRejectionMessage,
     currentDefaultRejectionMessage,

@@ -6,6 +6,8 @@ export interface Property {
   id?: number;
   name: string;
   address: string;
+  postalCode?: string;
+  town?: string;
   type: 'apartment' | 'house' | 'studio' | 'commercial' | 'parking' | 'other';
   surface: number; // m²
   rooms: number;

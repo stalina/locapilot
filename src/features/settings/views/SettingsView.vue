@@ -478,12 +478,21 @@ const saveDefaultRejectionMessage = async () => {
 
 // Sender address editing
 const editingSenderAddress = ref<string>('');
+const editingSenderName = ref<string>('');
+
 onMounted(async () => {
   try {
     const s = await db.settings.where('key').equals('senderAddress').first();
     editingSenderAddress.value = s && s.value ? String(s.value) : '';
   } catch (e) {
     editingSenderAddress.value = '';
+  }
+
+  try {
+    const s = await db.settings.where('key').equals('senderName').first();
+    editingSenderName.value = s && s.value ? String(s.value) : '';
+  } catch (e) {
+    editingSenderName.value = '';
   }
 });
 
@@ -493,6 +502,16 @@ const saveSenderAddress = async () => {
     alert("Adresse d'expéditeur sauvegardée");
   } catch (e) {
     console.error('Failed to save sender address', e);
+    alert('Erreur lors de la sauvegarde');
+  }
+};
+
+const saveSenderName = async () => {
+  try {
+    await settingsStore.updateSenderName(editingSenderName.value);
+    alert('Nom du propriétaire sauvegardé');
+  } catch (e) {
+    console.error('Failed to save sender name', e);
     alert('Erreur lors de la sauvegarde');
   }
 };
@@ -558,6 +577,24 @@ watch(
           <i class="mdi mdi-email"></i>
           Communications
         </h2>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Nom du propriétaire</h3>
+            <p>Éditez le nom du propriétaire utilisé pour les communications</p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <input
+              v-model="editingSenderName"
+              type="text"
+              placeholder="Ex: Jean Dupont"
+              style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px"
+            />
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveSenderName" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
+        </div>
 
         <div class="setting-card">
           <div class="setting-info">

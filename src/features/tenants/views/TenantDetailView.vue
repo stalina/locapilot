@@ -373,7 +373,11 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
               <i class="mdi mdi-home-city"></i>
               <div class="property-info">
                 <strong>{{ currentProperty.name }}</strong>
-                <span>{{ currentProperty.address }}</span>
+                <span v-if="currentProperty.postalCode || currentProperty.town">
+                  {{ currentProperty.address }}<template v-if="currentProperty.address">, </template
+                  >{{ currentProperty.postalCode }} {{ currentProperty.town }}
+                </span>
+                <span v-else>{{ currentProperty.address }}</span>
               </div>
               <i class="mdi mdi-chevron-right"></i>
             </div>

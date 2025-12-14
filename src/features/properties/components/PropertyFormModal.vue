@@ -28,6 +28,8 @@ const propertiesStore = usePropertiesStore();
 const formData = ref({
   name: '',
   address: '',
+  postalCode: '',
+  town: '',
   type: 'apartment' as Property['type'],
   surface: 0 as number,
   rooms: 0 as number,
@@ -55,6 +57,8 @@ watch(
       formData.value = {
         name: newProperty.name,
         address: newProperty.address,
+        postalCode: (newProperty as any).postalCode || '',
+        town: (newProperty as any).town || '',
         type: newProperty.type,
         surface: newProperty.surface,
         rooms: newProperty.rooms,
@@ -78,6 +82,8 @@ function resetForm() {
   formData.value = {
     name: '',
     address: '',
+    postalCode: '',
+    town: '',
     type: 'apartment',
     surface: 0,
     rooms: 0,
@@ -125,6 +131,8 @@ async function handleSubmit() {
     const cleanData = {
       name: formData.value.name,
       address: formData.value.address,
+      postalCode: formData.value.postalCode || undefined,
+      town: formData.value.town || undefined,
       type: formData.value.type,
       surface: formData.value.surface || 0,
       rooms: formData.value.rooms || 0,
@@ -190,10 +198,28 @@ function handleClose() {
               v-model="formData.address"
               class="textarea"
               rows="2"
-              placeholder="123 Rue de la République, 75015 Paris"
+              placeholder="123 Rue de la République"
               data-testid="property-address"
             />
             <div v-if="errors.address" class="field-error">{{ errors.address }}</div>
+          </div>
+
+          <div class="field-row">
+            <Input
+              v-model="formData.postalCode"
+              label="Code postal"
+              type="text"
+              placeholder="75015"
+              test-id="property-postalCode"
+            />
+
+            <Input
+              v-model="formData.town"
+              label="Ville"
+              type="text"
+              placeholder="Paris"
+              test-id="property-town"
+            />
           </div>
 
           <div class="field">
