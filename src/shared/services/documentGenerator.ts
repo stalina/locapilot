@@ -506,7 +506,7 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
       'novembre',
       'décembre',
     ];
-    month = monthNames[dueDate.getMonth()];
+    month = monthNames[dueDate.getMonth()] || 'janvier';
 
     // Récupérer le bail
     const lease = await db.leases.get(rent.leaseId);
