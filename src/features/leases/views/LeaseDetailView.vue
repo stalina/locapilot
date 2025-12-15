@@ -13,6 +13,8 @@ import type { Tenant } from '@/db/schema';
 import {
   prepareKeyHandoverAttestationData,
   generateKeyHandoverAttestation,
+  prepareMandatLocationData,
+  generateMandatLocation,
 } from '@/shared/services/documentGenerator';
 
 const route = useRoute();
@@ -141,6 +143,17 @@ const handleGenerateKeyAttestation = async () => {
     await generateKeyHandoverAttestation(data);
   } catch (error) {
     console.error('Failed to generate key handover attestation:', error);
+  }
+};
+
+const handleGenerateMandatLocation = async () => {
+  if (!lease.value?.id) return;
+
+  try {
+    const data = await prepareMandatLocationData(lease.value.id);
+    await generateMandatLocation(data);
+  } catch (error) {
+    console.error('Failed to generate mandat de location:', error);
   }
 };
 </script>
@@ -399,6 +412,13 @@ const handleGenerateKeyAttestation = async () => {
               </Button>
               <Button variant="outline" icon="key" @click="handleGenerateKeyAttestation">
                 Attestation remise des clés
+              </Button>
+              <Button
+                variant="outline"
+                icon="file-document-edit"
+                @click="handleGenerateMandatLocation"
+              >
+                Générer mandat de location
               </Button>
             </div>
           </Card>

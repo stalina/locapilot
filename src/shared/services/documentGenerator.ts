@@ -190,6 +190,35 @@ export interface RentReceiptData {
 }
 
 /**
+ * Interface pour les données de génération du mandat de location
+ */
+export interface MandatLocationData {
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerAddressInLine: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+  tenantFullName: string;
+  tenantEmail: string;
+  tenantPhoneNumber: string;
+  propertyName: string;
+  propertyAddress: string;
+  propertyPostalCode: string;
+  propertyTown: string;
+  propertySurface: number;
+  propertyNumberOfRooms: number;
+  month: string;
+  year: number;
+  totalPayedAmount: number;
+  totalPayedAmountInLetterUppercase: string;
+  rentAmount: number;
+  chargeAmount: number;
+  paymentDate: string;
+  rentStart: string;
+  today: string;
+}
+
+/**
  * Génère un courrier de régularisation des charges au format DOCX
  * @param data - Données à insérer dans le template
  * @param templatePath - Chemin vers le template DOCX (par défaut: /templateRegulCharge.docx)
@@ -593,4 +622,188 @@ export async function generateDocument(
     console.error(`Erreur génération document ${filename} :`, error);
     throw error;
   }
+}
+
+/**
+ * Génère un mandat de location au format DOCX
+ * @param data - Données à insérer dans le template
+ * @param templatePath - Chemin vers le template DOCX (par défaut: /templateMandatLocation.docx)
+ * @returns Promise qui se résout une fois le fichier téléchargé
+ */
+export async function generateMandatLocation(
+  data: MandatLocationData,
+  templatePath: string = '/templateMandatLocation.docx'
+): Promise<void> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_mandatLocation.docx`;
+
+    saveAs(out, filename);
+  } catch (error) {
+    console.error('Erreur génération mandat de location :', error);
+    throw error;
+  }
+}
+
+/**
+ * Prépare les données pour la génération du mandat de location
+ * @param leaseId - ID du bail
+ * @returns Promise contenant les données formatées pour le template
+ */
+export async function prepareMandatLocationData(leaseId: number): Promise<MandatLocationData> {
+  // Charger les informations du propriétaire depuis les settings
+  let ownerAddress = '';
+  let ownerFullName = '';
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+
+  try {
+    const addressSetting = await db.settings.where('key').equals('senderAddress').first();
+    if (addressSetting?.value) {
+      ownerAddress = String(addressSetting.value);
+    }
+    const nameSetting = await db.settings.where('key').equals('senderName').first();
+    if (nameSetting?.value) {
+      ownerFullName = String(nameSetting.value);
+    }
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) {
+      ownerEmail = String(emailSetting.value);
+    }
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) {
+      ownerPhoneNumber = String(phoneSetting.value);
+    }
+  } catch {
+    // Ignorer si les clés n'existent pas
+  }
+
+  // Résoudre les informations du bail, locataire et propriété
+  let tenantFullName = '';
+  let tenantEmail = '';
+  let tenantPhoneNumber = '';
+  let propertyName = '';
+  let propertyAddress = '';
+  let propertyPostalCode = '';
+  let propertyTown = '';
+  let propertySurface = 0;
+  let propertyNumberOfRooms = 0;
+  let month = '';
+  let year = 0;
+  let totalPayedAmount = 0;
+  let rentAmount = 0;
+  let chargeAmount = 0;
+  let paymentDate = '';
+  let rentStart = '';
+
+  try {
+    const lease = await db.leases.get(leaseId);
+    if (!lease) throw new Error('Lease not found');
+
+    // Montants du loyer
+    rentAmount = lease.rent || 0;
+    chargeAmount = lease.charges || 0;
+    totalPayedAmount = rentAmount + chargeAmount;
+
+    // Date de début du bail
+    if (lease.startDate) {
+      rentStart = new Date(lease.startDate).toLocaleDateString('fr-FR');
+    }
+
+    // Jour de paiement
+    paymentDate = String(lease.paymentDay || 1);
+
+    // Mois et année actuels pour le document
+    const now = new Date();
+    year = now.getFullYear();
+    const monthNames = [
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
+    ];
+    month = monthNames[now.getMonth()] || 'janvier';
+
+    // Récupérer le locataire
+    if (Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
+      const tenantId = (lease as any).tenantIds[0];
+      const tenant = await db.tenants.get(tenantId);
+      if (tenant) {
+        const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
+        tenantFullName =
+          `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
+        tenantEmail = tenant.email || '';
+        tenantPhoneNumber = tenant.phone || '';
+      }
+    }
+
+    // Récupérer la propriété
+    if ((lease as any).propertyId) {
+      const property = await db.properties.get((lease as any).propertyId);
+      if (property) {
+        propertyName = property.name || '';
+        propertyAddress = property.address || '';
+        propertyPostalCode = (property as any).postalCode || '';
+        propertyTown = (property as any).town || '';
+        propertySurface = property.surface || 0;
+        propertyNumberOfRooms = property.rooms || 0;
+      }
+    }
+  } catch (err) {
+    console.error('Unable to resolve lease/tenant/property for mandat generation', err);
+    throw err;
+  }
+
+  // Adresse en ligne (remplacer les retours à la ligne par des espaces)
+  const ownerAddressInLine = ownerAddress.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Montant en lettres majuscules
+  const totalPayedAmountInLetterUppercase = numberToLetters(totalPayedAmount).toUpperCase();
+
+  return {
+    ownerFullName,
+    ownerAddress,
+    ownerAddressInLine,
+    ownerEmail,
+    ownerPhoneNumber,
+    tenantFullName,
+    tenantEmail,
+    tenantPhoneNumber,
+    propertyName,
+    propertyAddress,
+    propertyPostalCode,
+    propertyTown,
+    propertySurface,
+    propertyNumberOfRooms,
+    month,
+    year,
+    totalPayedAmount,
+    totalPayedAmountInLetterUppercase,
+    rentAmount,
+    chargeAmount,
+    paymentDate,
+    rentStart,
+    today: new Date().toLocaleDateString('fr-FR'),
+  };
 }
