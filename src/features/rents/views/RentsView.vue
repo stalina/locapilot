@@ -11,6 +11,7 @@ import Badge from '@/shared/components/Badge.vue';
 import RentPaymentModal from '../components/RentPaymentModal.vue';
 import RentFormModal from '../components/RentFormModal.vue';
 import type { Rent, Lease } from '../../../db/types';
+import { prepareRentReceiptData, generateRentReceipt } from '@/shared/services/documentGenerator';
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
@@ -219,9 +220,16 @@ const statusConfig = (status: Rent['status']) => {
 
 // (mark as paid moved to payment modal flow)
 
-const handleGenerateReceipt = async (_rent: Rent) => {
-  // TODO: Implémenter la génération de quittance
-  alert('Fonctionnalité de génération de quittance à implémenter');
+const handleGenerateReceipt = async (rent: Rent) => {
+  if (!rent.id) return;
+
+  try {
+    const data = await prepareRentReceiptData(rent.id);
+    await generateRentReceipt(data);
+  } catch (error) {
+    console.error('Failed to generate rent receipt:', error);
+    alert('Erreur lors de la génération de la quittance');
+  }
 };
 </script>
 
