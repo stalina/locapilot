@@ -224,12 +224,12 @@ export interface MandatLocationData {
  * Génère un courrier de régularisation des charges au format DOCX
  * @param data - Données à insérer dans le template
  * @param templatePath - Chemin vers le template DOCX (par défaut: /templateRegulCharge.docx)
- * @returns Promise qui se résout une fois le fichier téléchargé
+ * @returns Promise qui se résout avec le Blob et le nom du fichier
  */
 export async function generateRegulationLetter(
   data: RegulationLetterData,
   templatePath: string = '/templateRegulCharge.docx'
-): Promise<void> {
+): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
     const zip = new PizZip(content as any);
@@ -247,11 +247,46 @@ export async function generateRegulationLetter(
     const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
     const filename = `${filenameDate}_courrierInfoRegulCharge.docx`;
 
-    saveAs(out, filename);
+    return { blob: out, filename };
   } catch (error) {
     console.error('Erreur génération courrier régularisation :', error);
     throw error;
   }
+}
+
+/**
+ * Sauvegarde le courrier de régularisation dans la base de données
+ * @param leaseId - ID du bail
+ * @param year - Année de régularisation
+ * @param blob - Blob du document
+ * @param filename - Nom du fichier
+ * @returns Promise qui se résout avec l'ID du document créé
+ */
+export async function saveRegulationLetterToDb(
+  leaseId: number,
+  year: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'other',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: `Courrier régularisation charges ${year}`,
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
 }
 
 /**
@@ -414,7 +449,7 @@ export async function prepareKeyHandoverAttestationData(
   let ownerFullName = '';
   let ownerEmail = '';
   let ownerPhoneNumber = '';
-  
+
   try {
     const addressSetting = await db.settings.where('key').equals('senderAddress').first();
     if (addressSetting?.value) {

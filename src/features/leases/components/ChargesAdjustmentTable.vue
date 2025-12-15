@@ -3,17 +3,23 @@ import { ref, computed, watch, onMounted } from 'vue';
 import Modal from '@/shared/components/Modal.vue';
 import Button from '@/shared/components/Button.vue';
 import { useLeasesStore } from '../stores/leasesStore';
+import { useDocumentsStore } from '../../documents/stores/documentsStore';
+import { useConfirm } from '@/shared/composables/useConfirm';
 import { db } from '@/db/database';
 import type { ChargesAdjustmentRow } from '@/db/types';
 import {
   prepareRegulationLetterData,
   generateRegulationLetter,
+  saveRegulationLetterToDb,
+  downloadBlob,
 } from '@/shared/services/documentGenerator';
 
 const props = withDefaults(defineProps<{ leaseId: number }>(), { leaseId: 0 });
 const emit = defineEmits<{}>();
 
 const leasesStore = useLeasesStore();
+const documentsStore = useDocumentsStore();
+const { confirm } = useConfirm();
 const rows = ref<ChargesAdjustmentRow[]>([]);
 const isLoading = ref(false);
 const showAddColumnModal = ref(false);
@@ -22,6 +28,9 @@ const newColumnLabel = ref('');
 onMounted(async () => {
   isLoading.value = true;
   try {
+    // Charger les documents pour vérifier les régularisations existantes
+    await documentsStore.fetchDocuments();
+    
     rows.value = (await leasesStore.fetchChargesAdjustments(props.leaseId)) || [];
 
     // Ensure we have rows for each year from lease start year to current year
@@ -172,10 +181,41 @@ function computeRegulation(r: ChargesAdjustmentRow) {
   return (Number(r.chargesProvisionPaid) || 0) - computeCustomTotal(r);
 }
 
+// Vérifie si un document de régularisation existe pour une année donnée
+function hasRegulationDocument(year: number): boolean {
+  return documentsStore.documents.some(
+    doc =>
+      doc.type === 'other' &&
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === props.leaseId &&
+      doc.description === `Courrier régularisation charges ${year}`
+  );
+}
+
 async function generateRegulLetter(r: ChargesAdjustmentRow) {
   try {
     const data = await prepareRegulationLetterData(r, computeCustomTotal, computeRegulation);
-    await generateRegulationLetter(data);
+    const { blob, filename } = await generateRegulationLetter(data);
+
+    // Demander à l'utilisateur s'il veut sauvegarder dans la base documentaire
+    const shouldSave = await confirm({
+      title: 'Sauvegarder le courrier de régularisation',
+      message:
+        'Voulez-vous sauvegarder ce courrier dans la base documentaire ? Vous pourrez le retrouver facilement dans la section Documents.',
+      confirmText: 'Sauvegarder et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      // Sauvegarder dans la BDD
+      await saveRegulationLetterToDb(props.leaseId, r.year, blob, filename);
+      // Recharger les documents pour mettre à jour la liste
+      await documentsStore.fetchDocuments();
+    }
+
+    // Télécharger dans tous les cas
+    downloadBlob(blob, filename);
   } catch (error) {
     console.error('Erreur génération courrier régularisation :', error);
   }
@@ -293,7 +333,8 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
                 </span>
                 <button
                   class="icon-button"
-                  title="Générer le courrier"
+                  :class="{ 'icon-saved': hasRegulationDocument(r.year) }"
+                  :title="hasRegulationDocument(r.year) ? 'Document enregistré' : 'Générer le courrier'"
                   @click.prevent="() => generateRegulLetter(r)"
                 >
                   <i class="mdi mdi-email-outline" aria-hidden="true"></i>
@@ -423,9 +464,16 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   padding: 6px;
   border-radius: 6px;
   color: var(--primary-color, #2563eb);
+  transition: all 0.2s ease;
 }
 .icon-button:hover {
   background: rgba(37, 99, 235, 0.08);
+}
+.icon-button.icon-saved {
+  color: var(--success-color, #10b981);
+}
+.icon-button.icon-saved:hover {
+  background: rgba(16, 185, 129, 0.08);
 }
 .icon-button i {
   font-size: 1.15em;
