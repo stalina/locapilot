@@ -308,7 +308,7 @@ export async function prepareRegulationLetterData(
   let ownerFullName = '';
   let ownerEmail = '';
   let ownerPhoneNumber = '';
-  
+
   try {
     const addressSetting = await db.settings.where('key').equals('senderAddress').first();
     if (addressSetting?.value) {

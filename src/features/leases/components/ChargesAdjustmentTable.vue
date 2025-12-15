@@ -30,7 +30,7 @@ onMounted(async () => {
   try {
     // Charger les documents pour vérifier les régularisations existantes
     await documentsStore.fetchDocuments();
-    
+
     rows.value = (await leasesStore.fetchChargesAdjustments(props.leaseId)) || [];
 
     // Ensure we have rows for each year from lease start year to current year
@@ -192,6 +192,28 @@ function hasRegulationDocument(year: number): boolean {
   );
 }
 
+// Récupère le document de régularisation existant pour une année donnée
+function getRegulationDocument(year: number) {
+  return documentsStore.documents.find(
+    doc =>
+      doc.type === 'other' &&
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === props.leaseId &&
+      doc.description === `Courrier régularisation charges ${year}`
+  );
+}
+
+async function downloadExistingRegulationLetter(year: number) {
+  const doc = getRegulationDocument(year);
+  if (!doc?.id) return;
+
+  try {
+    await documentsStore.downloadDocument(doc.id);
+  } catch (error) {
+    console.error('Erreur téléchargement courrier régularisation :', error);
+  }
+}
+
 async function generateRegulLetter(r: ChargesAdjustmentRow) {
   try {
     const data = await prepareRegulationLetterData(r, computeCustomTotal, computeRegulation);
@@ -334,8 +356,8 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
                 <button
                   class="icon-button"
                   :class="{ 'icon-saved': hasRegulationDocument(r.year) }"
-                  :title="hasRegulationDocument(r.year) ? 'Document enregistré' : 'Générer le courrier'"
-                  @click.prevent="() => generateRegulLetter(r)"
+                  :title="hasRegulationDocument(r.year) ? 'Télécharger le document' : 'Générer le courrier'"
+                  @click.prevent="() => hasRegulationDocument(r.year) ? downloadExistingRegulationLetter(r.year) : generateRegulLetter(r)"
                 >
                   <i class="mdi mdi-email-outline" aria-hidden="true"></i>
                 </button>
