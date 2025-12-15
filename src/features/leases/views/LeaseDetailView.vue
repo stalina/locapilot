@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLeasesStore } from '../stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import { useTenantsStore } from '../../tenants/stores/tenantsStore';
+import { useDocumentsStore } from '../../documents/stores/documentsStore';
+import { useConfirm } from '@/shared/composables/useConfirm';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
@@ -15,6 +17,8 @@ import {
   generateKeyHandoverAttestation,
   prepareMandatLocationData,
   generateMandatLocation,
+  saveMandatLocationToDb,
+  downloadBlob,
 } from '@/shared/services/documentGenerator';
 
 const route = useRoute();
@@ -22,6 +26,8 @@ const router = useRouter();
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
+const documentsStore = useDocumentsStore();
+const { confirm } = useConfirm();
 
 const showEditModal = ref(false);
 const leaseId = Number(route.params.id);
@@ -31,6 +37,7 @@ onMounted(async () => {
     leasesStore.fetchLeaseById(leaseId),
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
+    documentsStore.fetchDocuments(),
   ]);
 });
 
@@ -99,7 +106,14 @@ const handleEditSuccess = async () => {
 const handleDelete = async () => {
   if (!lease.value?.id) return;
 
-  if (confirm('Êtes-vous sûr de vouloir supprimer ce bail ?')) {
+  const confirmed = await confirm({
+    title: 'Supprimer le bail',
+    message: 'Êtes-vous sûr de vouloir supprimer ce bail ?',
+    type: 'danger',
+    confirmText: 'Supprimer',
+  });
+
+  if (confirmed) {
     try {
       await leasesStore.deleteLease(lease.value.id);
       router.push('/leases');
@@ -112,7 +126,14 @@ const handleDelete = async () => {
 const handleTerminate = async () => {
   if (!lease.value?.id) return;
 
-  if (confirm('Êtes-vous sûr de vouloir terminer ce bail ?')) {
+  const confirmed = await confirm({
+    title: 'Terminer le bail',
+    message: 'Êtes-vous sûr de vouloir terminer ce bail ?',
+    type: 'warning',
+    confirmText: 'Terminer',
+  });
+
+  if (confirmed) {
     try {
       await leasesStore.terminateLease(lease.value.id);
     } catch (error) {
@@ -146,14 +167,56 @@ const handleGenerateKeyAttestation = async () => {
   }
 };
 
+// Computed pour vérifier si un mandat existe déjà pour ce bail
+const existingMandatDocument = computed(() => {
+  if (!lease.value?.id) return null;
+  return documentsStore.documents.find(
+    doc =>
+      doc.type === 'lease' &&
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === lease.value!.id &&
+      doc.description === 'Mandat de location'
+  );
+});
+
 const handleGenerateMandatLocation = async () => {
   if (!lease.value?.id) return;
 
   try {
     const data = await prepareMandatLocationData(lease.value.id);
-    await generateMandatLocation(data);
+    const { blob, filename } = await generateMandatLocation(data);
+
+    // Demander à l'utilisateur s'il veut sauvegarder dans la base documentaire
+    const shouldSave = await confirm({
+      title: 'Sauvegarder le mandat de location',
+      message:
+        'Voulez-vous sauvegarder ce mandat dans la base documentaire ? Vous pourrez le retrouver facilement dans la section Documents.',
+      confirmText: 'Sauvegarder et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      // Sauvegarder dans la BDD
+      await saveMandatLocationToDb(lease.value.id, blob, filename);
+      // Recharger les documents pour mettre à jour la liste
+      await documentsStore.fetchDocuments();
+    }
+
+    // Télécharger dans tous les cas
+    downloadBlob(blob, filename);
   } catch (error) {
     console.error('Failed to generate mandat de location:', error);
+  }
+};
+
+const handleDownloadExistingMandat = async () => {
+  if (!existingMandatDocument.value?.id) return;
+
+  try {
+    await documentsStore.downloadDocument(existingMandatDocument.value.id);
+  } catch (error) {
+    console.error('Failed to download existing mandat:', error);
   }
 };
 </script>
@@ -414,11 +477,20 @@ const handleGenerateMandatLocation = async () => {
                 Attestation remise des clés
               </Button>
               <Button
+                v-if="!existingMandatDocument"
                 variant="outline"
                 icon="file-document-edit"
                 @click="handleGenerateMandatLocation"
               >
                 Générer mandat de location
+              </Button>
+              <Button
+                v-else
+                variant="outline"
+                icon="download"
+                @click="handleDownloadExistingMandat"
+              >
+                Télécharger le mandat
               </Button>
             </div>
           </Card>

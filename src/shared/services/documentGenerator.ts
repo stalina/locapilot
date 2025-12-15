@@ -628,12 +628,12 @@ export async function generateDocument(
  * Génère un mandat de location au format DOCX
  * @param data - Données à insérer dans le template
  * @param templatePath - Chemin vers le template DOCX (par défaut: /templateMandatLocation.docx)
- * @returns Promise qui se résout une fois le fichier téléchargé
+ * @returns Promise qui se résout avec le Blob et le nom du fichier
  */
 export async function generateMandatLocation(
   data: MandatLocationData,
   templatePath: string = '/templateMandatLocation.docx'
-): Promise<void> {
+): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
     const zip = new PizZip(content as any);
@@ -651,11 +651,53 @@ export async function generateMandatLocation(
     const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
     const filename = `${filenameDate}_mandatLocation.docx`;
 
-    saveAs(out, filename);
+    return { blob: out, filename };
   } catch (error) {
     console.error('Erreur génération mandat de location :', error);
     throw error;
   }
+}
+
+/**
+ * Sauvegarde le mandat de location dans la base de données
+ * @param leaseId - ID du bail
+ * @param blob - Blob du document
+ * @param filename - Nom du fichier
+ * @returns Promise qui se résout avec l'ID du document créé
+ */
+export async function saveMandatLocationToDb(
+  leaseId: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'lease',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: 'Mandat de location',
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
+}
+
+/**
+ * Télécharge un blob sur le poste client
+ * @param blob - Blob à télécharger
+ * @param filename - Nom du fichier
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+  saveAs(blob, filename);
 }
 
 /**
