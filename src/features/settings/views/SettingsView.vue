@@ -479,6 +479,8 @@ const saveDefaultRejectionMessage = async () => {
 // Sender address editing
 const editingSenderAddress = ref<string>('');
 const editingSenderName = ref<string>('');
+const editingSenderPhone = ref<string>('');
+const editingSenderEmail = ref<string>('');
 
 onMounted(async () => {
   try {
@@ -493,6 +495,20 @@ onMounted(async () => {
     editingSenderName.value = s && s.value ? String(s.value) : '';
   } catch (e) {
     editingSenderName.value = '';
+  }
+
+  try {
+    const s = await db.settings.where('key').equals('senderPhone').first();
+    editingSenderPhone.value = s && s.value ? String(s.value) : '';
+  } catch (e) {
+    editingSenderPhone.value = '';
+  }
+
+  try {
+    const s = await db.settings.where('key').equals('senderEmail').first();
+    editingSenderEmail.value = s && s.value ? String(s.value) : '';
+  } catch (e) {
+    editingSenderEmail.value = '';
   }
 });
 
@@ -512,6 +528,26 @@ const saveSenderName = async () => {
     alert('Nom du propriétaire sauvegardé');
   } catch (e) {
     console.error('Failed to save sender name', e);
+    alert('Erreur lors de la sauvegarde');
+  }
+};
+
+const saveSenderPhone = async () => {
+  try {
+    await settingsStore.updateSenderPhone(editingSenderPhone.value);
+    alert('Numéro de téléphone sauvegardé');
+  } catch (e) {
+    console.error('Failed to save sender phone', e);
+    alert('Erreur lors de la sauvegarde');
+  }
+};
+
+const saveSenderEmail = async () => {
+  try {
+    await settingsStore.updateSenderEmail(editingSenderEmail.value);
+    alert('Adresse email sauvegardée');
+  } catch (e) {
+    console.error('Failed to save sender email', e);
     alert('Erreur lors de la sauvegarde');
   }
 };
@@ -592,6 +628,42 @@ watch(
             />
             <div style="display: flex; gap: 8px; justify-content: flex-end">
               <Button @click="saveSenderName" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Numéro de téléphone</h3>
+            <p>Éditez le numéro de téléphone utilisé pour les communications</p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <input
+              v-model="editingSenderPhone"
+              type="tel"
+              placeholder="Ex: 06 12 34 56 78"
+              style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px"
+            />
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveSenderPhone" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Adresse email</h3>
+            <p>Éditez l'adresse email utilisée pour les communications</p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+            <input
+              v-model="editingSenderEmail"
+              type="email"
+              placeholder="Ex: contact@exemple.fr"
+              style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px"
+            />
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveSenderEmail" variant="primary">Enregistrer</Button>
             </div>
           </div>
         </div>

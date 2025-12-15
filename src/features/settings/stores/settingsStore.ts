@@ -255,6 +255,16 @@ Cordialement, `);
     await setSetting('senderName', name);
   }
 
+  // Persist sender phone under settings.key = 'senderPhone'
+  async function updateSenderPhone(phone: string): Promise<void> {
+    await setSetting('senderPhone', phone);
+  }
+
+  // Persist sender email under settings.key = 'senderEmail'
+  async function updateSenderEmail(email: string): Promise<void> {
+    await setSetting('senderEmail', email);
+  }
+
   return {
     // State
     theme,
@@ -285,6 +295,8 @@ Cordialement, `);
     resetToDefaults,
     updateSenderAddress,
     updateSenderName,
+    updateSenderPhone,
+    updateSenderEmail,
     // Default message
     defaultRejectionMessage,
     currentDefaultRejectionMessage,
