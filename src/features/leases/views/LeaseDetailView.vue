@@ -15,6 +15,7 @@ import type { Tenant } from '@/db/schema';
 import {
   prepareKeyHandoverAttestationData,
   generateKeyHandoverAttestation,
+  saveKeyHandoverAttestationToDb,
   prepareMandatLocationData,
   generateMandatLocation,
   saveMandatLocationToDb,
@@ -156,14 +157,56 @@ const goToTenant = (tenantId: number) => {
   router.push(`/tenants/${tenantId}`);
 };
 
+// Computed pour vérifier si une attestation de remise des clés existe déjà pour ce bail
+const existingKeyAttestationDocument = computed(() => {
+  if (!lease.value?.id) return null;
+  return documentsStore.documents.find(
+    doc =>
+      doc.type === 'lease' &&
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === lease.value!.id &&
+      doc.description === 'Attestation de remise des clés'
+  );
+});
+
 const handleGenerateKeyAttestation = async () => {
   if (!lease.value?.id) return;
 
   try {
     const data = await prepareKeyHandoverAttestationData(lease.value.id);
-    await generateKeyHandoverAttestation(data);
+    const { blob, filename } = await generateKeyHandoverAttestation(data);
+
+    // Demander à l'utilisateur s'il veut sauvegarder dans la base documentaire
+    const shouldSave = await confirm({
+      title: 'Sauvegarder l’attestation de remise des clés',
+      message:
+        'Voulez-vous sauvegarder cette attestation dans la base documentaire ? Vous pourrez la retrouver facilement dans la section Documents.',
+      confirmText: 'Sauvegarder et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      // Sauvegarder dans la BDD
+      await saveKeyHandoverAttestationToDb(lease.value.id, blob, filename);
+      // Recharger les documents pour mettre à jour la liste
+      await documentsStore.fetchDocuments();
+    }
+
+    // Télécharger dans tous les cas
+    downloadBlob(blob, filename);
   } catch (error) {
     console.error('Failed to generate key handover attestation:', error);
+  }
+};
+
+const handleDownloadExistingKeyAttestation = async () => {
+  if (!existingKeyAttestationDocument.value?.id) return;
+
+  try {
+    await documentsStore.downloadDocument(existingKeyAttestationDocument.value.id);
+  } catch (error) {
+    console.error('Failed to download existing key attestation:', error);
   }
 };
 
@@ -473,8 +516,21 @@ const handleDownloadExistingMandat = async () => {
               >
                 Terminer le bail
               </Button>
-              <Button variant="outline" icon="key" @click="handleGenerateKeyAttestation">
+              <Button
+                v-if="!existingKeyAttestationDocument"
+                variant="outline"
+                icon="key"
+                @click="handleGenerateKeyAttestation"
+              >
                 Attestation remise des clés
+              </Button>
+              <Button
+                v-else
+                variant="outline"
+                icon="download"
+                @click="handleDownloadExistingKeyAttestation"
+              >
+                Télécharger l'attestation de clés
               </Button>
               <Button
                 v-if="!existingMandatDocument"

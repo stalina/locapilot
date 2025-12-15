@@ -336,12 +336,12 @@ export async function prepareRegulationLetterData(
  * Génère une attestation de remise des clés au format DOCX
  * @param data - Données à insérer dans le template
  * @param templatePath - Chemin vers le template DOCX (par défaut: /templateAttestationRemiseDesCles.docx)
- * @returns Promise qui se résout une fois le fichier téléchargé
+ * @returns Promise qui se résout avec le Blob et le nom du fichier
  */
 export async function generateKeyHandoverAttestation(
   data: KeyHandoverAttestationData,
   templatePath: string = '/templateAttestationRemiseDesCles.docx'
-): Promise<void> {
+): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
     const zip = new PizZip(content as any);
@@ -359,11 +359,44 @@ export async function generateKeyHandoverAttestation(
     const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
     const filename = `${filenameDate}_attestationRemiseDesCles.docx`;
 
-    saveAs(out, filename);
+    return { blob: out, filename };
   } catch (error) {
     console.error('Erreur génération attestation remise des clés :', error);
     throw error;
   }
+}
+
+/**
+ * Sauvegarde l'attestation de remise des clés dans la base de données
+ * @param leaseId - ID du bail
+ * @param blob - Blob du document
+ * @param filename - Nom du fichier
+ * @returns Promise qui se résout avec l'ID du document créé
+ */
+export async function saveKeyHandoverAttestationToDb(
+  leaseId: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'lease',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: 'Attestation de remise des clés',
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
 }
 
 /**
