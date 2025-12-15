@@ -144,6 +144,8 @@ export interface RegulationLetterData {
   regulation: number;
   ownerAddress: string;
   ownerFullName: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
   date: string;
   tenantFullName: string;
   tenantName: string;
@@ -304,6 +306,9 @@ export async function prepareRegulationLetterData(
   // Charger l'adresse de l'expéditeur depuis les settings
   let ownerAddress = '';
   let ownerFullName = '';
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+  
   try {
     const addressSetting = await db.settings.where('key').equals('senderAddress').first();
     if (addressSetting?.value) {
@@ -312,6 +317,14 @@ export async function prepareRegulationLetterData(
     const nameSetting = await db.settings.where('key').equals('senderName').first();
     if (nameSetting?.value) {
       ownerFullName = String(nameSetting.value);
+    }
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) {
+      ownerEmail = String(emailSetting.value);
+    }
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) {
+      ownerPhoneNumber = String(phoneSetting.value);
     }
   } catch {
     // Ignorer si les clés n'existent pas
@@ -359,6 +372,8 @@ export async function prepareRegulationLetterData(
     regulation: computeRegulation(adjustmentRow),
     ownerAddress,
     ownerFullName,
+    ownerEmail,
+    ownerPhoneNumber,
     date: new Date().toLocaleDateString('fr-FR'),
     tenantFullName,
     tenantName,
