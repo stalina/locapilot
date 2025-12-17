@@ -230,7 +230,7 @@ export interface MandatLocationData {
  */
 export async function generateRegulationLetter(
   data: RegulationLetterData,
-  templatePath: string = '/templateRegulCharge.docx'
+  templatePath: string = `${import.meta.env.BASE_URL}templateRegulCharge.docx`
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
@@ -392,7 +392,7 @@ export async function prepareRegulationLetterData(
  */
 export async function generateKeyHandoverAttestation(
   data: KeyHandoverAttestationData,
-  templatePath: string = '/templateAttestationRemiseDesCles.docx'
+  templatePath: string = `${import.meta.env.BASE_URL}templateAttestationRemiseDesCles.docx`
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
@@ -541,7 +541,7 @@ export async function prepareKeyHandoverAttestationData(
  */
 export async function generateRentReceipt(
   data: RentReceiptData,
-  templatePath: string = '/templateQuittanceDeLoyer.docx'
+  templatePath: string = `${import.meta.env.BASE_URL}templateQuittanceDeLoyer.docx`
 ): Promise<void> {
   try {
     const content = await loadBinary(templatePath);
@@ -730,7 +730,7 @@ export async function generateDocument(
  */
 export async function generateMandatLocation(
   data: MandatLocationData,
-  templatePath: string = '/templateMandatLocation.docx'
+  templatePath: string = `${import.meta.env.BASE_URL}templateMandatLocation.docx`
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
