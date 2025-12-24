@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import Badge from './Badge.vue';
 import { usePropertyPhotos } from '@/shared/composables/usePropertyPhotos';
+import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import type { Property } from '@/db/types';
 
 interface Props {
@@ -42,15 +43,7 @@ const typeIcon = computed(() => {
 });
 
 const typeLabel = computed(() => {
-  const labels: Record<Property['type'], string> = {
-    apartment: 'Appartement',
-    house: 'Maison',
-    studio: 'Studio',
-    commercial: 'Commercial',
-    parking: 'Parking',
-    other: 'Autre',
-  };
-  return labels[props.property.type];
+  return getPropertyTypeLabel(props.property.type);
 });
 
 const totalRent = computed(() => {

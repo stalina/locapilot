@@ -12,8 +12,8 @@ import RichTextDisplay from '@/shared/components/RichTextDisplay.vue';
 import RichTextEditor from '@/shared/components/RichTextEditor.vue';
 import { formatAnnoncePlaceholders, defaultAnnonceTemplate } from '@/shared/utils/annonceTemplate';
 import { useNotification } from '@/shared/composables/useNotification';
+import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
-import type { Property } from '@/db/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,15 +26,6 @@ const showEditModal = ref(false);
 const isAnnonceEditing = ref(false);
 const annonceDraft = ref('');
 const { success: notifySuccess, error: notifyError } = useNotification();
-
-const typeLabels: Record<Property['type'], string> = {
-  apartment: 'Appartement',
-  house: 'Maison',
-  studio: 'Studio',
-  commercial: 'Commercial',
-  parking: 'Parking',
-  other: 'Autre',
-};
 
 const statusConfig = computed(() => {
   if (!propertiesStore.currentProperty) return null;
@@ -265,7 +256,7 @@ async function copyAnnonce() {
             <span v-else>{{ propertiesStore.currentProperty.address }}</span>
           </div>
           <div class="type-label">
-            {{ typeLabels[propertiesStore.currentProperty.type] }}
+            {{ getPropertyTypeLabel(propertiesStore.currentProperty.type) }}
           </div>
         </div>
       </div>
@@ -306,7 +297,7 @@ async function copyAnnonce() {
               <div class="info-item">
                 <span class="info-label">Type</span>
                 <span class="info-value">
-                  {{ typeLabels[propertiesStore.currentProperty.type] }}
+                  {{ getPropertyTypeLabel(propertiesStore.currentProperty.type) }}
                 </span>
               </div>
               <div class="info-item">

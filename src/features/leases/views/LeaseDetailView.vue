@@ -12,6 +12,7 @@ import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
 import type { Tenant } from '@/db/schema';
+import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import {
   prepareKeyHandoverAttestationData,
   generateKeyHandoverAttestation,
@@ -47,6 +48,12 @@ const lease = computed(() => leasesStore.currentLease);
 const property = computed(() => {
   if (!lease.value) return null;
   return propertiesStore.properties.find(p => p.id === lease.value!.propertyId) ?? null;
+});
+
+const propertyTypeLabel = computed(() => {
+  if (!property.value) return '—';
+
+  return getPropertyTypeLabel(property.value.type);
 });
 
 const tenants = computed(() => {
@@ -455,7 +462,7 @@ const handleDownloadExistingMandat = async () => {
                 </div>
                 <div class="info-item">
                   <span class="info-label">Type</span>
-                  <span class="info-value">{{ property.type }}</span>
+                  <span class="info-value">{{ propertyTypeLabel }}</span>
                 </div>
               </div>
             </template>

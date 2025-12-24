@@ -29,6 +29,8 @@ export const PROPERTY_TYPES = {
   OTHER: 'other',
 } as const;
 
+export type PropertyType = (typeof PROPERTY_TYPES)[keyof typeof PROPERTY_TYPES];
+
 export const PROPERTY_TYPE_LABELS = {
   [PROPERTY_TYPES.APARTMENT]: 'Appartement',
   [PROPERTY_TYPES.HOUSE]: 'Maison',
@@ -37,6 +39,10 @@ export const PROPERTY_TYPE_LABELS = {
   [PROPERTY_TYPES.PARKING]: 'Parking',
   [PROPERTY_TYPES.OTHER]: 'Autre',
 } as const;
+
+export function getPropertyTypeLabel(type: PropertyType): string {
+  return PROPERTY_TYPE_LABELS[type];
+}
 
 /**
  * Statuts des locataires
