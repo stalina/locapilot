@@ -34,6 +34,10 @@ onMounted(async () => {
     const prop = propertiesStore.properties.find(p => p.id === propertyIdQuery);
     if (prop) searchQuery.value = prop.name;
   }
+  // open lease form modal if requested
+  if (route.query.open === 'leaseForm') {
+    showLeaseForm.value = true;
+  }
 });
 
 const filteredLeases = computed(() => {

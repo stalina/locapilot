@@ -96,8 +96,14 @@ function handleFormSuccess() {
 }
 
 // Lifecycle
+import { useRoute } from 'vue-router';
+const route = useRoute();
+
 onMounted(async () => {
   await tenantsStore.fetchTenants();
+  if (route.query.open === 'tenantForm') {
+    showTenantForm.value = true;
+  }
 });
 </script>
 

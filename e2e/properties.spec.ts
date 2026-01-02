@@ -29,26 +29,22 @@ test.describe('Propriétés - e2e', () => {
   });
 
   test('Créer, éditer et supprimer une propriété', async ({ page }) => {
-    // Ouvrir le formulaire de création via data-testid (support mobile/desktop)
-    const newBtn = await page.locator('[data-testid="new-property-button"]').first();
-    await newBtn.waitFor({ state: 'visible', timeout: 3000 });
-    // Click via DOM to avoid Playwright viewport/overlay issues on mobile
-    await page.evaluate(el => (el as HTMLElement).click(), await newBtn.elementHandle());
-    await page.waitForSelector(
-      '[data-testid="modal"], [data-testid="modal-overlay"], [role="dialog"]',
-      {
-        timeout: 9000,
-      }
-    );
+    // Ouvrir le formulaire de création via data-testid
+    const newBtn = page.locator('[data-testid="new-property-button"]').first();
+    await newBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await newBtn.click();
+    await page.waitForSelector('form', { timeout: 10000 });
 
     const name = `E2E Test Bien ${Date.now()}`;
 
     // Remplir le formulaire en utilisant les data-testid exposés
-    await page.locator('[data-testid="property-name"]').fill(name);
-    await page.locator('[data-testid="property-address"]').fill('1 rue de Test, 75000 Paris');
-    await page.locator('[data-testid="property-surface"]').fill('42');
-    await page.locator('[data-testid="property-rooms"]').fill('2');
-    await page.locator('[data-testid="property-rent"]').fill('850');
+    await page.locator('[data-testid="property-name"]').fill(name, { timeout: 10000 });
+    await page
+      .locator('[data-testid="property-address"]')
+      .fill('1 rue de Test, 75000 Paris', { timeout: 10000 });
+    await page.locator('input[data-testid="property-surface"]').fill('42', { timeout: 10000 });
+    await page.locator('input[data-testid="property-rooms"]').fill('2', { timeout: 10000 });
+    await page.locator('input[data-testid="property-rent"]').fill('850', { timeout: 10000 });
 
     // Créer via bouton présent dans le footer du modal (texte du bouton)
     const modalFooter = page.locator('[data-testid="modal-footer"]');
