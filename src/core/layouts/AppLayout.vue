@@ -159,7 +159,7 @@ const closeSidebar = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000; /* Above sidebar */
+  z-index: 2000; /* Overlay must be above the sidebar on mobile */
   cursor: pointer;
 }
 
@@ -326,7 +326,7 @@ const closeSidebar = () => {
     left: -280px;
     top: 0;
     bottom: 0;
-    z-index: 1001; /* Above overlay so sidebar content is clickable */
+    z-index: 1000; /* Sidebar behind overlay */
     transition: left var(--transition-base, 0.2s ease);
     box-shadow: none;
     pointer-events: auto; /* Sidebar content is clickable */
