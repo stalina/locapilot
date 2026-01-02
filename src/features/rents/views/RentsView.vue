@@ -343,6 +343,7 @@ const handleGenerateReceipt = async (rent: Rent) => {
             <th>Propriété</th>
             <th>Locataire</th>
             <th>Montant</th>
+            <th>Charges</th>
             <th>Statut</th>
             <th>Date de paiement</th>
             <th>Actions</th>
@@ -371,9 +372,8 @@ const handleGenerateReceipt = async (rent: Rent) => {
                 })()
               }}
             </td>
-            <td class="amount-cell">
-              {{ (Number(rent.amount) + Number(rent.charges || 0)).toLocaleString('fr-FR') }} €
-            </td>
+            <td class="amount-cell">{{ Number(rent.amount).toLocaleString('fr-FR') }} €</td>
+            <td class="charges-cell">{{ Number(rent.charges || 0).toLocaleString('fr-FR') }} €</td>
             <td class="status-cell">
               <Badge
                 :variant="statusConfig(rent.status).variant"
