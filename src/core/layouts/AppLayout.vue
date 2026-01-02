@@ -159,7 +159,7 @@ const closeSidebar = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 2000; /* Overlay must be above the sidebar on mobile */
+  z-index: 900; /* Keep overlay beneath the sidebar to avoid intercepting clicks */
   cursor: pointer;
 }
 
@@ -326,7 +326,7 @@ const closeSidebar = () => {
     left: -280px;
     top: 0;
     bottom: 0;
-    z-index: 1000; /* Sidebar behind overlay */
+    z-index: 1000; /* Sidebar above overlay when open */
     transition: left var(--transition-base, 0.2s ease);
     box-shadow: none;
     pointer-events: none; /* Disabled when closed to avoid intercepting clicks */
