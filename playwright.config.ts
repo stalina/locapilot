@@ -14,15 +14,15 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:4173/locapilot',
+    baseURL: 'http://localhost:5175/',
     headless: true,
     viewport: { width: 1280, height: 800 },
     actionTimeout: 5000,
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4173/locapilot/',
+    command: 'npm run dev -- --port 5175',
+    url: 'http://localhost:5175/',
     timeout: 120_000,
     reuseExistingServer: process.env.CI ? false : true,
   },
@@ -30,6 +30,10 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-mobile',
+      use: { ...devices['Pixel 5'], viewport: devices['Pixel 5'].viewport },
     },
   ],
 });

@@ -159,7 +159,7 @@ const closeSidebar = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000; /* Above sidebar */
+  z-index: 900; /* Keep overlay beneath the sidebar to avoid intercepting clicks */
   cursor: pointer;
 }
 
@@ -326,15 +326,16 @@ const closeSidebar = () => {
     left: -280px;
     top: 0;
     bottom: 0;
-    z-index: 1001; /* Above overlay so sidebar content is clickable */
+    z-index: 1000; /* Sidebar above overlay when open */
     transition: left var(--transition-base, 0.2s ease);
     box-shadow: none;
-    pointer-events: auto; /* Sidebar content is clickable */
+    pointer-events: none; /* Disabled when closed to avoid intercepting clicks */
   }
 
   .sidebar.open {
     left: 0;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    pointer-events: auto; /* Enable when open */
   }
 
   .sidebar-header {

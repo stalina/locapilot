@@ -375,6 +375,34 @@
   margin-top: var(--space-6, 1.5rem);
 }
 
+@media (max-width: 768px) {
+  /* Keep quick action buttons visible on mobile without scrolling */
+  .quick-actions {
+    position: sticky;
+    top: 64px; /* below mobile header */
+    z-index: 1500;
+    background: transparent;
+    padding: var(--space-2, 0.5rem) 0;
+  }
+
+  /* Fixed action bar at bottom for small viewports to ensure clickability */
+  .quick-actions.fixed-mobile {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    gap: var(--space-3, 0.75rem);
+    z-index: 2500;
+    background: rgba(255, 255, 255, 0.98);
+    padding: var(--space-2, 0.5rem);
+    border-radius: var(--radius-xl, 1rem);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 /* ===================================
    SIDEBAR
    =================================== */
