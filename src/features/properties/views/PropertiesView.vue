@@ -103,8 +103,15 @@ function handleFormSuccess() {
 }
 
 // Lifecycle
+import { useRoute } from 'vue-router';
+const route = useRoute();
+
 onMounted(async () => {
   await propertiesStore.fetchProperties();
+  // open modal if requested via query
+  if (route.query.open === 'propertyForm') {
+    showPropertyForm.value = true;
+  }
 });
 </script>
 

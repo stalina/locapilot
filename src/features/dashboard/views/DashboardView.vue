@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
+import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
+import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
@@ -36,6 +40,30 @@ const upcomingEvents = ref<
     description: string;
   }>
 >([]);
+
+const router = useRouter();
+const propertiesStore = usePropertiesStore();
+const tenantsStore = useTenantsStore();
+const leasesStore = useLeasesStore();
+
+// quick action handlers
+function openNewProperty() {
+  // navigate to properties view and open modal via query param
+  router.push({ path: '/properties', query: { open: 'propertyForm' } });
+}
+
+function openNewTenant() {
+  router.push({ path: '/tenants', query: { open: 'tenantForm' } });
+}
+
+function openNewLease() {
+  router.push({ path: '/leases', query: { open: 'leaseForm' } });
+}
+
+function openRents() {
+  // navigate to rents view where quittance can be generated
+  router.push('/rents');
+}
 
 onMounted(async () => {
   await loadDashboardData();
@@ -125,6 +153,30 @@ async function loadDashboardData() {
     console.error('Failed to load dashboard data:', error);
   }
 }
+
+function handleActivityClick(activity: any) {
+  // Map activity types to relevant routes
+  if (activity.type === 'payment') {
+    router.push('/rents');
+  } else if (activity.type === 'lease') {
+    router.push('/leases');
+  } else if (activity.type === 'inventory') {
+    router.push('/inventories');
+  } else {
+    router.push('/activity');
+  }
+}
+
+function handleEventClick(event: any) {
+  // For simplicity, navigate to leases view for visits or to rents for due dates
+  if (event.title && event.title.toLowerCase().includes('visite')) {
+    router.push('/leases');
+  } else if (event.title && event.title.toLowerCase().includes('échéance')) {
+    router.push('/rents');
+  } else {
+    router.push('/');
+  }
+}
 </script>
 
 <template>
@@ -205,7 +257,12 @@ async function loadDashboardData() {
         </div>
 
         <div class="activity-list">
-          <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
+          <div
+            v-for="activity in recentActivities"
+            :key="activity.id"
+            class="activity-item"
+            @click="handleActivityClick(activity)"
+          >
             <div
               class="activity-icon"
               :style="{ background: `${activity.iconColor}22`, color: activity.iconColor }"
@@ -234,7 +291,12 @@ async function loadDashboardData() {
         </div>
 
         <div class="event-list">
-          <div v-for="event in upcomingEvents" :key="event.id" class="event-item">
+          <div
+            v-for="event in upcomingEvents"
+            :key="event.id"
+            class="event-item"
+            @click="handleEventClick(event)"
+          >
             <div class="event-date">{{ event.date }}</div>
             <div class="event-title">{{ event.title }}</div>
             <div class="event-description">{{ event.description }}</div>
@@ -242,10 +304,18 @@ async function loadDashboardData() {
         </div>
 
         <div class="quick-actions">
-          <Button variant="outline" icon="plus" size="sm"> Nouvelle propriété </Button>
-          <Button variant="outline" icon="account-plus" size="sm"> Nouveau locataire </Button>
-          <Button variant="outline" icon="file-plus" size="sm"> Nouveau bail </Button>
-          <Button variant="outline" icon="receipt" size="sm"> Générer quittance </Button>
+          <Button variant="outline" icon="plus" size="sm" @click="openNewProperty">
+            Nouvelle propriété
+          </Button>
+          <Button variant="outline" icon="account-plus" size="sm" @click="openNewTenant">
+            Nouveau locataire
+          </Button>
+          <Button variant="outline" icon="file-plus" size="sm" @click="openNewLease">
+            Nouveau bail
+          </Button>
+          <Button variant="outline" icon="receipt" size="sm" @click="openRents">
+            Générer quittance
+          </Button>
         </div>
       </section>
     </div>
