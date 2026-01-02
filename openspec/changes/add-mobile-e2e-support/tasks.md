@@ -8,4 +8,4 @@
 ## 2. Validation
 
 - [x] 2.1 Ensure tests pass on `chromium` and `chromium-mobile` projects.
-- [ ] 2.2 Manual smoke test of key flows on real mobile viewport.
+- [ ] 2.2 Manual smoke test of key flows on real mobile viewport (in-progress).
