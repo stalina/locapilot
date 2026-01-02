@@ -329,12 +329,13 @@ const closeSidebar = () => {
     z-index: 1000; /* Sidebar behind overlay */
     transition: left var(--transition-base, 0.2s ease);
     box-shadow: none;
-    pointer-events: auto; /* Sidebar content is clickable */
+    pointer-events: none; /* Disabled when closed to avoid intercepting clicks */
   }
 
   .sidebar.open {
     left: 0;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    pointer-events: auto; /* Enable when open */
   }
 
   .sidebar-header {
