@@ -242,7 +242,11 @@ export const useRentsStore = defineStore('rents', {
           date: new Date(rent.dueDate),
           title: property?.name || 'Bien inconnu',
           status: calendarStatus as 'pending' | 'paid' | 'overdue',
+          // Keep `amount` for backward compatibility (total = rent + charges)
           amount: (Number(rent.amount) || 0) + (Number((rent as any).charges) || 0),
+          // Expose separate fields so the UI can display them in dedicated columns
+          rentAmount: Number(rent.amount) || 0,
+          charges: Number((rent as any).charges) || 0,
           isVirtual: false,
         } as any;
       });
@@ -259,7 +263,11 @@ export const useRentsStore = defineStore('rents', {
           date: new Date(v.dueDate),
           title: property?.name || 'Bien inconnu',
           status: 'pending' as const,
+          // Keep `amount` (total) for backward compatibility
           amount: (Number(v.amount) || 0) + (Number(v.charges) || 0),
+          // Separate fields for UI columns
+          rentAmount: Number(v.amount) || 0,
+          charges: Number(v.charges) || 0,
           isVirtual: true,
         } as any;
       });
