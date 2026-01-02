@@ -375,6 +375,17 @@
   margin-top: var(--space-6, 1.5rem);
 }
 
+@media (max-width: 768px) {
+  /* Keep quick action buttons visible on mobile without scrolling */
+  .quick-actions {
+    position: sticky;
+    top: 64px; /* below mobile header */
+    z-index: 1500;
+    background: transparent;
+    padding: var(--space-2, 0.5rem) 0;
+  }
+}
+
 /* ===================================
    SIDEBAR
    =================================== */
