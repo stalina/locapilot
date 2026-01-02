@@ -5,11 +5,21 @@ test.describe('Propriétés - e2e', () => {
     await page.goto('/');
     const toggle = page.locator('[data-testid="mobile-menu-toggle"]');
     if ((await toggle.count()) > 0) {
-      await toggle.first().click();
-      await page
-        .locator('.sidebar.open')
-        .waitFor({ state: 'visible', timeout: 2000 })
-        .catch(() => {});
+      // Ensure toggle is visible before clicking (avoid desktop layouts where it's hidden)
+      if (await toggle.first().isVisible()) {
+        await toggle.first().click();
+        await page
+          .locator('.sidebar.open')
+          .waitFor({ state: 'visible', timeout: 2000 })
+          .catch(() => {});
+      }
+    } else {
+      // If no toggle but sidebar exists and is open, ensure it's closed to avoid overlays
+      const sidebarOpen = page.locator('.sidebar.open');
+      if ((await sidebarOpen.count()) > 0) {
+        await sidebarOpen.evaluate(el => (el as HTMLElement).classList.remove('open'));
+        await page.waitForTimeout(50);
+      }
     }
     const link = page.getByRole('link', { name: /Propriétés/ });
     await link.waitFor({ state: 'visible', timeout: 5000 });
