@@ -3,8 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Locataires - e2e', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    const toggle = page.locator('[data-testid="mobile-menu-toggle"]');
+    if ((await toggle.count()) > 0) {
+      await toggle.first().click();
+      await page
+        .locator('.sidebar.open')
+        .waitFor({ state: 'visible', timeout: 2000 })
+        .catch(() => {});
+    }
     const link = page.getByRole('link', { name: /Locataires|Locataires/ });
     await link.waitFor({ state: 'visible', timeout: 5000 });
+    await link.scrollIntoViewIfNeeded();
     await link.click();
     await expect(page).toHaveURL(/.*\/tenants/, { timeout: 5000 });
   });
