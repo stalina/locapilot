@@ -178,6 +178,8 @@ export interface RentReceiptData {
   ownerFullName: string;
   ownerAddress: string;
   ownerAddressInLine: string;
+  ownerEmail?: string;
+  ownerPhoneNumber?: string;
   tenantFullName: string;
   propertyName: string;
   propertyAddress: string;
@@ -607,9 +609,21 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
     if (!rent) throw new Error('Rent not found');
 
     // Montants
-    totalPayedAmount = rent.paidAmount || rent.amount + (rent.charges || 0);
-    rentAmount = rent.amount || 0;
-    chargeAmount = rent.charges || 0;
+    // `totalPayedAmount` must represent the amount actually paid by the tenant.
+    // Prefer explicit `paidAmount` when present. If not set but the rent status
+    // indicates 'paid', fallback to the rent nominal amount + charges.
+    if (typeof rent.paidAmount === 'number') {
+      totalPayedAmount = rent.paidAmount;
+    } else if (rent.status === 'paid') {
+      totalPayedAmount = (rent.amount || 0) + (rent.charges || 0);
+    } else {
+      totalPayedAmount = 0;
+    }
+
+    // The `rentAmount` and `chargeAmount` used on the quittance should come from the
+    // associated lease (mandat) when available. Use rent record as fallback.
+    rentAmount = rent.amount || 0; // will be overwritten by lease.rent if lease exists
+    chargeAmount = rent.charges || 0; // will be overwritten by lease.charges if lease exists
 
     // Date de paiement
     if (rent.paidDate) {
@@ -638,6 +652,9 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
     // Récupérer le bail
     const lease = await db.leases.get(rent.leaseId);
     if (lease) {
+      // Prefer the contractual amounts from the lease (mandat)
+      rentAmount = (lease as any).rent || rentAmount;
+      chargeAmount = (lease as any).charges || chargeAmount;
       // Récupérer le locataire
       if (Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
         const tenantId = (lease as any).tenantIds[0];
@@ -668,6 +685,18 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
   // Adresse en ligne (remplacer les retours à la ligne par des espaces)
   const ownerAddressInLine = ownerAddress.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
+  // Lire email et téléphone du propriétaire depuis les settings (optionnel)
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+  try {
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) ownerEmail = String(emailSetting.value);
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) ownerPhoneNumber = String(phoneSetting.value);
+  } catch {
+    // ignore
+  }
+
   // Montant en lettres majuscules
   const totalPayedAmountInLetterUppercase = numberToLetters(totalPayedAmount).toUpperCase();
 
@@ -684,6 +713,11 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
     year,
     totalPayedAmount,
     totalPayedAmountInLetterUppercase,
+    // Backwards-compatible PascalCase fields used by some DOCX templates
+    TotalPayedAmount: totalPayedAmount,
+    TotalPayedAmountInLetterUppercase: totalPayedAmountInLetterUppercase,
+    ownerEmail,
+    ownerPhoneNumber,
     rentAmount,
     chargeAmount,
     paymentDate,
