@@ -13,6 +13,7 @@ import 'primeicons/primeicons.css';
 import '@mdi/font/css/materialdesignicons.css';
 
 import App from './App.vue';
+import { seedDemoData } from '@/db/seed';
 
 // Initialize database
 initializeDatabase().catch(error => {
@@ -34,6 +35,11 @@ app.use(PrimeVue, {
 const appStore = useAppStore();
 appStore.initializeNetworkListeners();
 appStore.initializeApp();
+
+// Seed demo data in development so dashboard shows content
+if (import.meta.env.DEV) {
+  seedDemoData().catch(err => console.error('Failed to seed demo data', err));
+}
 
 // Mount app
 app.mount('#app');
