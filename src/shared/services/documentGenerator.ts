@@ -189,9 +189,6 @@ export interface RentReceiptData {
   year: number;
   totalPayedAmount: number;
   totalPayedAmountInLetterUppercase: string;
-  // Backwards-compatible PascalCase fields used by some DOCX templates
-  TotalPayedAmount?: number;
-  TotalPayedAmountInLetterUppercase?: string;
   rentAmount: number;
   chargeAmount: number;
   paymentDate: string;
@@ -716,9 +713,6 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
     year,
     totalPayedAmount,
     totalPayedAmountInLetterUppercase,
-    // Backwards-compatible PascalCase fields used by some DOCX templates
-    TotalPayedAmount: totalPayedAmount,
-    TotalPayedAmountInLetterUppercase: totalPayedAmountInLetterUppercase,
     ownerEmail,
     ownerPhoneNumber,
     rentAmount,
