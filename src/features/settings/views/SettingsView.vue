@@ -22,6 +22,27 @@ let deferredPrompt: any = null;
 const isExporting = ref(false);
 const isImporting = ref(false);
 
+// Helper: convert ArrayBuffer to base64 in chunks to avoid call stack issues
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32KB chunks
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
+  }
+  return btoa(binary);
+};
+
+// Helper: convert base64 string to Blob
+const base64ToBlob = (b64: string, mime = 'application/octet-stream') => {
+  const binary = atob(b64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+};
+
 // PeerJS sync
 const isHosting = ref(false);
 const hostId = ref<string | null>(null);
@@ -97,8 +118,7 @@ const buildExportPayload = async () => {
       try {
         if (d.data instanceof Blob) {
           const text = await d.data.arrayBuffer();
-          const uint8 = new Uint8Array(text);
-          const b64 = btoa(String.fromCharCode(...uint8));
+          const b64 = arrayBufferToBase64(text);
           copy.data = `data:${d.mimeType};base64,${b64}`;
         } else if (typeof d.data === 'string') {
           copy.data = d.data;
@@ -295,13 +315,9 @@ const performImportFromObject = async (data: any) => {
           if (matches) {
             const mime = matches[1];
             const b64 = matches[2];
-            const binary = atob(b64);
-            const len = binary.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-            copy.data = new Blob([bytes], { type: mime });
+            copy.data = base64ToBlob(b64, mime);
             copy.mimeType = mime;
-            copy.size = bytes.length;
+            copy.size = (copy.data as Blob).size;
           } else {
             copy.data = null;
           }
