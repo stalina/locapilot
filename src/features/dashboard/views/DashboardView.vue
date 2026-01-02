@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
-import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
-import { useLeasesStore } from '@/features/leases/stores/leasesStore';
+// stores not required here; removed unused imports to satisfy tsc
+// import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
+// import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
+// import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
@@ -42,9 +43,10 @@ const upcomingEvents = ref<
 >([]);
 
 const router = useRouter();
-const propertiesStore = usePropertiesStore();
-const tenantsStore = useTenantsStore();
-const leasesStore = useLeasesStore();
+// stores are not used directly in this view; navigation delegates to feature views
+// const propertiesStore = usePropertiesStore();
+// const tenantsStore = useTenantsStore();
+// const leasesStore = useLeasesStore();
 
 // quick action handlers
 function openNewProperty() {
