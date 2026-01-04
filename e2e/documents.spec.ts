@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { safeClick } from './utils/safeClick';
 
 test.describe('Documents - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,7 +32,7 @@ test.describe('Documents - e2e', () => {
     // Ouvrir modal upload
     const newBtn = page.locator('[data-testid="new-document-button"]').first();
     if ((await newBtn.count()) === 0) test.skip();
-    await newBtn.click();
+    await safeClick(page, newBtn);
     await page.waitForSelector('form');
 
     // Préparer un fichier temporaire minimal
@@ -41,7 +42,7 @@ test.describe('Documents - e2e', () => {
 
     await input.setInputFiles(filePath);
     const footer = page.locator('[data-testid="modal-footer"]');
-    await footer.getByRole('button', { name: /Uploader|Enregistrer/ }).click();
+    await safeClick(page, footer.getByRole('button', { name: /Uploader|Enregistrer/ }).first());
 
     // Vérifier la présence dans la liste
     const docItem = page.locator('.document-item', { hasText: 'tenants_modal' }).first();
@@ -50,7 +51,7 @@ test.describe('Documents - e2e', () => {
     // Ouvrir preview si disponible
     const preview = docItem.locator('[data-testid="preview-document-button"]');
     if ((await preview.count()) > 0) {
-      await preview.first().click();
+      await safeClick(page, preview.first());
       await page.waitForSelector('.document-preview', { timeout: 3000 }).catch(() => {});
     }
 
@@ -58,7 +59,8 @@ test.describe('Documents - e2e', () => {
     const del = docItem.locator('[data-testid="delete-document-button"]');
     if ((await del.count()) > 0) {
       page.on('dialog', async d => await d.accept());
-      await del.first().click();
+      page.on('dialog', async d => await d.accept());
+      await safeClick(page, del.first());
     }
 
     await expect(page.locator('.document-item', { hasText: 'tenants_modal' })).toHaveCount(0);

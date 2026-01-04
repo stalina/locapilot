@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { safeClick } from './utils/safeClick';
 
 test.describe('Propriétés - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -32,7 +33,7 @@ test.describe('Propriétés - e2e', () => {
     // Ouvrir le formulaire de création via data-testid
     const newBtn = page.locator('[data-testid="new-property-button"]').first();
     await newBtn.waitFor({ state: 'visible', timeout: 10000 });
-    await newBtn.click();
+    await safeClick(page, newBtn);
     await page.waitForSelector('form', { timeout: 10000 });
 
     const name = `E2E Test Bien ${Date.now()}`;
@@ -49,7 +50,7 @@ test.describe('Propriétés - e2e', () => {
     // Créer via bouton présent dans le footer du modal (texte du bouton)
     const modalFooter = page.locator('[data-testid="modal-footer"]');
     await modalFooter.waitFor({ state: 'visible', timeout: 5000 });
-    await modalFooter.getByRole('button', { name: /Créer|Enregistrer/ }).click();
+    await safeClick(page, modalFooter.getByRole('button', { name: /Créer|Enregistrer/ }).first());
 
     // Vérifier présence dans la liste: chercher une card contenant le nom
     await expect(page.locator('.property-card', { hasText: name })).toBeVisible({ timeout: 5000 });
@@ -65,9 +66,9 @@ test.describe('Propriétés - e2e', () => {
     const card = page.locator('.property-card', { hasText: name }).first();
     const editBtn = card.locator('[data-testid="edit-property-button"]');
     if ((await editBtn.count()) > 0) {
-      await editBtn.first().click();
+      await safeClick(page, editBtn.first());
       await page.locator('[data-testid="property-name"]').fill(`${name} - modifié`);
-      await page.locator('[data-testid="property-form-submit"]').click();
+      await safeClick(page, page.locator('[data-testid="property-form-submit"]'));
       await expect(page.locator('.property-card', { hasText: `${name} - modifié` })).toBeVisible();
     }
 
@@ -79,7 +80,7 @@ test.describe('Propriétés - e2e', () => {
       page.on('dialog', async dialog => {
         await dialog.accept();
       });
-      await delBtn.first().click();
+      await safeClick(page, delBtn.first());
     }
 
     // Vérifier la suppression (attendre disparition)

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { safeClick } from './utils/safeClick';
 
 test.describe('Inventories - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -28,9 +29,30 @@ test.describe('Inventories - e2e', () => {
   });
 
   test('Créer inventaire avec photos et notes', async ({ page }) => {
+    // Ensure a property exists to associate with the inventory
+    const anyProperty = page.locator('.property-card').first();
+    if ((await anyProperty.count()) === 0) {
+      const propLink = page.getByRole('link', { name: /Propriétés|Propriétés|Properties/ });
+      if ((await propLink.count()) > 0) {
+        await safeClick(page, propLink.first());
+        await page.waitForSelector('[data-testid="new-property-button"]', { timeout: 2000 }).catch(() => {});
+        const newBtnP = page.locator('[data-testid="new-property-button"]').first();
+        if ((await newBtnP.count()) > 0) {
+          await safeClick(page, newBtnP);
+          await page.waitForSelector('form');
+          const name = `E2E Inv Prop ${Date.now()}`;
+          await page.locator('[data-testid="property-name"]').fill(name).catch(() => {});
+          await page.locator('[data-testid="property-address"]').fill('1 rue E2E', { timeout: 2000 }).catch(() => {});
+          const footerP = page.locator('[data-testid="modal-footer"]');
+          await footerP.getByRole('button', { name: /Créer|Enregistrer/ }).click().catch(() => {});
+          await page.goto('/inventories').catch(() => {});
+        }
+      }
+    }
+
     const newBtn = page.locator('[data-testid="new-inventory-button"]').first();
     if ((await newBtn.count()) === 0) test.skip();
-    await newBtn.click();
+    await safeClick(page, newBtn);
     await page.waitForSelector('form');
 
     await page.locator('input[data-testid="inventory-title"]').fill('E2E Inventory');
@@ -43,7 +65,12 @@ test.describe('Inventories - e2e', () => {
     }
 
     const footer = page.locator('[data-testid="modal-footer"]');
-    await footer.getByRole('button', { name: /Créer|Enregistrer/ }).click();
+    // Associate property if select exists
+    const propSelect = page.locator('select[data-testid="inventory-property"]');
+    if ((await propSelect.count()) > 0) {
+      await propSelect.selectOption({ index: 0 }).catch(() => {});
+    }
+    await safeClick(page, footer.getByRole('button', { name: /Créer|Enregistrer/ }).first());
 
     // Vérifier présence
     await expect(page.locator('.inventory-card', { hasText: 'E2E Inventory' })).toBeVisible({

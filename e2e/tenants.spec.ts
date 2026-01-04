@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { safeClick } from './utils/safeClick';
 
 test.describe('Locataires - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -28,7 +29,7 @@ test.describe('Locataires - e2e', () => {
 
   test('Créer, éditer et supprimer un locataire', async ({ page }) => {
     // Ouvrir le formulaire de création via data-testid
-    await page.locator('[data-testid="new-tenant-button"]').first().click();
+    await safeClick(page, page.locator('[data-testid="new-tenant-button"]').first());
     await page.waitForSelector('form');
 
     const firstName = `E2E_First_${Date.now()}`;
@@ -46,7 +47,7 @@ test.describe('Locataires - e2e', () => {
     // Créer via footer modal
     const modalFooter = page.locator('[data-testid="modal-footer"]');
     await modalFooter.waitFor({ state: 'visible', timeout: 5000 });
-    await modalFooter.getByRole('button', { name: /Créer|Enregistrer/ }).click();
+    await safeClick(page, modalFooter.getByRole('button', { name: /Créer|Enregistrer/ }).first());
 
     // Vérifier présence dans la liste: chercher une card contenant le nom
     const fullName = `${firstName} ${lastName}`;
@@ -61,12 +62,12 @@ test.describe('Locataires - e2e', () => {
     // Cliquer sur Modifier si disponible (bouton en header de détail)
     const editBtn = page.getByRole('button', { name: /Modifier/ }).first();
     if ((await editBtn.count()) > 0) {
-      await editBtn.click();
+      await safeClick(page, editBtn);
       const newFirst = `${firstName}-mod`;
       await page.locator('input[data-testid="tenant-firstName"]').fill(newFirst);
       // Footer submit
       const footer = page.locator('[data-testid="modal-footer"]');
-      await footer.getByRole('button', { name: /Enregistrer|Créer/ }).click();
+      await safeClick(page, footer.getByRole('button', { name: /Enregistrer|Créer/ }).first());
       await expect(page.locator('h1', { hasText: newFirst })).toBeVisible({ timeout: 5000 });
     }
 
@@ -77,13 +78,13 @@ test.describe('Locataires - e2e', () => {
       page.on('dialog', async dialog => {
         await dialog.accept();
       });
-      await delBtn.first().click();
+      await safeClick(page, delBtn.first());
     } else {
       // Essayer depuis la page détail
       const delDetail = page.getByRole('button', { name: /Supprimer/ }).first();
       if ((await delDetail.count()) > 0) {
         page.on('dialog', async dialog => await dialog.accept());
-        await delDetail.click();
+        await safeClick(page, delDetail);
       }
     }
 
