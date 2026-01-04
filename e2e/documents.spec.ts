@@ -6,9 +6,12 @@ test.describe('Documents - e2e', () => {
     await resetApp(page);
     await navigateFromSidebar(page, /Documents/i, /\/documents/);
 
-    const filePath = 'test-output/tenants_modal.html';
     const fileInput = page.locator('.upload-zone input[type=file]').first();
-    await fileInput.setInputFiles(filePath);
+    await fileInput.setInputFiles({
+      name: 'tenants_modal.html',
+      mimeType: 'text/html',
+      buffer: Buffer.from('<!doctype html><html><body>locapilot e2e</body></html>', 'utf-8'),
+    });
 
     const card = page.locator('.document-card', { hasText: 'tenants_modal.html' }).first();
     await expect(card).toBeVisible({ timeout: 10_000 });

@@ -58,6 +58,20 @@ export async function ensureSidebarOpen(page: Page) {
   if (await toggle.isVisible().catch(() => false)) {
     await toggle.click();
     await page.locator('.sidebar.open').first().waitFor({ state: 'visible', timeout: 5000 });
+    // Laisse le temps aux transitions CSS de se stabiliser (mobile)
+    await page.waitForTimeout(100);
+  }
+}
+
+export async function ensureSidebarClosed(page: Page) {
+  const toggle = page.locator('[data-testid="mobile-menu-toggle"]').first();
+  if (!(await toggle.isVisible().catch(() => false))) return;
+
+  const openSidebar = page.locator('.sidebar.open').first();
+  if (await openSidebar.isVisible().catch(() => false)) {
+    await toggle.click();
+    await openSidebar.waitFor({ state: 'hidden', timeout: 5000 });
+    await page.waitForTimeout(100);
   }
 }
 
@@ -65,9 +79,14 @@ export async function navigateFromSidebar(page: Page, linkName: RegExp, expected
   await ensureSidebarOpen(page);
   const link = page.getByRole('link', { name: linkName }).first();
   await link.waitFor({ state: 'visible', timeout: 10_000 });
-  await link.click();
-  // Allow the router to settle
-  await page.waitForURL(expectedUrl, { timeout: 10_000 });
+  await Promise.all([
+    page.waitForURL(expectedUrl, { timeout: 10_000 }),
+    // Sur mobile, les animations peuvent rendre l'élément "not stable" si on clique trop tôt.
+    link.click({ timeout: 10_000 }),
+  ]);
+
+  // Sur mobile, on ferme la sidebar si elle reste ouverte (overlay qui intercepte les clicks)
+  await ensureSidebarClosed(page);
 }
 
 export function withinModal(page: Page, title: RegExp): Locator {
