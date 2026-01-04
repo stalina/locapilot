@@ -123,6 +123,26 @@ body {
   color: var(--text-tertiary, #94a3b8);
 }
 
+/* Laisser les enfants grid/flex rétrécir correctement pour éviter overflow horizontal */
+.content-grid > *,
+.view-container > *,
+.detail-view .left-column,
+.detail-view .right-column,
+.base-table,
+.table-wrapper,
+.charges-table-wrapper {
+  min-width: 0;
+}
+
+/* Forcer le wrapping des textes longs dans les descriptions / card bodies */
+.detail-view .description,
+.detail-view .card-body,
+.detail-view .announcement,
+.card .card-body {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .detail-view .content-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -134,6 +154,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-6, 1.5rem);
+}
+
+/* Fix overflow issue: allow grid columns to shrink and ensure long text wraps */
+.detail-view .left-column,
+.detail-view .right-column {
+  min-width: 0; /* allow columns to shrink inside grid */
+}
+
+.detail-view .description,
+.detail-view .announcement,
+.detail-view .card-body {
+  word-break: break-word; /* break long words to avoid stretching */
+  overflow-wrap: anywhere;
 }
 
 .detail-view .card-header {
