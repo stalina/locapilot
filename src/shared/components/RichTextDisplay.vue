@@ -21,8 +21,11 @@ const sanitizedContent = computed(() => {
 });
 
 const isEmpty = computed(() => {
-  // Vérifier si le contenu est vide après suppression des balises
-  const textOnly = sanitizedContent.value.replace(/<[^>]*>/g, '').trim();
+  // Vérifier si le contenu est vide après suppression des balises,
+  // en extrayant le texte depuis un conteneur DOM temporaire plutôt que via une regex
+  const container = document.createElement('div');
+  container.innerHTML = sanitizedContent.value;
+  const textOnly = (container.textContent || '').trim();
   return !textOnly;
 });
 </script>
