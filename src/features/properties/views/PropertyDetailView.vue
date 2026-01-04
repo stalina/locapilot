@@ -160,21 +160,10 @@ async function copyAnnonce() {
     // Convert HTML to plain text while preserving line breaks
     function htmlToPlainText(html: string) {
       if (!html) return '';
-      // remove script/style blocks
-      const cleaned = html
-        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '');
-      // replace <br> and closing block tags with newlines
-      const withBreaks = cleaned
-        .replace(/<br\s*\/*>/gi, '\n')
-        .replace(/<\/(p|div|h[1-6]|li|ul|ol|tr|table|section|article)>/gi, '\n')
-        .replace(/<(\/)?td[^>]*>/gi, '\t');
-      // strip remaining tags
-      const stripped = withBreaks.replace(/<[^>]+>/g, '');
-      // decode HTML entities
-      const txt = document.createElement('textarea');
-      txt.innerHTML = stripped;
-      let decoded = txt.value;
+      // Use DOM parsing to safely convert HTML to text
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      let decoded = (container.innerText || container.textContent || '');
       // Normalize line endings and collapse multiple blank lines
       decoded = decoded
         .replace(/\r/g, '')
