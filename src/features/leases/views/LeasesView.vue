@@ -160,7 +160,14 @@ const handleFormSuccess = async () => {
       </div>
       <div class="header-actions">
         <SearchBox v-model="searchQuery" placeholder="Rechercher par propriété, locataire..." />
-        <Button variant="primary" icon="plus" @click="handleNewLease"> Nouveau bail </Button>
+        <Button
+          variant="primary"
+          icon="plus"
+          data-testid="new-lease-button"
+          @click="handleNewLease"
+        >
+          Nouveau bail
+        </Button>
       </div>
     </header>
 
@@ -237,6 +244,7 @@ const handleFormSuccess = async () => {
       <Button
         variant="primary"
         icon="plus"
+        data-testid="new-lease-button"
         @click="handleNewLease"
         v-if="!searchQuery && statusFilter === 'all'"
       >

@@ -33,3 +33,7 @@ test-results
 test-output
 .nyc_output
 data
+
+# Playwright / generated artifacts (must not be linted or committed)
+.playwright-mcp
+dev-dist
