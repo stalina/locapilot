@@ -4,19 +4,21 @@ import { usePropertiesStore } from '@/features/properties/stores/propertiesStore
 import type { Property } from '@/db/types';
 
 // Mock database
-vi.mock('@/db/database', () => ({
-  db: {
-    properties: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock('../repositories/propertiesRepository', () => ({
+  fetchAllProperties: vi.fn(),
+  fetchPropertyById: vi.fn(),
+  createProperty: vi.fn(),
+  updateProperty: vi.fn(),
+  deleteProperty: vi.fn(),
 }));
 
-import { db } from '@/db/database';
+import {
+  fetchAllProperties,
+  fetchPropertyById,
+  createProperty,
+  updateProperty,
+  deleteProperty,
+} from '../repositories/propertiesRepository';
 
 describe('propertiesStore', () => {
   beforeEach(() => {
@@ -105,22 +107,23 @@ describe('propertiesStore', () => {
         },
       ];
 
-      vi.mocked(db.properties.toArray).mockResolvedValue(mockProperties);
+      vi.mocked(fetchAllProperties).mockResolvedValue(mockProperties);
 
       const store = usePropertiesStore();
       await store.fetchProperties();
 
+      expect(fetchAllProperties).toHaveBeenCalled();
       expect(store.properties).toEqual(mockProperties);
       expect(store.isLoading).toBe(false);
       expect(store.error).toBeNull();
     });
 
     it('should handle fetch error', async () => {
-      vi.mocked(db.properties.toArray).mockRejectedValue(new Error('DB Error'));
+      vi.mocked(fetchAllProperties).mockRejectedValue(new Error('DB Error'));
 
       const store = usePropertiesStore();
       await store.fetchProperties();
-      
+
       expect(store.error).toBe('DB Error');
       expect(store.properties).toEqual([]);
     });
@@ -147,13 +150,13 @@ describe('propertiesStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.properties.add).mockResolvedValue(1);
-      vi.mocked(db.properties.toArray).mockResolvedValue([createdProperty]);
+      vi.mocked(createProperty).mockResolvedValue(1);
+      vi.mocked(fetchAllProperties).mockResolvedValue([createdProperty]);
 
       const store = usePropertiesStore();
       await store.createProperty(newProperty);
 
-      expect(db.properties.add).toHaveBeenCalled();
+      expect(createProperty).toHaveBeenCalled();
       expect(store.properties).toHaveLength(1);
       expect(store.properties[0]!.name).toBe('New Property');
     });
@@ -184,14 +187,17 @@ describe('propertiesStore', () => {
       const store = usePropertiesStore();
       store.properties = [existingProperty];
 
-      vi.mocked(db.properties.update).mockResolvedValue(1);
-      vi.mocked(db.properties.toArray).mockResolvedValue([updatedProperty]);
+      vi.mocked(updateProperty).mockResolvedValue(1);
+      vi.mocked(fetchAllProperties).mockResolvedValue([updatedProperty]);
 
       await store.updateProperty(1, { name: 'New Name' });
 
-      expect(db.properties.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        name: 'New Name',
-      }));
+      expect(updateProperty).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          name: 'New Name',
+        })
+      );
       expect(store.properties[0]!.name).toBe('New Name');
     });
 
@@ -202,12 +208,12 @@ describe('propertiesStore', () => {
       const store = usePropertiesStore();
       store.properties = [prop1, prop2];
 
-      vi.mocked(db.properties.delete).mockResolvedValue(undefined);
-      vi.mocked(db.properties.toArray).mockResolvedValue([prop2]);
+      vi.mocked(deleteProperty).mockResolvedValue(undefined);
+      vi.mocked(fetchAllProperties).mockResolvedValue([prop2]);
 
       await store.deleteProperty(1);
 
-      expect(db.properties.delete).toHaveBeenCalledWith(1);
+      expect(deleteProperty).toHaveBeenCalledWith(1);
       expect(store.properties).toHaveLength(1);
       expect(store.properties[0]!.id).toBe(2);
     });
@@ -225,28 +231,28 @@ describe('propertiesStore', () => {
         features: [],
       };
 
-      vi.mocked(db.properties.add).mockRejectedValue(new Error('Create failed'));
+      vi.mocked(createProperty).mockRejectedValue(new Error('Create failed'));
 
       const store = usePropertiesStore();
-      
+
       await expect(store.createProperty(newProperty)).rejects.toThrow('Create failed');
       expect(store.error).toBe('Create failed');
     });
 
     it('should handle update error', async () => {
-      vi.mocked(db.properties.update).mockRejectedValue(new Error('Update failed'));
+      vi.mocked(updateProperty).mockRejectedValue(new Error('Update failed'));
 
       const store = usePropertiesStore();
-      
+
       await expect(store.updateProperty(1, { name: 'New Name' })).rejects.toThrow('Update failed');
       expect(store.error).toBe('Update failed');
     });
 
     it('should handle delete error', async () => {
-      vi.mocked(db.properties.delete).mockRejectedValue(new Error('Delete failed'));
+      vi.mocked(deleteProperty).mockRejectedValue(new Error('Delete failed'));
 
       const store = usePropertiesStore();
-      
+
       await expect(store.deleteProperty(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Delete failed');
     });
@@ -267,17 +273,18 @@ describe('propertiesStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.properties.get).mockResolvedValue(mockProperty);
+      vi.mocked(fetchPropertyById).mockResolvedValue(mockProperty);
 
       const store = usePropertiesStore();
       await store.fetchPropertyById(1);
 
+      expect(fetchPropertyById).toHaveBeenCalledWith(1);
       expect(store.currentProperty).toEqual(mockProperty);
       expect(store.error).toBeNull();
     });
 
     it('should handle property not found', async () => {
-      vi.mocked(db.properties.get).mockResolvedValue(undefined);
+      vi.mocked(fetchPropertyById).mockResolvedValue(undefined);
 
       const store = usePropertiesStore();
       await store.fetchPropertyById(999);
@@ -287,7 +294,7 @@ describe('propertiesStore', () => {
     });
 
     it('should handle fetch by id error', async () => {
-      vi.mocked(db.properties.get).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchPropertyById).mockRejectedValue(new Error('Fetch failed'));
 
       const store = usePropertiesStore();
       await store.fetchPropertyById(1);
@@ -316,9 +323,9 @@ describe('propertiesStore', () => {
       const store = usePropertiesStore();
       store.currentProperty = mockProperty;
 
-      vi.mocked(db.properties.update).mockResolvedValue(1);
-      vi.mocked(db.properties.toArray).mockResolvedValue([updatedProperty]);
-      vi.mocked(db.properties.get).mockResolvedValue(updatedProperty);
+      vi.mocked(updateProperty).mockResolvedValue(1);
+      vi.mocked(fetchAllProperties).mockResolvedValue([updatedProperty]);
+      vi.mocked(fetchPropertyById).mockResolvedValue(updatedProperty);
 
       await store.updateProperty(1, { name: 'Updated' });
 
@@ -344,8 +351,8 @@ describe('propertiesStore', () => {
       const store = usePropertiesStore();
       store.currentProperty = mockProperty;
 
-      vi.mocked(db.properties.delete).mockResolvedValue(undefined);
-      vi.mocked(db.properties.toArray).mockResolvedValue([]);
+      vi.mocked(deleteProperty).mockResolvedValue(undefined);
+      vi.mocked(fetchAllProperties).mockResolvedValue([]);
 
       await store.deleteProperty(1);
 

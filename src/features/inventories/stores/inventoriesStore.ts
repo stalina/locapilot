@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { db } from '@/db/database';
 import type { Inventory } from '@/db/types';
+import {
+  createInventory as createInventoryRepo,
+  deleteInventory as deleteInventoryRepo,
+  fetchAllInventories,
+  fetchInventoryById as fetchInventoryByIdRepo,
+  updateInventory as updateInventoryRepo,
+} from '../repositories/inventoriesRepository';
 
 export const useInventoriesStore = defineStore('inventories', () => {
   // State
@@ -11,16 +17,12 @@ export const useInventoriesStore = defineStore('inventories', () => {
   const error = ref<string | null>(null);
 
   // Getters
-  const checkInInventories = computed(() =>
-    inventories.value.filter(i => i.type === 'checkin')
-  );
+  const checkInInventories = computed(() => inventories.value.filter(i => i.type === 'checkin'));
 
-  const checkOutInventories = computed(() =>
-    inventories.value.filter(i => i.type === 'checkout')
-  );
+  const checkOutInventories = computed(() => inventories.value.filter(i => i.type === 'checkout'));
 
-  const getInventoriesByLease = computed(() => (leaseId: number) =>
-    inventories.value.filter(i => i.leaseId === leaseId)
+  const getInventoriesByLease = computed(
+    () => (leaseId: number) => inventories.value.filter(i => i.leaseId === leaseId)
   );
 
   // Actions
@@ -28,7 +30,7 @@ export const useInventoriesStore = defineStore('inventories', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      inventories.value = await db.inventories.toArray();
+      inventories.value = await fetchAllInventories();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch inventories';
       console.error('Failed to fetch inventories:', err);
@@ -41,7 +43,7 @@ export const useInventoriesStore = defineStore('inventories', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      currentInventory.value = (await db.inventories.get(id)) || null;
+      currentInventory.value = (await fetchInventoryByIdRepo(id)) || null;
       if (!currentInventory.value) {
         error.value = 'Inventory not found';
       }
@@ -57,11 +59,7 @@ export const useInventoriesStore = defineStore('inventories', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const id = await db.inventories.add({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const id = await createInventoryRepo(data);
       await fetchInventories();
       return id;
     } catch (err) {
@@ -77,12 +75,9 @@ export const useInventoriesStore = defineStore('inventories', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.inventories.update(id, {
-        ...data,
-        updatedAt: new Date(),
-      });
+      await updateInventoryRepo(id, data);
       await fetchInventories();
-      
+
       if (currentInventory.value?.id === id) {
         await fetchInventoryById(id);
       }
@@ -99,9 +94,9 @@ export const useInventoriesStore = defineStore('inventories', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.inventories.delete(id);
+      await deleteInventoryRepo(id);
       await fetchInventories();
-      
+
       if (currentInventory.value?.id === id) {
         currentInventory.value = null;
       }

@@ -3,20 +3,21 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import type { Lease } from '@/db/types';
 
-// Mock database
-vi.mock('@/db/database', () => ({
-  db: {
-    leases: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock('../repositories/leasesRepository', () => ({
+  fetchAllLeases: vi.fn(),
+  fetchLeaseById: vi.fn(),
+  createLease: vi.fn(),
+  updateLease: vi.fn(),
+  deleteLease: vi.fn(),
 }));
 
-import { db } from '@/db/database';
+import {
+  fetchAllLeases,
+  fetchLeaseById,
+  createLease,
+  updateLease,
+  deleteLease,
+} from '../repositories/leasesRepository';
 
 describe('leasesStore', () => {
   beforeEach(() => {
@@ -57,19 +58,13 @@ describe('leasesStore', () => {
 
     it('should filter pending leases', () => {
       const store = useLeasesStore();
-      store.leases = [
-        { id: 1, status: 'pending' } as Lease,
-        { id: 2, status: 'active' } as Lease,
-      ];
+      store.leases = [{ id: 1, status: 'pending' } as Lease, { id: 2, status: 'active' } as Lease];
       expect(store.pendingLeases).toHaveLength(1);
     });
 
     it('should count leases correctly', () => {
       const store = useLeasesStore();
-      store.leases = [
-        { id: 1 } as Lease,
-        { id: 2 } as Lease,
-      ];
+      store.leases = [{ id: 1 } as Lease, { id: 2 } as Lease];
       expect(store.leases.length).toBe(2);
     });
   });
@@ -92,11 +87,12 @@ describe('leasesStore', () => {
         },
       ];
 
-      vi.mocked(db.leases.toArray).mockResolvedValue(mockLeases);
+      vi.mocked(fetchAllLeases).mockResolvedValue(mockLeases);
 
       const store = useLeasesStore();
       await store.fetchLeases();
 
+      expect(fetchAllLeases).toHaveBeenCalled();
       expect(store.leases).toEqual(mockLeases);
       expect(store.isLoading).toBe(false);
       expect(store.error).toBeNull();
@@ -121,13 +117,12 @@ describe('leasesStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.leases.add).mockResolvedValue(1);
-      vi.mocked(db.leases.toArray).mockResolvedValue([createdLease]);
+      vi.mocked(createLease).mockResolvedValue(createdLease as Lease);
 
       const store = useLeasesStore();
       await store.createLease(newLease);
 
-      expect(db.leases.add).toHaveBeenCalled();
+      expect(createLease).toHaveBeenCalled();
       expect(store.leases).toHaveLength(1);
       expect(store.leases[0]!.rent).toBe(1200);
     });
@@ -151,14 +146,16 @@ describe('leasesStore', () => {
       store.leases = [existingLease];
 
       const mockUpdatedLease = { ...existingLease, rent: 1100 };
-      vi.mocked(db.leases.update).mockResolvedValue(1);
-      vi.mocked(db.leases.get).mockResolvedValue(mockUpdatedLease);
+      vi.mocked(updateLease).mockResolvedValue(mockUpdatedLease as Lease);
 
       await store.updateLease(1, { rent: 1100 });
 
-      expect(db.leases.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        rent: 1100,
-      }));
+      expect(updateLease).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          rent: 1100,
+        })
+      );
       expect(store.leases[0]!.rent).toBe(1100);
     });
 
@@ -169,22 +166,21 @@ describe('leasesStore', () => {
       const store = useLeasesStore();
       store.leases = [lease1, lease2];
 
-      vi.mocked(db.leases.delete).mockResolvedValue(undefined);
-      vi.mocked(db.leases.toArray).mockResolvedValue([lease2]);
+      vi.mocked(deleteLease).mockResolvedValue(undefined);
 
       await store.deleteLease(1);
 
-      expect(db.leases.delete).toHaveBeenCalledWith(1);
+      expect(deleteLease).toHaveBeenCalledWith(1);
       expect(store.leases).toHaveLength(1);
       expect(store.leases[0]!.id).toBe(2);
     });
 
     it('should handle fetch error', async () => {
-      vi.mocked(db.leases.toArray).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchAllLeases).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useLeasesStore();
       await store.fetchLeases();
-      
+
       expect(store.error).toBe('Échec du chargement des baux');
       expect(store.leases).toEqual([]);
     });
@@ -201,28 +197,28 @@ describe('leasesStore', () => {
         status: 'active' as const,
       };
 
-      vi.mocked(db.leases.add).mockRejectedValue(new Error('Create failed'));
+      vi.mocked(createLease).mockRejectedValue(new Error('Create failed'));
 
       const store = useLeasesStore();
-      
+
       await expect(store.createLease(newLease)).rejects.toThrow('Create failed');
       expect(store.error).toBe('Échec de la création du bail');
     });
 
     it('should handle update error', async () => {
-      vi.mocked(db.leases.update).mockRejectedValue(new Error('Update failed'));
+      vi.mocked(updateLease).mockRejectedValue(new Error('Update failed'));
 
       const store = useLeasesStore();
-      
+
       await expect(store.updateLease(1, { rent: 1100 })).rejects.toThrow('Update failed');
       expect(store.error).toBe('Échec de la mise à jour du bail');
     });
 
     it('should handle delete error', async () => {
-      vi.mocked(db.leases.delete).mockRejectedValue(new Error('Delete failed'));
+      vi.mocked(deleteLease).mockRejectedValue(new Error('Delete failed'));
 
       const store = useLeasesStore();
-      
+
       await expect(store.deleteLease(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Échec de la suppression du bail');
     });
@@ -242,17 +238,18 @@ describe('leasesStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.leases.get).mockResolvedValue(mockLease);
+      vi.mocked(fetchLeaseById).mockResolvedValue(mockLease);
 
       const store = useLeasesStore();
       await store.fetchLeaseById(1);
 
+      expect(fetchLeaseById).toHaveBeenCalledWith(1);
       expect(store.currentLease).toEqual(mockLease);
       expect(store.error).toBeNull();
     });
 
     it('should handle lease not found', async () => {
-      vi.mocked(db.leases.get).mockResolvedValue(undefined);
+      vi.mocked(fetchLeaseById).mockResolvedValue(undefined);
 
       const store = useLeasesStore();
       await store.fetchLeaseById(999);
@@ -262,7 +259,7 @@ describe('leasesStore', () => {
     });
 
     it('should handle fetch by id error', async () => {
-      vi.mocked(db.leases.get).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchLeaseById).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useLeasesStore();
       await store.fetchLeaseById(1);

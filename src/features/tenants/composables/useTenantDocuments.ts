@@ -1,6 +1,10 @@
 import { ref } from 'vue';
-import { db } from '@/db/database';
 import type { TenantDocument } from '@/db/types';
+import {
+  addTenantDocument as addTenantDocumentRepo,
+  listTenantDocuments,
+  removeTenantDocument as removeTenantDocumentRepo,
+} from '../repositories/tenantDocumentsRepository';
 
 export function useTenantDocuments() {
   const isLoading = ref(false);
@@ -8,8 +12,7 @@ export function useTenantDocuments() {
 
   async function getTenantDocuments(tenantId: number): Promise<TenantDocument[]> {
     try {
-      const docs = await db.tenantDocuments.where({ tenantId }).sortBy('uploadedAt');
-      return docs;
+      return await listTenantDocuments(tenantId);
     } catch (e) {
       console.error('Failed to fetch tenant documents:', e);
       return [];
@@ -24,37 +27,7 @@ export function useTenantDocuments() {
     isLoading.value = true;
     error.value = null;
     try {
-      const now = new Date();
-      // First create a global document entry so it appears in DocumentsView
-      const globalDoc: Omit<import('@/db/types').Document, 'id'> = {
-        name: file.name,
-        type: 'other',
-        relatedEntityType: 'tenant',
-        relatedEntityId: tenantId,
-        mimeType: file.type,
-        size: file.size,
-        data: file.slice(),
-        description: notes,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      const globalId = await db.documents.add(globalDoc as any);
-
-      const tenantDoc: Omit<TenantDocument, 'id'> = {
-        tenantId,
-        name: file.name,
-        mimeType: file.type,
-        size: file.size,
-        data: file.slice(),
-        notes,
-        uploadedAt: now,
-        documentId: globalId as number,
-      };
-
-      const id = await db.tenantDocuments.add(tenantDoc as TenantDocument);
-      const created = await db.tenantDocuments.get(id as number);
-      return created || null;
+      return await addTenantDocumentRepo({ tenantId, file, notes });
     } catch (e) {
       console.error('Failed to add tenant document:', e);
       error.value = e instanceof Error ? e.message : 'Failed to add document';
@@ -68,11 +41,7 @@ export function useTenantDocuments() {
     isLoading.value = true;
     error.value = null;
     try {
-      const td = await db.tenantDocuments.get(documentId);
-      if (td?.documentId) {
-        await db.documents.delete(td.documentId);
-      }
-      await db.tenantDocuments.delete(documentId);
+      await removeTenantDocumentRepo(documentId);
     } catch (e) {
       console.error('Failed to remove tenant document:', e);
       error.value = e instanceof Error ? e.message : 'Failed to remove document';

@@ -3,19 +3,27 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useDocumentsStore } from './documentsStore';
 import type { Document } from '@/db/types';
 
-vi.mock('@/db/database', () => ({
-  db: {
-    documents: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock('../repositories/documentsRepository', () => ({
+  fetchAllDocuments: vi.fn(),
+  fetchDocumentById: vi.fn(),
+  createDocument: vi.fn(),
+  updateDocument: vi.fn(),
+  deleteDocument: vi.fn(),
 }));
 
-import { db } from '@/db/database';
+vi.mock('../services/documentsService', () => ({
+  buildDocumentFromFile: vi.fn(),
+  triggerDocumentDownload: vi.fn(),
+}));
+
+import {
+  fetchAllDocuments,
+  fetchDocumentById,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+} from '../repositories/documentsRepository';
+import { buildDocumentFromFile, triggerDocumentDownload } from '../services/documentsService';
 
 describe('documentsStore', () => {
   beforeEach(() => {
@@ -42,7 +50,7 @@ describe('documentsStore', () => {
         { id: 2, type: 'inventory', name: 'Inventory 1' } as Document,
         { id: 3, type: 'lease', name: 'Lease 2' } as Document,
       ];
-      
+
       const leaseDocuments = store.documentsByType('lease');
       expect(leaseDocuments.length).toBe(2);
       expect(leaseDocuments[0]!.type).toBe('lease');
@@ -55,7 +63,7 @@ describe('documentsStore', () => {
         { id: 2, relatedEntityType: 'tenant', relatedEntityId: 1 } as Document,
         { id: 3, relatedEntityType: 'property', relatedEntityId: 1 } as Document,
       ];
-      
+
       const propertyDocs = store.documentsByEntity('property', 1);
       expect(propertyDocs.length).toBe(2);
       expect(propertyDocs[0]!.relatedEntityType).toBe('property');
@@ -68,7 +76,7 @@ describe('documentsStore', () => {
         { id: 2, size: 2048 } as Document,
         { id: 3, size: 512 } as Document,
       ];
-      
+
       expect(store.totalSize).toBe(3584); // 1024 + 2048 + 512
     });
 
@@ -80,7 +88,7 @@ describe('documentsStore', () => {
         { id: 3, type: 'inventory' } as Document,
         { id: 4, type: 'other' } as Document,
       ];
-      
+
       const counts = store.documentCounts;
       expect(counts.lease).toBe(2);
       expect(counts.inventory).toBe(1);
@@ -95,12 +103,12 @@ describe('documentsStore', () => {
         { id: 2, name: 'Doc 2' } as Document,
       ];
 
-      vi.mocked(db.documents.toArray).mockResolvedValue(mockDocuments);
+      vi.mocked(fetchAllDocuments).mockResolvedValue(mockDocuments);
 
       const store = useDocumentsStore();
       await store.fetchDocuments();
 
-      expect(db.documents.toArray).toHaveBeenCalled();
+      expect(fetchAllDocuments).toHaveBeenCalled();
       expect(store.documents.length).toBe(2);
     });
 
@@ -120,13 +128,22 @@ describe('documentsStore', () => {
         size: file.size,
       } as Document;
 
-      vi.mocked(db.documents.add).mockResolvedValue(1);
-      vi.mocked(db.documents.get).mockResolvedValue(mockDocument);
+      vi.mocked(buildDocumentFromFile).mockReturnValue({
+        ...metadata,
+        name: file.name,
+        mimeType: file.type,
+        size: file.size,
+        data: file.slice(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      vi.mocked(createDocument).mockResolvedValue(mockDocument);
 
       const store = useDocumentsStore();
       const result = await store.uploadDocument(file, metadata);
 
-      expect(db.documents.add).toHaveBeenCalled();
+      expect(buildDocumentFromFile).toHaveBeenCalled();
+      expect(createDocument).toHaveBeenCalled();
       expect(result?.name).toBe('test.pdf');
       expect(store.documents.length).toBe(1);
       expect(store.uploadProgress).toBe(0); // Reset after upload
@@ -141,22 +158,19 @@ describe('documentsStore', () => {
         updatedAt: new Date(),
       } as Document;
 
-      const updatedDoc = {
-        ...existingDoc,
-        name: 'New Name.pdf',
-      };
-
       const store = useDocumentsStore();
       store.documents = [existingDoc];
 
-      vi.mocked(db.documents.update).mockResolvedValue(1);
-      vi.mocked(db.documents.get).mockResolvedValue(updatedDoc);
+      vi.mocked(updateDocument).mockResolvedValue(1);
 
       await store.updateDocument(1, { name: 'New Name.pdf' });
 
-      expect(db.documents.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        name: 'New Name.pdf',
-      }));
+      expect(updateDocument).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          name: 'New Name.pdf',
+        })
+      );
       expect(store.documents[0]!.name).toBe('New Name.pdf');
     });
 
@@ -167,21 +181,21 @@ describe('documentsStore', () => {
       const store = useDocumentsStore();
       store.documents = [doc1, doc2];
 
-      vi.mocked(db.documents.delete).mockResolvedValue(undefined);
+      vi.mocked(deleteDocument).mockResolvedValue(undefined);
 
       await store.deleteDocument(1);
 
-      expect(db.documents.delete).toHaveBeenCalledWith(1);
+      expect(deleteDocument).toHaveBeenCalledWith(1);
       expect(store.documents.length).toBe(1);
       expect(store.documents[0]!.id).toBe(2);
     });
 
     it('should handle fetch error', async () => {
-      vi.mocked(db.documents.toArray).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchAllDocuments).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useDocumentsStore();
       await store.fetchDocuments();
-      
+
       expect(store.error).toBe('Échec du chargement des documents');
     });
 
@@ -193,28 +207,28 @@ describe('documentsStore', () => {
         relatedEntityId: 1,
       };
 
-      vi.mocked(db.documents.add).mockRejectedValue(new Error('Upload failed'));
+      vi.mocked(createDocument).mockRejectedValue(new Error('Upload failed'));
 
       const store = useDocumentsStore();
-      
+
       await expect(store.uploadDocument(file, metadata)).rejects.toThrow('Upload failed');
       expect(store.error).toBe('Échec du téléversement du document');
     });
 
     it('should handle update error', async () => {
-      vi.mocked(db.documents.update).mockRejectedValue(new Error('Update failed'));
+      vi.mocked(updateDocument).mockRejectedValue(new Error('Update failed'));
 
       const store = useDocumentsStore();
-      
+
       await expect(store.updateDocument(1, { name: 'New' })).rejects.toThrow('Update failed');
       expect(store.error).toBe('Échec de la mise à jour du document');
     });
 
     it('should handle delete error', async () => {
-      vi.mocked(db.documents.delete).mockRejectedValue(new Error('Delete failed'));
+      vi.mocked(deleteDocument).mockRejectedValue(new Error('Delete failed'));
 
       const store = useDocumentsStore();
-      
+
       await expect(store.deleteDocument(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Échec de la suppression du document');
     });
@@ -233,7 +247,7 @@ describe('documentsStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.documents.get).mockResolvedValue(mockDocument);
+      vi.mocked(fetchDocumentById).mockResolvedValue(mockDocument);
 
       const store = useDocumentsStore();
       await store.fetchDocumentById(1);
@@ -243,7 +257,7 @@ describe('documentsStore', () => {
     });
 
     it('should handle document not found', async () => {
-      vi.mocked(db.documents.get).mockResolvedValue(undefined);
+      vi.mocked(fetchDocumentById).mockResolvedValue(undefined);
 
       const store = useDocumentsStore();
       await store.fetchDocumentById(999);
@@ -253,12 +267,51 @@ describe('documentsStore', () => {
     });
 
     it('should handle fetch by id error', async () => {
-      vi.mocked(db.documents.get).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchDocumentById).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useDocumentsStore();
       await store.fetchDocumentById(1);
 
       expect(store.error).toBe('Échec du chargement du document');
+    });
+
+    it('should download document successfully', async () => {
+      const doc: Document = {
+        id: 1,
+        name: 'Test.pdf',
+        type: 'other',
+        mimeType: 'application/pdf',
+        size: 10,
+        data: new Blob(['test']),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(fetchDocumentById).mockResolvedValue(doc);
+
+      const store = useDocumentsStore();
+      await store.downloadDocument(1);
+
+      expect(fetchDocumentById).toHaveBeenCalledWith(1);
+      expect(triggerDocumentDownload).toHaveBeenCalledWith(doc);
+    });
+
+    it('should handle download document not found', async () => {
+      vi.mocked(fetchDocumentById).mockResolvedValue(undefined);
+
+      const store = useDocumentsStore();
+      await store.downloadDocument(1);
+
+      expect(triggerDocumentDownload).not.toHaveBeenCalled();
+      expect(store.error).toBe('Document non trouvé');
+    });
+
+    it('should handle download error', async () => {
+      vi.mocked(fetchDocumentById).mockRejectedValue(new Error('Download failed'));
+
+      const store = useDocumentsStore();
+      await expect(store.downloadDocument(1)).rejects.toThrow('Download failed');
+      expect(store.error).toBe('Échec du téléchargement du document');
     });
 
     it('should clear error', () => {

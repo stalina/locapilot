@@ -3,20 +3,26 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import type { Tenant } from '@/db/types';
 
-// Mock database
-vi.mock('@/db/database', () => ({
-  db: {
-    tenants: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock('@/features/tenants/repositories/tenantsRepository', () => ({
+  fetchAllTenants: vi.fn(),
+  fetchTenantById: vi.fn(),
+  createTenant: vi.fn(),
+  updateTenant: vi.fn(),
+  deleteTenant: vi.fn(),
+  updateTenantStatus: vi.fn(),
 }));
 
-import { db } from '@/db/database';
+vi.mock('@/features/tenants/repositories/tenantAuditsRepository', () => ({
+  addTenantAudit: vi.fn(),
+}));
+
+import {
+  createTenant as createTenantRepo,
+  deleteTenant as deleteTenantRepo,
+  fetchAllTenants,
+  fetchTenantById as fetchTenantByIdRepo,
+  updateTenant as updateTenantRepo,
+} from '@/features/tenants/repositories/tenantsRepository';
 
 describe('tenantsStore', () => {
   beforeEach(() => {
@@ -78,7 +84,7 @@ describe('tenantsStore', () => {
         },
       ];
 
-      vi.mocked(db.tenants.toArray).mockResolvedValue(mockTenants);
+      vi.mocked(fetchAllTenants).mockResolvedValue(mockTenants);
 
       const store = useTenantsStore();
       await store.fetchTenants();
@@ -106,13 +112,13 @@ describe('tenantsStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.tenants.add).mockResolvedValue(1);
-      vi.mocked(db.tenants.toArray).mockResolvedValue([createdTenant]);
+      vi.mocked(createTenantRepo).mockResolvedValue(1);
+      vi.mocked(fetchAllTenants).mockResolvedValue([createdTenant]);
 
       const store = useTenantsStore();
       await store.createTenant(newTenant);
 
-      expect(db.tenants.add).toHaveBeenCalled();
+      expect(createTenantRepo).toHaveBeenCalled();
       expect(store.tenants).toHaveLength(1);
       expect(store.tenants[0]!.firstName).toBe('Jane');
     });
@@ -138,12 +144,12 @@ describe('tenantsStore', () => {
       const store = useTenantsStore();
       store.tenants = [existingTenant];
 
-      vi.mocked(db.tenants.update).mockResolvedValue(1);
-      vi.mocked(db.tenants.toArray).mockResolvedValue([updatedTenant]);
+      vi.mocked(updateTenantRepo).mockResolvedValue();
+      vi.mocked(fetchAllTenants).mockResolvedValue([updatedTenant]);
 
       await store.updateTenant(1, { firstName: 'New Name' });
 
-      expect(db.tenants.update).toHaveBeenCalledWith(
+      expect(updateTenantRepo).toHaveBeenCalledWith(
         1,
         expect.objectContaining({
           firstName: 'New Name',
@@ -159,18 +165,18 @@ describe('tenantsStore', () => {
       const store = useTenantsStore();
       store.tenants = [tenant1, tenant2];
 
-      vi.mocked(db.tenants.delete).mockResolvedValue(undefined);
-      vi.mocked(db.tenants.toArray).mockResolvedValue([tenant2]);
+      vi.mocked(deleteTenantRepo).mockResolvedValue();
+      vi.mocked(fetchAllTenants).mockResolvedValue([tenant2]);
 
       await store.deleteTenant(1);
 
-      expect(db.tenants.delete).toHaveBeenCalledWith(1);
+      expect(deleteTenantRepo).toHaveBeenCalledWith(1);
       expect(store.tenants).toHaveLength(1);
       expect(store.tenants[0]!.id).toBe(2);
     });
 
     it('should handle fetch error', async () => {
-      vi.mocked(db.tenants.toArray).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchAllTenants).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useTenantsStore();
       await store.fetchTenants();
@@ -188,7 +194,7 @@ describe('tenantsStore', () => {
         status: 'active' as const,
       };
 
-      vi.mocked(db.tenants.add).mockRejectedValue(new Error('Create failed'));
+      vi.mocked(createTenantRepo).mockRejectedValue(new Error('Create failed'));
 
       const store = useTenantsStore();
 
@@ -197,7 +203,7 @@ describe('tenantsStore', () => {
     });
 
     it('should handle update error', async () => {
-      vi.mocked(db.tenants.update).mockRejectedValue(new Error('Update failed'));
+      vi.mocked(updateTenantRepo).mockRejectedValue(new Error('Update failed'));
 
       const store = useTenantsStore();
 
@@ -206,7 +212,7 @@ describe('tenantsStore', () => {
     });
 
     it('should handle delete error', async () => {
-      vi.mocked(db.tenants.delete).mockRejectedValue(new Error('Delete failed'));
+      vi.mocked(deleteTenantRepo).mockRejectedValue(new Error('Delete failed'));
 
       const store = useTenantsStore();
 
@@ -227,7 +233,7 @@ describe('tenantsStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.tenants.get).mockResolvedValue(mockTenant);
+      vi.mocked(fetchTenantByIdRepo).mockResolvedValue(mockTenant);
 
       const store = useTenantsStore();
       await store.fetchTenantById(1);
@@ -237,7 +243,7 @@ describe('tenantsStore', () => {
     });
 
     it('should handle tenant not found', async () => {
-      vi.mocked(db.tenants.get).mockResolvedValue(undefined);
+      vi.mocked(fetchTenantByIdRepo).mockResolvedValue(undefined);
 
       const store = useTenantsStore();
       await store.fetchTenantById(999);
@@ -247,7 +253,7 @@ describe('tenantsStore', () => {
     });
 
     it('should handle fetch by id error', async () => {
-      vi.mocked(db.tenants.get).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchTenantByIdRepo).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useTenantsStore();
       await store.fetchTenantById(1);
@@ -273,9 +279,9 @@ describe('tenantsStore', () => {
       const store = useTenantsStore();
       store.currentTenant = mockTenant;
 
-      vi.mocked(db.tenants.update).mockResolvedValue(1);
-      vi.mocked(db.tenants.toArray).mockResolvedValue([updatedTenant]);
-      vi.mocked(db.tenants.get).mockResolvedValue(updatedTenant);
+      vi.mocked(updateTenantRepo).mockResolvedValue();
+      vi.mocked(fetchAllTenants).mockResolvedValue([updatedTenant]);
+      vi.mocked(fetchTenantByIdRepo).mockResolvedValue(updatedTenant);
 
       await store.updateTenant(1, { firstName: 'Updated' });
 
@@ -298,8 +304,8 @@ describe('tenantsStore', () => {
       const store = useTenantsStore();
       store.currentTenant = mockTenant;
 
-      vi.mocked(db.tenants.delete).mockResolvedValue(undefined);
-      vi.mocked(db.tenants.toArray).mockResolvedValue([]);
+      vi.mocked(deleteTenantRepo).mockResolvedValue();
+      vi.mocked(fetchAllTenants).mockResolvedValue([]);
 
       await store.deleteTenant(1);
 

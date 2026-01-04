@@ -3,19 +3,21 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useRentsStore } from './rentsStore';
 import type { Rent } from '@/db/types';
 
-vi.mock('@/db/database', () => ({
-  db: {
-    rents: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock('../repositories/rentsRepository', () => ({
+  fetchAllRents: vi.fn(),
+  fetchRentById: vi.fn(),
+  createRent: vi.fn(),
+  updateRent: vi.fn(),
+  deleteRent: vi.fn(),
 }));
 
-import { db } from '@/db/database';
+import {
+  fetchAllRents,
+  fetchRentById,
+  createRent,
+  updateRent,
+  deleteRent,
+} from '../repositories/rentsRepository';
 
 describe('rentsStore', () => {
   beforeEach(() => {
@@ -47,20 +49,14 @@ describe('rentsStore', () => {
 
     it('should filter pending rents', () => {
       const store = useRentsStore();
-      store.rents = [
-        { id: 1, status: 'paid' } as Rent,
-        { id: 2, status: 'pending' } as Rent,
-      ];
+      store.rents = [{ id: 1, status: 'paid' } as Rent, { id: 2, status: 'pending' } as Rent];
       expect(store.pendingRents.length).toBe(1);
       expect(store.pendingRents[0]!.status).toBe('pending');
     });
 
     it('should filter overdue (late) rents', () => {
       const store = useRentsStore();
-      store.rents = [
-        { id: 1, status: 'late' } as Rent,
-        { id: 2, status: 'paid' } as Rent,
-      ];
+      store.rents = [{ id: 1, status: 'late' } as Rent, { id: 2, status: 'paid' } as Rent];
       expect(store.overdueRents.length).toBe(1);
       expect(store.overdueRents[0]!.status).toBe('late');
     });
@@ -94,12 +90,12 @@ describe('rentsStore', () => {
         { id: 2, status: 'pending', dueDate: new Date() } as Rent,
       ];
 
-      vi.mocked(db.rents.toArray).mockResolvedValue(mockRents);
+      vi.mocked(fetchAllRents).mockResolvedValue(mockRents);
 
       const store = useRentsStore();
       await store.fetchRents();
 
-      expect(db.rents.toArray).toHaveBeenCalled();
+      expect(fetchAllRents).toHaveBeenCalled();
       expect(store.rents.length).toBe(2);
     });
 
@@ -112,12 +108,18 @@ describe('rentsStore', () => {
         status: 'pending' as const,
       };
 
-      vi.mocked(db.rents.add).mockResolvedValue(1);
+      const created: Rent = {
+        id: 1,
+        ...newRent,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(createRent).mockResolvedValue(created);
 
       const store = useRentsStore();
       const result = await store.createRent(newRent);
 
-      expect(db.rents.add).toHaveBeenCalled();
+      expect(createRent).toHaveBeenCalled();
       expect(result.id).toBeDefined();
       expect(result.amount).toBe(1000);
       expect(store.rents.length).toBe(1);
@@ -138,13 +140,16 @@ describe('rentsStore', () => {
       const store = useRentsStore();
       store.rents = [existingRent];
 
-      vi.mocked(db.rents.update).mockResolvedValue(1);
+      vi.mocked(updateRent).mockResolvedValue({ ...existingRent, status: 'paid' } as Rent);
 
       await store.updateRent(1, { status: 'paid' });
 
-      expect(db.rents.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        status: 'paid',
-      }));
+      expect(updateRent).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          status: 'paid',
+        })
+      );
       expect(store.rents[0]!.status).toBe('paid');
     });
 
@@ -155,11 +160,11 @@ describe('rentsStore', () => {
       const store = useRentsStore();
       store.rents = [rent1, rent2];
 
-      vi.mocked(db.rents.delete).mockResolvedValue(undefined);
+      vi.mocked(deleteRent).mockResolvedValue(undefined);
 
       await store.deleteRent(1);
 
-      expect(db.rents.delete).toHaveBeenCalledWith(1);
+      expect(deleteRent).toHaveBeenCalledWith(1);
       expect(store.rents.length).toBe(1);
       expect(store.rents[0]!.id).toBe(2);
     });
@@ -179,23 +184,26 @@ describe('rentsStore', () => {
       const store = useRentsStore();
       store.rents = [existingRent];
 
-      vi.mocked(db.rents.update).mockResolvedValue(1);
+      vi.mocked(updateRent).mockResolvedValue({ ...existingRent, status: 'paid' } as Rent);
 
       const paymentDate = new Date('2024-01-15');
       await store.payRent(1, paymentDate);
 
-      expect(db.rents.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        status: 'paid',
-        paidDate: paymentDate,
-      }));
+      expect(updateRent).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          status: 'paid',
+          paidDate: paymentDate,
+        })
+      );
     });
 
     it('should handle fetch error', async () => {
-      vi.mocked(db.rents.toArray).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchAllRents).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useRentsStore();
       await store.fetchRents();
-      
+
       expect(store.error).toBe('Échec du chargement des loyers');
     });
 
@@ -208,28 +216,28 @@ describe('rentsStore', () => {
         status: 'pending' as const,
       };
 
-      vi.mocked(db.rents.add).mockRejectedValue(new Error('Create failed'));
+      vi.mocked(createRent).mockRejectedValue(new Error('Create failed'));
 
       const store = useRentsStore();
-      
+
       await expect(store.createRent(newRent)).rejects.toThrow('Create failed');
       expect(store.error).toBe('Échec de la création du loyer');
     });
 
     it('should handle update error', async () => {
-      vi.mocked(db.rents.update).mockRejectedValue(new Error('Update failed'));
+      vi.mocked(updateRent).mockRejectedValue(new Error('Update failed'));
 
       const store = useRentsStore();
-      
+
       await expect(store.updateRent(1, { status: 'paid' })).rejects.toThrow('Update failed');
       expect(store.error).toBe('Échec de la mise à jour du loyer');
     });
 
     it('should handle delete error', async () => {
-      vi.mocked(db.rents.delete).mockRejectedValue(new Error('Delete failed'));
+      vi.mocked(deleteRent).mockRejectedValue(new Error('Delete failed'));
 
       const store = useRentsStore();
-      
+
       await expect(store.deleteRent(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Échec de la suppression du loyer');
     });
@@ -246,7 +254,7 @@ describe('rentsStore', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(db.rents.get).mockResolvedValue(mockRent);
+      vi.mocked(fetchRentById).mockResolvedValue(mockRent);
 
       const store = useRentsStore();
       await store.fetchRentById(1);
@@ -256,7 +264,7 @@ describe('rentsStore', () => {
     });
 
     it('should handle rent not found', async () => {
-      vi.mocked(db.rents.get).mockResolvedValue(undefined);
+      vi.mocked(fetchRentById).mockResolvedValue(undefined);
 
       const store = useRentsStore();
       await store.fetchRentById(999);
@@ -266,7 +274,7 @@ describe('rentsStore', () => {
     });
 
     it('should handle fetch by id error', async () => {
-      vi.mocked(db.rents.get).mockRejectedValue(new Error('Fetch failed'));
+      vi.mocked(fetchRentById).mockRejectedValue(new Error('Fetch failed'));
 
       const store = useRentsStore();
       await store.fetchRentById(1);
