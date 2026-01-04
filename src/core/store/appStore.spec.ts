@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useAppStore } from './appStore';
+// Import package.json to assert against current package version
+import pkg from '../../../package.json';
 
 describe('appStore', () => {
   beforeEach(() => {
@@ -16,7 +18,7 @@ describe('appStore', () => {
   describe('State', () => {
     it('should initialize with correct defaults', () => {
       const store = useAppStore();
-      expect(store.appVersion).toBe('0.0.1');
+      expect(store.appVersion).toBe(pkg.version);
       expect(store.isLoading).toBe(false);
       expect(store.isInitialized).toBe(false);
       expect(store.notification).toBeNull();
@@ -28,7 +30,7 @@ describe('appStore', () => {
     it('should compute app info', () => {
       const store = useAppStore();
       const info = store.appInfo;
-      expect(info.version).toBe('0.0.1');
+      expect(info.version).toBe(pkg.version);
       expect(typeof info.online).toBe('boolean');
       expect(info.initialized).toBe(false);
     });

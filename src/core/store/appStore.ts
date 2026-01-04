@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+// Import version from package.json to keep app version in sync
+import pkg from '../../../package.json';
 
 export const useAppStore = defineStore('app', () => {
   // State
   const isOnline = ref(navigator.onLine);
-  const appVersion = ref('0.0.1');
+  const appVersion = ref<string>(pkg?.version ?? '0.0.1');
   const isLoading = ref(false);
   const isInitialized = ref(false);
   const notification = ref<{

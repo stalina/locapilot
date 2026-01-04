@@ -102,6 +102,18 @@ const isEmpty = computed(() => {
   margin: 4px 0;
 }
 
+/* Force wrapping for any rich text content to avoid horizontal overflow
+   and ensure long words/URLs break gracefully inside the description */
+:deep(p),
+:deep(li),
+:deep(ul),
+:deep(ol),
+:deep(div) {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 :deep(ul) {
   list-style-type: disc;
 }
