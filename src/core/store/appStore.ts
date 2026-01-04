@@ -6,12 +6,7 @@ import pkg from '../../../package.json';
 export const useAppStore = defineStore('app', () => {
   // State
   const isOnline = ref(navigator.onLine);
-  // When running tests (vitest) keep the expected default version to avoid
-  // breaking assertions that rely on a fixed value.
-  const isTestEnv =
-    typeof process !== 'undefined' &&
-    (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test');
-  const appVersion = ref<string>(isTestEnv ? '0.0.1' : (pkg?.version ?? '0.0.1'));
+  const appVersion = ref<string>(pkg?.version ?? '0.0.1');
   const isLoading = ref(false);
   const isInitialized = ref(false);
   const notification = ref<{
