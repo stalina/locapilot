@@ -11,7 +11,6 @@
     "test:coverage": "vitest --coverage",
     "test:ui": "vitest --ui",
     "test:e2e": "ENABLE_PWA_IN_DEV=1 playwright test",
-    "e2e": "npm run test:e2e",
     "lint": "eslint .",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",

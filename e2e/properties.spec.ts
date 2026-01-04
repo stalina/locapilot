@@ -1,90 +1,63 @@
 import { test, expect } from '@playwright/test';
-import { safeClick } from './utils/safeClick';
+import { resetApp, navigateFromSidebar, withinModal } from './utils/app';
 
 test.describe('Propriétés - e2e', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    const toggle = page.locator('[data-testid="mobile-menu-toggle"]');
-    if ((await toggle.count()) > 0) {
-      // Ensure toggle is visible before clicking (avoid desktop layouts where it's hidden)
-      if (await toggle.first().isVisible()) {
-        await toggle.first().click();
-        await page
-          .locator('.sidebar.open')
-          .waitFor({ state: 'visible', timeout: 2000 })
-          .catch(() => {});
-      }
-    } else {
-      // If no toggle but sidebar exists and is open, ensure it's closed to avoid overlays
-      const sidebarOpen = page.locator('.sidebar.open');
-      if ((await sidebarOpen.count()) > 0) {
-        await sidebarOpen.evaluate(el => (el as HTMLElement).classList.remove('open'));
-        await page.waitForTimeout(50);
-      }
-    }
-    const link = page.getByRole('link', { name: /Propriétés/ });
-    await link.waitFor({ state: 'visible', timeout: 5000 });
-    await link.scrollIntoViewIfNeeded();
-    await link.click();
-    await expect(page).toHaveURL(/.*\/properties/, { timeout: 5000 });
+    await resetApp(page);
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
   });
 
   test('Créer, éditer et supprimer une propriété', async ({ page }) => {
-    // Ouvrir le formulaire de création via data-testid
-    const newBtn = page.locator('[data-testid="new-property-button"]').first();
-    await newBtn.waitFor({ state: 'visible', timeout: 10000 });
-    await safeClick(page, newBtn);
-    await page.waitForSelector('form', { timeout: 10000 });
-
     const name = `E2E Test Bien ${Date.now()}`;
 
-    // Remplir le formulaire en utilisant les data-testid exposés
-    await page.locator('[data-testid="property-name"]').fill(name, { timeout: 10000 });
-    await page
-      .locator('[data-testid="property-address"]')
-      .fill('1 rue de Test, 75000 Paris', { timeout: 10000 });
-    await page.locator('input[data-testid="property-surface"]').fill('42', { timeout: 10000 });
-    await page.locator('input[data-testid="property-rooms"]').fill('2', { timeout: 10000 });
-    await page.locator('input[data-testid="property-rent"]').fill('850', { timeout: 10000 });
+    // Créer
+    await page.locator('[data-testid="new-property-button"]').first().click();
+    const createModal = withinModal(page, /Propri[ée]t[ée]|Bien|property/i);
+    await createModal.waitFor({ state: 'visible', timeout: 10_000 });
 
-    // Créer via bouton présent dans le footer du modal (texte du bouton)
-    const modalFooter = page.locator('[data-testid="modal-footer"]');
-    await modalFooter.waitFor({ state: 'visible', timeout: 5000 });
-    await safeClick(page, modalFooter.getByRole('button', { name: /Créer|Enregistrer/ }).first());
+    await createModal.locator('[data-testid="property-name"]').fill(name);
+    await createModal
+      .locator('[data-testid="property-address"]')
+      .fill('1 rue de Test, 75000 Paris');
+    await createModal.locator('input[data-testid="property-surface"]').fill('42');
+    await createModal.locator('input[data-testid="property-rooms"]').fill('2');
+    await createModal.locator('input[data-testid="property-rent"]').fill('850');
+
+    await createModal.locator('[data-testid="property-form-submit"]').click();
 
     // Vérifier présence dans la liste: chercher une card contenant le nom
-    await expect(page.locator('.property-card', { hasText: name })).toBeVisible({ timeout: 5000 });
-
-    // Ouvrir la fiche détail / édition (cliquer sur l'élément)
-    await page.click(`text=${name}`);
-    await page
-      .waitForSelector('h3:has-text("Détails du bien") , h3:has-text("Fiche")', { timeout: 2000 })
-      .catch(() => {});
-
-    // Cliquer sur bouton édition si présent
-    // Cliquer sur éditer via data-testid si disponible sur la card trouvée
     const card = page.locator('.property-card', { hasText: name }).first();
-    const editBtn = card.locator('[data-testid="edit-property-button"]');
-    if ((await editBtn.count()) > 0) {
-      await safeClick(page, editBtn.first());
-      await page.locator('[data-testid="property-name"]').fill(`${name} - modifié`);
-      await safeClick(page, page.locator('[data-testid="property-form-submit"]'));
-      await expect(page.locator('.property-card', { hasText: `${name} - modifié` })).toBeVisible();
-    }
+    await expect(card).toBeVisible({ timeout: 10_000 });
 
-    // Supprimer la propriété
-    // Supprimer la propriété en cliquant sur le bouton delete présent sur la card
-    const delBtn = card.locator('[data-testid="delete-property-button"]');
-    if ((await delBtn.count()) > 0) {
-      // Set dialog handler before clicking
-      page.on('dialog', async dialog => {
-        await dialog.accept();
-      });
-      await safeClick(page, delBtn.first());
+    // Éditer
+    const editBtn = card.locator('[data-testid="edit-property-button"]');
+    await expect(editBtn).toBeVisible();
+    await editBtn.click();
+
+    const editModal = withinModal(page, /Propri[ée]t[ée]|Bien|property/i);
+    await editModal.waitFor({ state: 'visible', timeout: 10_000 });
+    const updatedName = `${name} - modifié`;
+    await editModal.locator('[data-testid="property-name"]').fill(updatedName);
+    await editModal.locator('[data-testid="property-form-submit"]').click();
+    await expect(page.locator('.property-card', { hasText: updatedName })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Supprimer
+    const delCard = page.locator('.property-card', { hasText: updatedName }).first();
+    const delBtn = delCard.locator('[data-testid="delete-property-button"]');
+    page.on('dialog', async dialog => {
+      await dialog.accept();
+    });
+    await delBtn.click();
+
+    // Si une confirmation custom apparaît, l'accepter
+    const confirmBtn = page.getByRole('button', { name: /Supprimer/i }).first();
+    if (await confirmBtn.isVisible().catch(() => false)) {
+      await confirmBtn.click();
     }
 
     // Vérifier la suppression (attendre disparition)
-    // Vérifier la disparition du nom dans la liste
-    await expect(page.locator('.property-card', { hasText: name })).toHaveCount(0);
+    await expect(page.locator('.property-card', { hasText: updatedName })).toHaveCount(0);
   });
 });

@@ -252,6 +252,7 @@ const toggleTenant = (tenantId: number) => {
               <select
                 v-model.number="formData.propertyId"
                 :class="['select', { error: errors.propertyId }]"
+                data-testid="lease-property"
                 required
               >
                 <option :value="0" disabled>Sélectionner une propriété</option>
@@ -275,7 +276,7 @@ const toggleTenant = (tenantId: number) => {
             <h4 class="section-title">Locataires</h4>
             <div class="field">
               <label class="field-label">Locataires <span class="required">*</span></label>
-              <div class="tenant-list">
+              <div class="tenant-list" data-testid="lease-tenants">
                 <label
                   v-for="tenant in availableTenants"
                   :key="tenant.id"
@@ -310,12 +311,14 @@ const toggleTenant = (tenantId: number) => {
                 label="Date de début"
                 type="date"
                 :error="errors.startDate"
+                test-id="lease-startDate"
                 required
               />
               <Input
                 v-model="formData.endDate"
                 label="Date de fin"
                 type="date"
+                test-id="lease-endDate"
                 hint="Laisser vide pour un bail sans date de fin"
               />
             </div>
@@ -330,6 +333,7 @@ const toggleTenant = (tenantId: number) => {
                 label="Loyer mensuel (€)"
                 type="number"
                 :error="errors.rent"
+                test-id="lease-rent"
                 min="0"
                 step="0.01"
                 required
@@ -338,6 +342,7 @@ const toggleTenant = (tenantId: number) => {
                 v-model.number="formData.charges"
                 label="Charges (€)"
                 type="number"
+                test-id="lease-charges"
                 min="0"
                 step="0.01"
               />
@@ -348,6 +353,7 @@ const toggleTenant = (tenantId: number) => {
                 label="Dépôt de garantie (€)"
                 type="number"
                 :error="errors.deposit"
+                test-id="lease-deposit"
                 min="0"
                 step="0.01"
                 required
@@ -357,6 +363,7 @@ const toggleTenant = (tenantId: number) => {
                 label="Jour de paiement"
                 type="number"
                 :error="errors.paymentDay"
+                test-id="lease-paymentDay"
                 min="1"
                 max="31"
                 hint="Jour du mois (1-31)"
@@ -370,7 +377,7 @@ const toggleTenant = (tenantId: number) => {
             <h4 class="section-title">Statut</h4>
             <div class="field">
               <label class="field-label">Statut</label>
-              <select v-model="formData.status" class="select">
+              <select v-model="formData.status" class="select" data-testid="lease-status">
                 <option value="pending">En attente</option>
                 <option value="active">Actif</option>
                 <option value="ended">Terminé</option>
@@ -384,7 +391,12 @@ const toggleTenant = (tenantId: number) => {
     <template #footer>
       <div class="modal-actions">
         <Button @click="handleCancel" variant="secondary" type="button"> Annuler </Button>
-        <Button @click="handleSubmit" variant="primary" type="button">
+        <Button
+          @click="handleSubmit"
+          variant="primary"
+          type="button"
+          data-testid="lease-form-submit"
+        >
           {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
         </Button>
       </div>
