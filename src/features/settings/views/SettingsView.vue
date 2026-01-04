@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, unref, watch, onBeforeUnmount } from 'vue';
+import { ref, onMounted, unref, watch, onBeforeUnmount, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { db } from '@/db/database';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useDataTransferStore } from '../stores/dataTransferStore';
 import PeerSyncService from '../services/peerSyncService';
 // Read version injected by Vite define into import.meta.env
 // @ts-ignore - injected by Vite via `define`
@@ -19,29 +19,9 @@ const canInstall = ref(false);
 let deferredPrompt: any = null;
 
 // Export/Import
-const isExporting = ref(false);
-const isImporting = ref(false);
-
-// Helper: convert ArrayBuffer to base64 in chunks to avoid call stack issues
-const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000; // 32KB chunks
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
-  }
-  return btoa(binary);
-};
-
-// Helper: convert base64 string to Blob
-const base64ToBlob = (b64: string, mime = 'application/octet-stream') => {
-  const binary = atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-};
+const dataTransferStore = useDataTransferStore();
+const isExporting = computed(() => dataTransferStore.isExporting);
+const isImporting = computed(() => dataTransferStore.isImporting);
 
 // PeerJS sync
 const isHosting = ref(false);
@@ -85,9 +65,8 @@ const handleInstallPWA = async () => {
 };
 
 const handleExportData = async () => {
-  isExporting.value = true;
   try {
-    const { json } = await buildExportPayload();
+    const { json } = await dataTransferStore.exportData(rawAppVersion);
 
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -104,47 +83,7 @@ const handleExportData = async () => {
   } catch (error) {
     console.error('Export error:', error);
     alert("Erreur lors de l'export des données");
-  } finally {
-    isExporting.value = false;
   }
-};
-
-// Build export JSON payload for reuse (returns string JSON and parsed data)
-const buildExportPayload = async () => {
-  const documentsRaw = await db.documents.toArray();
-  const documents: any[] = await Promise.all(
-    documentsRaw.map(async d => {
-      const copy: any = { ...d };
-      try {
-        if (d.data instanceof Blob) {
-          const text = await d.data.arrayBuffer();
-          const b64 = arrayBufferToBase64(text);
-          copy.data = `data:${d.mimeType};base64,${b64}`;
-        } else if (typeof d.data === 'string') {
-          copy.data = d.data;
-        } else {
-          copy.data = null;
-        }
-      } catch (e) {
-        copy.data = null;
-      }
-      return copy;
-    })
-  );
-
-  const data = {
-    properties: await db.properties.toArray(),
-    tenants: await db.tenants.toArray(),
-    leases: await db.leases.toArray(),
-    rents: await db.rents.toArray(),
-    documents,
-    inventories: await db.inventories.toArray(),
-    exportedAt: new Date().toISOString(),
-    version: rawAppVersion,
-  };
-
-  const json = JSON.stringify(data, null, 2);
-  return { json, data };
 };
 
 // Build PeerJS channel id: lcp-<version>-<hh-mm-sss>-<random3>
@@ -180,7 +119,7 @@ const startHosting = async () => {
         (async () => {
           try {
             peerStatus.value = 'Connection open - sending export payload';
-            const { json } = await buildExportPayload();
+            const { json } = await dataTransferStore.exportData(rawAppVersion);
             peerService?.sendExport(json);
           } catch (e) {
             console.error('Failed to send export from host', e);
@@ -251,7 +190,7 @@ const connectToHost = async () => {
           }
 
           // perform import using existing logic
-          await performImportFromObject(parsed);
+          await dataTransferStore.importFromObject(parsed);
           alert('Données synchronisées avec succès !');
           peerStatus.value = 'Import complete';
           // cleanup
@@ -286,56 +225,6 @@ const connectToHost = async () => {
   }
 };
 
-// Reuse import logic but from an object (parsed JSON)
-const performImportFromObject = async (data: any) => {
-  // Basic validation
-  if (!data.properties || !data.tenants) {
-    throw new Error('Format de fichier invalide');
-  }
-
-  // Clear existing data
-  await db.properties.clear();
-  await db.tenants.clear();
-  await db.leases.clear();
-  await db.rents.clear();
-  await db.documents.clear();
-  await db.inventories.clear();
-
-  if (data.properties.length) await db.properties.bulkAdd(data.properties);
-  if (data.tenants.length) await db.tenants.bulkAdd(data.tenants);
-  if (data.leases?.length) await db.leases.bulkAdd(data.leases);
-  if (data.rents?.length) await db.rents.bulkAdd(data.rents);
-
-  if (data.documents?.length) {
-    const docsToAdd = data.documents.map((d: any) => {
-      const copy = { ...d };
-      try {
-        if (typeof d.data === 'string' && d.data.startsWith('data:')) {
-          const matches = d.data.match(/^data:(.+);base64,(.*)$/);
-          if (matches) {
-            const mime = matches[1];
-            const b64 = matches[2];
-            copy.data = base64ToBlob(b64, mime);
-            copy.mimeType = mime;
-            copy.size = (copy.data as Blob).size;
-          } else {
-            copy.data = null;
-          }
-        } else {
-          copy.data = null;
-        }
-      } catch (e) {
-        copy.data = null;
-      }
-      return copy;
-    });
-
-    await db.documents.bulkAdd(docsToAdd);
-  }
-
-  if (data.inventories?.length) await db.inventories.bulkAdd(data.inventories);
-};
-
 const handleImportData = () => {
   const input = document.createElement('input');
   input.type = 'file';
@@ -345,7 +234,6 @@ const handleImportData = () => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    isImporting.value = true;
     try {
       const text = await file.text();
       const data = JSON.parse(text);
@@ -360,61 +248,13 @@ const handleImportData = () => {
         return;
       }
 
-      // Clear existing data
-      await db.properties.clear();
-      await db.tenants.clear();
-      await db.leases.clear();
-      await db.rents.clear();
-      await db.documents.clear();
-      await db.inventories.clear();
-
-      // Import new data
-      if (data.properties.length) await db.properties.bulkAdd(data.properties);
-      if (data.tenants.length) await db.tenants.bulkAdd(data.tenants);
-      if (data.leases?.length) await db.leases.bulkAdd(data.leases);
-      if (data.rents?.length) await db.rents.bulkAdd(data.rents);
-      if (data.documents?.length) {
-        // Rebuild Blobs for documents that have data URLs
-        const docsToAdd = data.documents.map((d: any) => {
-          const copy = { ...d };
-          try {
-            if (typeof d.data === 'string' && d.data.startsWith('data:')) {
-              const matches = d.data.match(/^data:(.+);base64,(.*)$/);
-              if (matches) {
-                const mime = matches[1];
-                const b64 = matches[2];
-                const binary = atob(b64);
-                const len = binary.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-                copy.data = new Blob([bytes], { type: mime });
-                copy.mimeType = mime;
-                copy.size = bytes.length;
-              } else {
-                copy.data = null;
-              }
-            } else {
-              copy.data = null;
-            }
-          } catch (e) {
-            copy.data = null;
-          }
-          return copy;
-        });
-
-        await db.documents.bulkAdd(docsToAdd);
-      }
-
-      // Import inventories after documents so referenced document IDs remain valid
-      if (data.inventories?.length) await db.inventories.bulkAdd(data.inventories);
+      await dataTransferStore.importFromObject(data);
 
       alert('Données importées avec succès !');
       router.push('/');
     } catch (error) {
       console.error('Import error:', error);
       alert("Erreur lors de l'import des données: " + (error as Error).message);
-    } finally {
-      isImporting.value = false;
     }
   };
 
@@ -439,12 +279,7 @@ const handleClearData = async () => {
   }
 
   try {
-    await db.properties.clear();
-    await db.tenants.clear();
-    await db.leases.clear();
-    await db.rents.clear();
-    await db.documents.clear();
-    await db.inventories.clear();
+    await dataTransferStore.clearAllBusinessData();
 
     alert('Toutes les données ont été supprimées');
     router.push('/');
@@ -500,30 +335,15 @@ const editingSenderEmail = ref<string>('');
 
 onMounted(async () => {
   try {
-    const s = await db.settings.where('key').equals('senderAddress').first();
-    editingSenderAddress.value = s && s.value ? String(s.value) : '';
-  } catch (e) {
+    const info = await settingsStore.fetchSenderInfo();
+    editingSenderAddress.value = String(info.senderAddress || '');
+    editingSenderName.value = String(info.senderName || '');
+    editingSenderPhone.value = String(info.senderPhone || '');
+    editingSenderEmail.value = String(info.senderEmail || '');
+  } catch {
     editingSenderAddress.value = '';
-  }
-
-  try {
-    const s = await db.settings.where('key').equals('senderName').first();
-    editingSenderName.value = s && s.value ? String(s.value) : '';
-  } catch (e) {
     editingSenderName.value = '';
-  }
-
-  try {
-    const s = await db.settings.where('key').equals('senderPhone').first();
-    editingSenderPhone.value = s && s.value ? String(s.value) : '';
-  } catch (e) {
     editingSenderPhone.value = '';
-  }
-
-  try {
-    const s = await db.settings.where('key').equals('senderEmail').first();
-    editingSenderEmail.value = s && s.value ? String(s.value) : '';
-  } catch (e) {
     editingSenderEmail.value = '';
   }
 });

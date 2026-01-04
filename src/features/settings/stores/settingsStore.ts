@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { db } from '@/db/database';
+import { fetchSettingValue, saveSettingValue } from '../repositories/settingsRepository';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -70,8 +70,8 @@ Cordialement, `);
   // Helper to get setting from DB
   const getSetting = async <T>(key: string, defaultValue: T): Promise<T> => {
     try {
-      const setting = await db.settings.where('key').equals(key).first();
-      return setting ? (setting.value as T) : defaultValue;
+      const value = await fetchSettingValue<T>(key);
+      return typeof value === 'undefined' ? defaultValue : value;
     } catch (err) {
       console.error(`Failed to get setting ${key}:`, err);
       return defaultValue;
@@ -81,21 +81,10 @@ Cordialement, `);
   // Helper to save setting to DB
   const setSetting = async (key: string, value: unknown): Promise<void> => {
     try {
-      // Try the simple put first - tests and many environments mock/expect this.
-      await db.settings.put({ key, value, updatedAt: new Date() });
-    } catch {
-      // If put failed (eg. edge cases with unique index), fallback to explicit upsert
-      try {
-        const existing = await db.settings.where('key').equals(key).first();
-        if (existing && existing.id) {
-          await db.settings.update(existing.id, { value, updatedAt: new Date() });
-        } else {
-          await db.settings.add({ key, value, updatedAt: new Date() });
-        }
-      } catch (err2) {
-        console.error(`Failed to save setting ${key}:`, err2);
-        throw err2;
-      }
+      await saveSettingValue(key, value);
+    } catch (err2) {
+      console.error(`Failed to save setting ${key}:`, err2);
+      throw err2;
     }
   };
 
@@ -265,6 +254,19 @@ Cordialement, `);
     await setSetting('senderEmail', email);
   }
 
+  async function fetchSenderInfo(): Promise<{
+    senderAddress: string;
+    senderName: string;
+    senderPhone: string;
+    senderEmail: string;
+  }> {
+    const senderAddress = await getSetting('senderAddress', '');
+    const senderName = await getSetting('senderName', '');
+    const senderPhone = await getSetting('senderPhone', '');
+    const senderEmail = await getSetting('senderEmail', '');
+    return { senderAddress, senderName, senderPhone, senderEmail };
+  }
+
   return {
     // State
     theme,
@@ -297,6 +299,7 @@ Cordialement, `);
     updateSenderName,
     updateSenderPhone,
     updateSenderEmail,
+    fetchSenderInfo,
     // Default message
     defaultRejectionMessage,
     currentDefaultRejectionMessage,

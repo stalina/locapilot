@@ -5,8 +5,8 @@ import Button from '@/shared/components/Button.vue';
 import { useLeasesStore } from '../stores/leasesStore';
 import { useDocumentsStore } from '../../documents/stores/documentsStore';
 import { useConfirm } from '@/shared/composables/useConfirm';
-import { db } from '@/db/database';
 import type { ChargesAdjustmentRow } from '@/db/types';
+import { fetchRentsByLeaseId } from '../repositories/leaseRentsRepository';
 import {
   prepareRegulationLetterData,
   generateRegulationLetter,
@@ -88,9 +88,15 @@ onMounted(async () => {
 // After initial load, compute provision sums from rents for each year and persist
 async function computeProvisions() {
   if (!props.leaseId) return;
+  let rents: any[] = [];
+  try {
+    rents = await fetchRentsByLeaseId(props.leaseId);
+  } catch (err) {
+    console.error('Failed to fetch rents for provisions computation', err);
+    return;
+  }
   for (const r of rows.value) {
     try {
-      const rents = await db.rents.where({ leaseId: props.leaseId }).toArray();
       const yearRents = rents.filter(rt => {
         try {
           const d = new Date(rt.dueDate);
@@ -356,8 +362,17 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
                 <button
                   class="icon-button"
                   :class="{ 'icon-saved': hasRegulationDocument(r.year) }"
-                  :title="hasRegulationDocument(r.year) ? 'Télécharger le document' : 'Générer le courrier'"
-                  @click.prevent="() => hasRegulationDocument(r.year) ? downloadExistingRegulationLetter(r.year) : generateRegulLetter(r)"
+                  :title="
+                    hasRegulationDocument(r.year)
+                      ? 'Télécharger le document'
+                      : 'Générer le courrier'
+                  "
+                  @click.prevent="
+                    () =>
+                      hasRegulationDocument(r.year)
+                        ? downloadExistingRegulationLetter(r.year)
+                        : generateRegulLetter(r)
+                  "
                 >
                   <i class="mdi mdi-email-outline" aria-hidden="true"></i>
                 </button>

@@ -3,7 +3,6 @@ import { ref, computed, onMounted, watch, unref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenantsStore';
 import { useSettingsStore } from '../../settings/stores/settingsStore';
-import { db } from '@/db/database';
 import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
 import Button from '../../../shared/components/Button.vue';
@@ -11,6 +10,8 @@ import TenantFormModal from '../components/TenantFormModal.vue';
 import RefusalModal from '../components/RefusalModal.vue';
 import CreateLeaseModal from '../../leases/components/CreateLeaseModal.vue';
 import TenantDocumentsList from '../components/TenantDocumentsList.vue';
+import { computeTenantAge, getTenantStatusConfig } from '../services/tenantsService';
+import { fetchLastRefusalReason } from '../repositories/tenantAuditsRepository';
 
 const route = useRoute();
 const router = useRouter();
@@ -29,30 +30,11 @@ const showRefusalModal = ref(false);
 const showCreateLeaseModal = ref(false);
 
 const age = computed(() => {
-  if (!tenant.value?.birthDate) return null;
-  const today = new Date();
-  const birth = new Date(tenant.value.birthDate);
-  let years = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    years--;
-  }
-  return years;
+  return computeTenantAge(tenant.value?.birthDate);
 });
 
 const statusConfig = computed(() => {
-  switch (tenant.value?.status) {
-    case 'active':
-      return { label: 'Actif', color: 'success' };
-    case 'candidate':
-      return { label: 'Candidat', color: 'accent' };
-    case 'candidature-refusee':
-      return { label: 'Candidature refusée', color: 'error' };
-    case 'former':
-      return { label: 'Ancien', color: 'error' };
-    default:
-      return { label: 'Inconnu', color: 'default' };
-  }
+  return getTenantStatusConfig(tenant.value?.status);
 });
 
 // Refusal reason (loaded from tenantAudits)
@@ -62,17 +44,7 @@ async function loadRefusalReason(id: number | undefined) {
   refusalReason.value = null;
   if (!id) return;
   try {
-    const audits = await db.tenantAudits
-      .where({ tenantId: id, action: 'refused' })
-      .sortBy('timestamp');
-    if (audits && audits.length > 0) {
-      const last = audits[audits.length - 1];
-      if (last && typeof last.reason === 'string') {
-        refusalReason.value = last.reason || null;
-      } else {
-        refusalReason.value = null;
-      }
-    }
+    refusalReason.value = await fetchLastRefusalReason(id);
   } catch (err) {
     console.error('Failed to load refusal reason:', err);
   }

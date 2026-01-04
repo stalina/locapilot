@@ -1,8 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { db } from '@/db/database';
 import { useTenantDocuments } from '../composables/useTenantDocuments';
 import type { Tenant } from '@/db/types';
+import {
+  createTenant as createTenantRepo,
+  deleteTenant as deleteTenantRepo,
+  fetchAllTenants,
+  fetchTenantById as fetchTenantByIdRepo,
+  updateTenant as updateTenantRepo,
+  updateTenantStatus as updateTenantStatusRepo,
+} from '../repositories/tenantsRepository';
+import { addTenantAudit as addTenantAuditRepo } from '../repositories/tenantAuditsRepository';
+import { resolveTenantStatusTransition } from '../services/tenantsService';
 
 export const useTenantsStore = defineStore('tenants', () => {
   // State
@@ -29,7 +38,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      tenants.value = await db.tenants.toArray();
+      tenants.value = await fetchAllTenants();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch tenants';
       console.error('Failed to fetch tenants:', err);
@@ -42,7 +51,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      currentTenant.value = (await db.tenants.get(id)) || null;
+      currentTenant.value = (await fetchTenantByIdRepo(id)) || null;
       if (!currentTenant.value) {
         error.value = 'Tenant not found';
       }
@@ -58,11 +67,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const id = await db.tenants.add({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const id = await createTenantRepo(data);
       await fetchTenants();
       return id;
     } catch (err) {
@@ -78,10 +83,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.tenants.update(id, {
-        ...data,
-        updatedAt: new Date(),
-      });
+      await updateTenantRepo(id, data);
       await fetchTenants();
 
       if (currentTenant.value?.id === id) {
@@ -100,7 +102,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.tenants.delete(id);
+      await deleteTenantRepo(id);
       await fetchTenants();
 
       if (currentTenant.value?.id === id) {
@@ -118,7 +120,7 @@ export const useTenantsStore = defineStore('tenants', () => {
   // Tenant documents & audits helpers
   async function listTenantDocuments(tenantId: number) {
     try {
-      return await db.tenantDocuments.where({ tenantId }).sortBy('uploadedAt');
+      return await useTenantDocuments().getTenantDocuments(tenantId);
     } catch (err) {
       console.error('Failed to list tenant documents:', err);
       throw err;
@@ -175,14 +177,7 @@ export const useTenantsStore = defineStore('tenants', () => {
     documentIds?: number[];
   }) {
     try {
-      const id = await db.tenantAudits.add({
-        tenantId: audit.tenantId,
-        action: audit.action,
-        actorId: audit.actorId ?? null,
-        reason: audit.reason,
-        documentIds: audit.documentIds || [],
-        timestamp: new Date(),
-      });
+      const id = await addTenantAuditRepo(audit);
       return id;
     } catch (err) {
       console.error('Failed to add tenant audit:', err);
@@ -209,14 +204,13 @@ Cordialement, `;
   ) {
     isLoading.value = true;
     try {
-      const newStatus =
-        status === 'validated' ? 'active' : status === 'refused' ? 'candidature-refusee' : status;
+      const { newStatus, auditAction } = resolveTenantStatusTransition(status);
       // update tenant status
-      await db.tenants.update(tenantId, { status: newStatus, updatedAt: new Date() });
+      await updateTenantStatusRepo(tenantId, newStatus);
       // add audit entry
       await addTenantAudit({
         tenantId,
-        action: status === 'validated' ? 'validated' : status === 'refused' ? 'refused' : 'updated',
+        action: auditAction,
         actorId: auditData?.actorId ?? null,
         reason: auditData?.reason,
         documentIds: auditData?.documentIds,

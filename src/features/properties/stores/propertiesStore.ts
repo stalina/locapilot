@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { db } from '@/db/database';
 import type { Property } from '@/db/types';
+import {
+  createProperty as createPropertyRepo,
+  deleteProperty as deletePropertyRepo,
+  fetchAllProperties,
+  fetchPropertyById as fetchPropertyByIdRepo,
+  updateProperty as updatePropertyRepo,
+} from '../repositories/propertiesRepository';
 
 export const usePropertiesStore = defineStore('properties', () => {
   // State
@@ -11,13 +17,9 @@ export const usePropertiesStore = defineStore('properties', () => {
   const error = ref<string | null>(null);
 
   // Getters
-  const occupiedProperties = computed(() =>
-    properties.value.filter(p => p.status === 'occupied')
-  );
+  const occupiedProperties = computed(() => properties.value.filter(p => p.status === 'occupied'));
 
-  const vacantProperties = computed(() =>
-    properties.value.filter(p => p.status === 'vacant')
-  );
+  const vacantProperties = computed(() => properties.value.filter(p => p.status === 'vacant'));
 
   const maintenanceProperties = computed(() =>
     properties.value.filter(p => p.status === 'maintenance')
@@ -34,13 +36,16 @@ export const usePropertiesStore = defineStore('properties', () => {
   });
 
   const propertiesByType = computed(() => {
-    return properties.value.reduce((acc, property) => {
-      if (!acc[property.type]) {
-        acc[property.type] = [];
-      }
-      acc[property.type]!.push(property);
-      return acc;
-    }, {} as Record<string, Property[]>);
+    return properties.value.reduce(
+      (acc, property) => {
+        if (!acc[property.type]) {
+          acc[property.type] = [];
+        }
+        acc[property.type]!.push(property);
+        return acc;
+      },
+      {} as Record<string, Property[]>
+    );
   });
 
   // Actions
@@ -48,7 +53,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      properties.value = await db.properties.toArray();
+      properties.value = await fetchAllProperties();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch properties';
       console.error('Failed to fetch properties:', err);
@@ -61,7 +66,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      currentProperty.value = (await db.properties.get(id)) || null;
+      currentProperty.value = (await fetchPropertyByIdRepo(id)) || null;
       if (!currentProperty.value) {
         error.value = 'Property not found';
       }
@@ -77,11 +82,7 @@ export const usePropertiesStore = defineStore('properties', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const id = await db.properties.add({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const id = await createPropertyRepo(data);
       await fetchProperties();
       return id;
     } catch (err) {
@@ -97,12 +98,9 @@ export const usePropertiesStore = defineStore('properties', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.properties.update(id, {
-        ...data,
-        updatedAt: new Date(),
-      });
+      await updatePropertyRepo(id, data);
       await fetchProperties();
-      
+
       // Update current property if it's the one being updated
       if (currentProperty.value?.id === id) {
         await fetchPropertyById(id);
@@ -120,9 +118,9 @@ export const usePropertiesStore = defineStore('properties', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      await db.properties.delete(id);
+      await deletePropertyRepo(id);
       await fetchProperties();
-      
+
       // Clear current property if it's the one being deleted
       if (currentProperty.value?.id === id) {
         currentProperty.value = null;

@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia';
-import { db } from '@/db/database';
 import type { Rent, Lease, Property } from '@/db/types';
+import {
+  createRent as createRentRepo,
+  deleteRent as deleteRentRepo,
+  fetchAllRents,
+  fetchRentById as fetchRentByIdRepo,
+  updateRent as updateRentRepo,
+} from '../repositories/rentsRepository';
+import {
+  buildCalendarEvents,
+  buildPaidRentUpdates,
+  computeOverdueRentIds,
+  generateVirtualRents as generateVirtualRentsService,
+} from '../services/rentsService';
 
 interface RentsState {
   rents: Rent[];
@@ -85,7 +97,7 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        this.rents = await db.rents.toArray();
+        this.rents = await fetchAllRents();
 
         // Mettre à jour le statut des loyers en retard
         await this.updateOverdueRents();
@@ -101,7 +113,7 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        const rent = await db.rents.get(id);
+        const rent = await fetchRentByIdRepo(id);
         if (rent) {
           this.currentRent = rent;
         } else {
@@ -119,15 +131,7 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        const now = new Date();
-        const newRent: Omit<Rent, 'id'> = {
-          ...rent,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        const id = await db.rents.add(newRent as Rent);
-        const createdRent: Rent = { ...newRent, id: id as number };
+        const createdRent = await createRentRepo(rent);
         this.rents.push(createdRent);
         return createdRent;
       } catch (error) {
@@ -143,20 +147,17 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        const updatedRent = {
-          ...updates,
-          updatedAt: new Date(),
-        };
+        const updatedRent = await updateRentRepo(id, updates);
 
-        await db.rents.update(id, updatedRent);
+        if (updatedRent) {
+          const index = this.rents.findIndex((r: Rent) => r.id === id);
+          if (index !== -1) {
+            this.rents[index] = updatedRent;
+          }
 
-        const index = this.rents.findIndex((r: Rent) => r.id === id);
-        if (index !== -1) {
-          this.rents[index] = { ...this.rents[index], ...updatedRent } as Rent;
-        }
-
-        if (this.currentRent?.id === id) {
-          this.currentRent = { ...this.currentRent, ...updatedRent } as Rent;
+          if (this.currentRent?.id === id) {
+            this.currentRent = updatedRent;
+          }
         }
       } catch (error) {
         this.error = 'Échec de la mise à jour du loyer';
@@ -171,7 +172,7 @@ export const useRentsStore = defineStore('rents', {
       this.isLoading = true;
       this.error = null;
       try {
-        await db.rents.delete(id);
+        await deleteRentRepo(id);
         this.rents = this.rents.filter((r: Rent) => r.id !== id);
         if (this.currentRent?.id === id) {
           this.currentRent = null;
@@ -186,93 +187,25 @@ export const useRentsStore = defineStore('rents', {
     },
 
     async payRent(id: number, paidDate?: Date) {
-      await this.updateRent(id, {
-        status: 'paid',
-        paidDate: paidDate || new Date(),
-      });
+      await this.updateRent(id, buildPaidRentUpdates(paidDate));
     },
 
     // Generate virtual pending rents from active leases when no rent exists for the month
     generateVirtualRents(leases: Lease[], referenceDate = new Date()) {
-      const activeLeases = leases.filter(l => l.status === 'active');
-      const today = new Date(referenceDate);
-      today.setHours(0, 0, 0, 0);
-
-      return activeLeases
-        .map((lease: Lease) => {
-          const paymentDay = (lease as any).paymentDay || 1;
-          const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
-          if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
-
-          const exists = this.rents.some(r => {
-            if (r.leaseId !== lease.id) return false;
-            const d = new Date(r.dueDate);
-            return (
-              d.getFullYear() === candidate.getFullYear() && d.getMonth() === candidate.getMonth()
-            );
-          });
-
-          if (exists) return null;
-
-          return {
-            id: `virtual-${lease.id}-${candidate.getFullYear()}-${candidate.getMonth()}`,
-            leaseId: lease.id,
-            dueDate: candidate,
-            amount: (lease as any).rent,
-            charges: (lease as any).charges || 0,
-            status: 'pending' as const,
-            isVirtual: true,
-          } as any;
-        })
-        .filter(Boolean) as any[];
+      return generateVirtualRentsService({
+        leases,
+        existingRents: this.rents,
+        referenceDate,
+      }) as any;
     },
 
     // Build calendar event objects from real rents and virtual rents (leases required)
     buildCalendarEvents(leases: Lease[], properties: Property[]) {
-      const real = this.rents.map((rent: Rent) => {
-        const lease = leases.find(l => l.id === rent.leaseId);
-        const property = lease ? properties.find(p => p.id === lease.propertyId) : null;
-        const calendarStatus =
-          rent.status === 'late' ? 'overdue' : rent.status === 'partial' ? 'pending' : rent.status;
-        const id = `${rent.id ?? 'r'}-${rent.leaseId}-${new Date(rent.dueDate).setHours(0, 0, 0, 0)}`;
-        return {
-          id,
-          rentId: rent.id,
-          leaseId: rent.leaseId,
-          date: new Date(rent.dueDate),
-          title: property?.name || 'Bien inconnu',
-          status: calendarStatus as 'pending' | 'paid' | 'overdue',
-          // Keep `amount` for backward compatibility (total = rent + charges)
-          amount: (Number(rent.amount) || 0) + (Number((rent as any).charges) || 0),
-          // Expose separate fields so the UI can display them in dedicated columns
-          rentAmount: Number(rent.amount) || 0,
-          charges: Number((rent as any).charges) || 0,
-          isVirtual: false,
-        } as any;
+      return buildCalendarEvents({
+        rents: this.rents,
+        leases,
+        properties,
       });
-
-      const virtual = this.generateVirtualRents(leases);
-      const virtualEvents = virtual.map((v: any) => {
-        const lease = leases.find(l => l.id === v.leaseId);
-        const property = lease ? properties.find(p => p.id === lease.propertyId) : null;
-        const id = `${String(v.id)}-${v.leaseId}-${new Date(v.dueDate).setHours(0, 0, 0, 0)}`;
-        return {
-          id,
-          rentId: undefined,
-          leaseId: v.leaseId,
-          date: new Date(v.dueDate),
-          title: property?.name || 'Bien inconnu',
-          status: 'pending' as const,
-          // Keep `amount` (total) for backward compatibility
-          amount: (Number(v.amount) || 0) + (Number(v.charges) || 0),
-          // Separate fields for UI columns
-          rentAmount: Number(v.amount) || 0,
-          charges: Number(v.charges) || 0,
-          isVirtual: true,
-        } as any;
-      });
-
-      return [...real, ...virtualEvents];
     },
 
     // Create a rent from a virtual rent payload
@@ -298,19 +231,8 @@ export const useRentsStore = defineStore('rents', {
     },
 
     async updateOverdueRents() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const updates = this.rents
-        .filter((r: Rent) => {
-          if (r.status === 'paid') return false;
-          const dueDate = new Date(r.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-          return dueDate < today;
-        })
-        .map((r: Rent) => r.id! && this.updateRent(r.id!, { status: 'late' }));
-
-      await Promise.all(updates);
+      const overdueIds = computeOverdueRentIds(this.rents);
+      await Promise.all(overdueIds.map(id => this.updateRent(id, { status: 'late' })));
     },
 
     clearError() {

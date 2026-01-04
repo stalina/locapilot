@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia';
-import { db } from '@/db/database';
 import type { Document } from '@/db/types';
+import {
+  createDocument as createDocumentRepo,
+  deleteDocument as deleteDocumentRepo,
+  fetchAllDocuments,
+  fetchDocumentById as fetchDocumentByIdRepo,
+  updateDocument as updateDocumentRepo,
+} from '../repositories/documentsRepository';
+import {
+  buildDocumentFromFile,
+  triggerDocumentDownload,
+  type UploadDocumentMetadata,
+} from '../services/documentsService';
 
 interface DocumentsState {
   documents: Document[];
@@ -21,17 +32,17 @@ export const useDocumentsStore = defineStore('documents', {
 
   getters: {
     // Documents par type
-    documentsByType: (state) => (type: Document['type']) =>
+    documentsByType: state => (type: Document['type']) =>
       state.documents.filter(d => d.type === type),
 
     // Documents par entité (property, tenant, lease)
-    documentsByEntity: (state) => (entityType: string, entityId: number) =>
+    documentsByEntity: state => (entityType: string, entityId: number) =>
       state.documents.filter(
         d => d.relatedEntityType === entityType && d.relatedEntityId === entityId
       ),
 
     // Documents récents (30 derniers jours)
-    recentDocuments: (state) => {
+    recentDocuments: state => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       return state.documents
@@ -40,11 +51,10 @@ export const useDocumentsStore = defineStore('documents', {
     },
 
     // Taille totale des documents (en bytes)
-    totalSize: (state) =>
-      state.documents.reduce((sum, d) => sum + d.size, 0),
+    totalSize: state => state.documents.reduce((sum, d) => sum + d.size, 0),
 
     // Nombre de documents par type
-    documentCounts: (state) => {
+    documentCounts: state => {
       const counts: Record<string, number> = {
         lease: 0,
         inventory: 0,
@@ -64,7 +74,7 @@ export const useDocumentsStore = defineStore('documents', {
       this.isLoading = true;
       this.error = null;
       try {
-        this.documents = await db.documents.toArray();
+        this.documents = await fetchAllDocuments();
       } catch (error) {
         this.error = 'Échec du chargement des documents';
         console.error('Failed to fetch documents:', error);
@@ -77,7 +87,7 @@ export const useDocumentsStore = defineStore('documents', {
       this.isLoading = true;
       this.error = null;
       try {
-        const document = await db.documents.get(id);
+        const document = await fetchDocumentByIdRepo(id);
         if (document) {
           this.currentDocument = document;
         } else {
@@ -91,10 +101,7 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async uploadDocument(
-      file: File,
-      metadata: Omit<Document, 'id' | 'name' | 'mimeType' | 'size' | 'data' | 'createdAt' | 'updatedAt'>
-    ) {
+    async uploadDocument(file: File, metadata: UploadDocumentMetadata) {
       this.isLoading = true;
       this.error = null;
       this.uploadProgress = 0;
@@ -107,29 +114,14 @@ export const useDocumentsStore = defineStore('documents', {
           }
         }, 100);
 
-        // Lire le fichier en Blob (File est déjà un Blob)
-        const data = file.slice(); // Create a copy as Blob
-
         clearInterval(progressInterval);
         this.uploadProgress = 100;
 
         const now = new Date();
+        const newDocument: Omit<Document, 'id'> = buildDocumentFromFile(file, metadata, now);
 
-        const newDocument: Omit<Document, 'id'> = {
-          ...metadata,
-          name: file.name,
-          mimeType: file.type,
-          size: file.size,
-          data,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        const id = await db.documents.add(newDocument as Document);
-        const addedDocument = await db.documents.get(id);
-        if (addedDocument) {
-          this.documents.push(addedDocument);
-        }
+        const addedDocument = await createDocumentRepo(newDocument);
+        if (addedDocument) this.documents.push(addedDocument);
         this.uploadProgress = 0;
 
         return addedDocument;
@@ -143,7 +135,10 @@ export const useDocumentsStore = defineStore('documents', {
       }
     },
 
-    async updateDocument(id: number, updates: Partial<Omit<Document, 'id' | 'createdAt' | 'data'>>) {
+    async updateDocument(
+      id: number,
+      updates: Partial<Omit<Document, 'id' | 'createdAt' | 'data'>>
+    ) {
       this.isLoading = true;
       this.error = null;
       try {
@@ -151,7 +146,7 @@ export const useDocumentsStore = defineStore('documents', {
           ...updates,
           updatedAt: new Date(),
         };
-        await db.documents.update(id, updateData as Partial<Document>);
+        await updateDocumentRepo(id, updateData);
 
         const index = this.documents.findIndex((d: Document) => d.id === id);
         if (index !== -1) {
@@ -174,7 +169,7 @@ export const useDocumentsStore = defineStore('documents', {
       this.isLoading = true;
       this.error = null;
       try {
-        await db.documents.delete(id);
+        await deleteDocumentRepo(id);
         this.documents = this.documents.filter((d: Document) => d.id !== id);
         if (this.currentDocument?.id === id) {
           this.currentDocument = null;
@@ -190,26 +185,13 @@ export const useDocumentsStore = defineStore('documents', {
 
     async downloadDocument(id: number) {
       try {
-        const document = await db.documents.get(id);
+        const document = await fetchDocumentByIdRepo(id);
         if (!document) {
           this.error = 'Document non trouvé';
           return;
         }
 
-        // Créer un blob à partir des données
-        const blob = new Blob([document.data], { type: document.mimeType });
-        const url = URL.createObjectURL(blob);
-
-        // Créer un lien de téléchargement
-        const a = window.document.createElement('a');
-        a.href = url;
-        a.download = document.name;
-        window.document.body.appendChild(a);
-        a.click();
-        window.document.body.removeChild(a);
-
-        // Libérer l'URL
-        URL.revokeObjectURL(url);
+        triggerDocumentDownload(document);
       } catch (error) {
         this.error = 'Échec du téléchargement du document';
         console.error('Failed to download document:', error);

@@ -1,22 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSettingsStore } from './settingsStore';
-import { db } from '@/db/database';
 
-// Mock IndexedDB
-vi.mock('@/db/database', () => ({
-  db: {
-    settings: {
-      where: vi.fn(() => ({
-        equals: vi.fn(() => ({
-          first: vi.fn(),
-        })),
-      })),
-      put: vi.fn(),
-      clear: vi.fn(),
-    },
-  },
+vi.mock('../repositories/settingsRepository', () => ({
+  fetchSettingValue: vi.fn(),
+  saveSettingValue: vi.fn(),
 }));
+
+import { fetchSettingValue, saveSettingValue } from '../repositories/settingsRepository';
 
 describe('settingsStore', () => {
   beforeEach(() => {
@@ -47,26 +38,20 @@ describe('settingsStore', () => {
 
   describe('loadSettings', () => {
     it('should load settings from IndexedDB', async () => {
-      const mockSettings = {
-        key: 'theme',
-        value: 'dark',
-      };
-
-      const mockFirst = vi.fn().mockResolvedValue(mockSettings);
-      const mockEquals = vi.fn().mockReturnValue({ first: mockFirst });
-      vi.mocked(db.settings.where).mockReturnValue({ equals: mockEquals } as any);
+      vi.mocked(fetchSettingValue).mockImplementation(async (key: string) => {
+        if (key === 'theme') return 'dark';
+        return undefined;
+      });
 
       const store = useSettingsStore();
       await store.loadSettings();
 
-      expect(db.settings.where).toHaveBeenCalledWith('key');
+      expect(fetchSettingValue).toHaveBeenCalled();
       expect(store.theme).toBe('dark');
     });
 
     it('should handle load errors gracefully', async () => {
-      const mockFirst = vi.fn().mockRejectedValue(new Error('DB Error'));
-      const mockEquals = vi.fn().mockReturnValue({ first: mockFirst });
-      vi.mocked(db.settings.where).mockReturnValue({ equals: mockEquals } as any);
+      vi.mocked(fetchSettingValue).mockRejectedValue(new Error('DB Error'));
 
       const store = useSettingsStore();
       await store.loadSettings();
@@ -83,12 +68,7 @@ describe('settingsStore', () => {
       await store.updateTheme('dark');
 
       expect(store.theme).toBe('dark');
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'theme',
-          value: 'dark',
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('theme', 'dark');
     });
   });
 
@@ -99,12 +79,7 @@ describe('settingsStore', () => {
       await store.updateLanguage('en');
 
       expect(store.language).toBe('en');
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'language',
-          value: 'en',
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('language', 'en');
     });
   });
 
@@ -115,12 +90,7 @@ describe('settingsStore', () => {
       await store.updateCurrency('USD');
 
       expect(store.currency).toBe('USD');
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'currency',
-          value: 'USD',
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('currency', 'USD');
     });
   });
 
@@ -137,12 +107,7 @@ describe('settingsStore', () => {
       await store.updateNotifications(newNotifications);
 
       expect(store.notifications).toEqual(newNotifications);
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'notifications',
-          value: newNotifications,
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('notifications', newNotifications);
     });
   });
 
@@ -154,7 +119,7 @@ describe('settingsStore', () => {
       await store.toggleNotification('enabled');
 
       expect(store.notifications.enabled).toBe(!initialValue);
-      expect(db.settings.put).toHaveBeenCalled();
+      expect(saveSettingValue).toHaveBeenCalled();
     });
 
     it('should toggle rent reminders', async () => {
@@ -193,12 +158,7 @@ describe('settingsStore', () => {
       await store.toggleCompactMode();
 
       expect(store.compactMode).toBe(!initialValue);
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'compactMode',
-          value: !initialValue,
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('compactMode', !initialValue);
     });
   });
 
@@ -210,12 +170,7 @@ describe('settingsStore', () => {
       await store.toggleAutoSave();
 
       expect(store.autoSave).toBe(!initialValue);
-      expect(db.settings.put).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'autoSave',
-          value: !initialValue,
-        })
-      );
+      expect(saveSettingValue).toHaveBeenCalledWith('autoSave', !initialValue);
     });
   });
 

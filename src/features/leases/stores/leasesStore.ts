@@ -1,13 +1,24 @@
 import { defineStore } from 'pinia';
-import { db } from '@/db/database';
-import type { Lease } from '@/db/schema';
+import type { ChargesAdjustmentRow, Lease } from '@/db/types';
+import {
+  createLease as createLeaseRepo,
+  deleteLease as deleteLeaseRepo,
+  fetchAllLeases,
+  fetchLeaseById as fetchLeaseByIdRepo,
+  updateLease as updateLeaseRepo,
+} from '../repositories/leasesRepository';
+import {
+  fetchChargesAdjustmentsByLeaseId,
+  upsertChargesAdjustment as upsertChargesAdjustmentRepo,
+} from '../repositories/chargesAdjustmentsRepository';
+import { buildTerminationUpdates } from '../services/leasesService';
 
 interface LeasesState {
   leases: Lease[];
   currentLease: Lease | null;
   isLoading: boolean;
   error: string | null;
-  chargesAdjustments: Record<number, import('@/db/types').ChargesAdjustmentRow[]>; // leaseId -> rows
+  chargesAdjustments: Record<number, ChargesAdjustmentRow[]>; // leaseId -> rows
 }
 
 export const useLeasesStore = defineStore('leases', {
@@ -71,7 +82,7 @@ export const useLeasesStore = defineStore('leases', {
       this.isLoading = true;
       this.error = null;
       try {
-        this.leases = await db.leases.toArray();
+        this.leases = await fetchAllLeases();
       } catch (error) {
         this.error = 'Échec du chargement des baux';
         console.error('Failed to fetch leases:', error);
@@ -84,7 +95,7 @@ export const useLeasesStore = defineStore('leases', {
       this.isLoading = true;
       this.error = null;
       try {
-        const lease = await db.leases.get(id);
+        const lease = await fetchLeaseByIdRepo(id);
         if (lease) {
           this.currentLease = lease;
         } else {
@@ -101,7 +112,7 @@ export const useLeasesStore = defineStore('leases', {
     // Charges adjustments management
     async fetchChargesAdjustments(leaseId: number) {
       try {
-        const rows = await db.chargesAdjustments.where({ leaseId }).sortBy('year');
+        const rows = await fetchChargesAdjustmentsByLeaseId(leaseId);
         this.chargesAdjustments = { ...this.chargesAdjustments, [leaseId]: rows };
         return rows;
       } catch (error) {
@@ -111,49 +122,12 @@ export const useLeasesStore = defineStore('leases', {
     },
 
     async upsertChargesAdjustment(
-      row: Partial<import('@/db/types').ChargesAdjustmentRow> & { leaseId: number; year: number }
+      row: Partial<ChargesAdjustmentRow> & { leaseId: number; year: number }
     ) {
       try {
-        const now = new Date();
-        const existing = await db.chargesAdjustments
-          .where({ leaseId: row.leaseId, year: row.year })
-          .first();
-        if (existing) {
-          // Serialize to ensure no Vue reactivity or non-clonable properties
-          const updates = JSON.parse(JSON.stringify({ ...row, updatedAt: now })) as Partial<
-            import('@/db/types').ChargesAdjustmentRow
-          >;
-          // Restore Date object after JSON serialization
-          updates.updatedAt = now;
-          await db.chargesAdjustments.update(existing.id!, updates);
-          const updated = await db.chargesAdjustments.get(existing.id!);
-          if (updated) {
-            await this.fetchChargesAdjustments(row.leaseId);
-            return updated;
-          }
-        } else {
-          // Serialize to ensure no Vue reactivity or non-clonable properties
-          const toAdd = JSON.parse(
-            JSON.stringify({
-              leaseId: row.leaseId,
-              year: row.year,
-              monthlyRent: row.monthlyRent ?? 0,
-              chargesProvisionPaid: row.chargesProvisionPaid ?? 0,
-              rentsPaidCount: row.rentsPaidCount ?? 0,
-              rentsPaidTotal: row.rentsPaidTotal ?? 0,
-              customCharges: row.customCharges ?? {},
-              createdAt: now,
-              updatedAt: now,
-            })
-          ) as import('@/db/types').ChargesAdjustmentRow;
-          // Restore Date objects after JSON serialization
-          toAdd.createdAt = now;
-          toAdd.updatedAt = now;
-          const id = await db.chargesAdjustments.add(toAdd);
-          const created = await db.chargesAdjustments.get(id);
-          await this.fetchChargesAdjustments(row.leaseId);
-          return created;
-        }
+        const updatedOrCreated = await upsertChargesAdjustmentRepo(row);
+        await this.fetchChargesAdjustments(row.leaseId);
+        return updatedOrCreated;
       } catch (error) {
         console.error('Failed to upsert charges adjustment:', error);
         throw error;
@@ -164,15 +138,7 @@ export const useLeasesStore = defineStore('leases', {
       this.isLoading = true;
       this.error = null;
       try {
-        const now = new Date();
-        const newLease: Omit<Lease, 'id'> = {
-          ...lease,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        const id = await db.leases.add(newLease);
-        const createdLease = { ...newLease, id } as Lease;
+        const createdLease = await createLeaseRepo(lease);
         this.leases.push(createdLease);
         return createdLease;
       } catch (error) {
@@ -188,15 +154,7 @@ export const useLeasesStore = defineStore('leases', {
       this.isLoading = true;
       this.error = null;
       try {
-        const updatedFields = {
-          ...updates,
-          updatedAt: new Date(),
-        };
-
-        await db.leases.update(id, updatedFields);
-
-        // Refetch to get updated lease
-        const updatedLease = await db.leases.get(id);
+        const updatedLease = await updateLeaseRepo(id, updates);
         if (updatedLease) {
           const index = this.leases.findIndex(l => l.id === id);
           if (index !== -1) {
@@ -220,7 +178,7 @@ export const useLeasesStore = defineStore('leases', {
       this.isLoading = true;
       this.error = null;
       try {
-        await db.leases.delete(id);
+        await deleteLeaseRepo(id);
         this.leases = this.leases.filter(l => l.id !== id);
         if (this.currentLease?.id === id) {
           this.currentLease = null;
@@ -235,10 +193,7 @@ export const useLeasesStore = defineStore('leases', {
     },
 
     async terminateLease(id: number) {
-      await this.updateLease(id, {
-        status: 'ended',
-        endDate: new Date(),
-      });
+      await this.updateLease(id, buildTerminationUpdates());
     },
 
     clearError() {
