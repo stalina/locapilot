@@ -13,11 +13,17 @@ export async function createProperty(
   data: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
   now = new Date()
 ): Promise<number> {
-  return db.properties.add({
+  const id = await db.properties.add({
     ...data,
     createdAt: now,
     updatedAt: now,
   } as any);
+
+  if (typeof id !== 'number') {
+    throw new Error('Failed to create property');
+  }
+
+  return id;
 }
 
 export async function updateProperty(

@@ -13,11 +13,17 @@ export async function createInventory(
   data: Omit<Inventory, 'id' | 'createdAt' | 'updatedAt'>,
   now = new Date()
 ): Promise<number> {
-  return db.inventories.add({
+  const id = await db.inventories.add({
     ...data,
     createdAt: now,
     updatedAt: now,
   } as any);
+
+  if (typeof id !== 'number') {
+    throw new Error('Failed to create inventory');
+  }
+
+  return id;
 }
 
 export async function updateInventory(
