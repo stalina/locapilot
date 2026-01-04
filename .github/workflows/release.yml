@@ -1,0 +1,241 @@
+name: Release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Type de version'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Notes de version (optionnel, sinon utilise RELEASE_NOTES.md)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          case "${{ github.event.inputs.version_type }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update package.json version
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          npm version $NEW_VERSION --no-git-tag-version
+
+      - name: Prepare release notes
+        id: release_notes
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            NOTES="${{ github.event.inputs.release_notes }}"
+          elif [ -f "RELEASE_NOTES.md" ]; then
+            NOTES=$(cat RELEASE_NOTES.md)
+          else
+            NOTES="Release v${NEW_VERSION} — ${VERSION_TYPE} release"
+          fi
+          
+          echo "$NOTES" > /tmp/release_notes.txt
+          
+          if [ -f "RELEASE_NOTES.md" ]; then
+            TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+            mkdir -p release_archive
+            cp RELEASE_NOTES.md "release_archive/RELEASE_NOTES_v${{ steps.current_version.outputs.version }}_${TIMESTAMP}.md"
+          fi
+          
+          cat > RELEASE_NOTES.md << EOF
+          Release v${NEW_VERSION} — ${VERSION_TYPE} release
+          
+          ${NOTES}
+          
+          ---
+          
+          Generated on $(date '+%Y-%m-%d %H:%M:%S')
+          EOF
+
+      - name: Create release branch and commit changes
+        id: create_branch
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          BRANCH_NAME="release/v${NEW_VERSION}"
+          
+          git checkout -b "$BRANCH_NAME"
+          git add package.json package-lock.json RELEASE_NOTES.md
+          if [ -d "release_archive" ]; then
+            git add release_archive/
+          fi
+          git commit -m "chore(release): bump version to v${NEW_VERSION}"
+          git push origin "$BRANCH_NAME"
+          
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const newVersion = '${{ steps.new_version.outputs.version }}';
+            const versionType = '${{ github.event.inputs.version_type }}';
+            const branchName = '${{ steps.create_branch.outputs.branch_name }}';
+            
+            const fs = require('fs');
+            const releaseNotes = fs.readFileSync('/tmp/release_notes.txt', 'utf8');
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release v${newVersion}`,
+              head: branchName,
+              base: 'main',
+              body: `## 🚀 Release v${newVersion} (${versionType})
+            
+            ### Changements
+            - Mise à jour de la version à \`${newVersion}\`
+            - Mise à jour des release notes
+            - Archivage de l'ancienne version
+            
+            ### Release Notes
+            
+            ${releaseNotes}
+            
+            ---
+            
+            Cette PR sera automatiquement mergée si les tests passent.
+            Créée automatiquement par GitHub Actions.`
+            });
+            
+            console.log(`PR créée: #${pr.number}`);
+            return pr.number;
+
+      - name: Merge Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.create_pr.outputs.result }};
+            
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: `chore(release): bump version to v${{ steps.new_version.outputs.version }}`,
+                commit_message: 'Automated release version bump'
+              });
+              console.log('✅ PR mergée avec succès');
+            } catch (error) {
+              console.log('⚠️ Impossible de merger automatiquement');
+              console.log('Raison:', error.message);
+              console.log('📋 Action requise: Mergez manuellement la PR #' + prNumber);
+            }
+
+      - name: Wait for PR merge and fetch latest
+        run: |
+          sleep 5
+          git checkout main
+          git pull origin main
+
+      - name: Create Git tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          git tag -a "v${NEW_VERSION}" -m "Release v${NEW_VERSION}"
+          git push origin "v${NEW_VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          name: Release v${{ steps.new_version.outputs.version }}
+          body_path: /tmp/release_notes.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## ✅ Release créée avec succès" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version précédente:** v${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Nouvelle version:** v${{ steps.new_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type de version:** ${{ github.event.inputs.version_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branche de release:** ${{ steps.create_branch.outputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pull Request:** #${{ steps.create_pr.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag créé:** v${{ steps.new_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Liens" >> $GITHUB_STEP_SUMMARY
+          echo "- [Voir la release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.new_version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Voir la PR](https://github.com/${{ github.repository }}/pull/${{ steps.create_pr.outputs.result }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Déploiement" >> $GITHUB_STEP_SUMMARY
+          echo "Le déploiement sur GitHub Pages sera automatiquement déclenché suite à la création du tag." >> $GITHUB_STEP_SUMMARY
+          echo "Consultez l'onglet [Actions](https://github.com/${{ github.repository }}/actions/workflows/deploy.yml) pour suivre le déploiement." >> $GITHUB_STEP_SUMMARY
