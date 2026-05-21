@@ -9,6 +9,7 @@ export type ExportDataPayload = {
   rents: unknown[];
   documents: SerializedDocument[];
   inventories: unknown[];
+  settings: unknown[];
   exportedAt: string;
   version: string;
 };

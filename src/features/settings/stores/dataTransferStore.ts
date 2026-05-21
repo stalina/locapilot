@@ -30,6 +30,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
       rents: raw.rents,
       documents,
       inventories: raw.inventories,
+      settings: raw.settings,
       exportedAt: new Date().toISOString(),
       version,
     };
@@ -69,6 +70,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
         rents: (data as any).rents,
         documents: docsToAdd,
         inventories: (data as any).inventories,
+        settings: Array.isArray((data as any).settings) ? (data as any).settings : [],
       });
     } catch (e) {
       console.error('Import error:', e);

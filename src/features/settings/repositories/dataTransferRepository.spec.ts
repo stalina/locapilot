@@ -36,9 +36,12 @@ describe('dataTransferRepository (integration)', () => {
       updatedAt: new Date(),
     } as any);
 
+    await db.settings.add({ key: 'ownerName', value: 'Jean Dupont', updatedAt: new Date() } as any);
+
     const raw = await fetchRawExportData();
     expect(raw.properties.length).toBe(1);
     expect(raw.documents.length).toBe(1);
+    expect(raw.settings.length).toBe(1);
   });
 
   it('importBusinessData clears and bulkAdds in a transaction', async () => {
@@ -53,6 +56,8 @@ describe('dataTransferRepository (integration)', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
+
+    await db.settings.add({ key: 'ownerName', value: 'OldOwner', updatedAt: new Date() } as any);
 
     await importBusinessData({
       properties: [
@@ -73,10 +78,15 @@ describe('dataTransferRepository (integration)', () => {
       rents: [],
       documents: [],
       inventories: [],
+      settings: [{ key: 'ownerName', value: 'NewOwner', updatedAt: new Date() }],
     });
 
     const props = await db.properties.toArray();
     expect(props.length).toBe(1);
     expect(props[0]?.name).toBe('New');
+
+    const settings = await db.settings.toArray();
+    expect(settings.length).toBe(1);
+    expect(settings[0]?.value).toBe('NewOwner');
   });
 });
