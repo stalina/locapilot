@@ -191,6 +191,8 @@ const connectToHost = async () => {
 
           // perform import using existing logic
           await dataTransferStore.importFromObject(parsed);
+          await settingsStore.loadSettings();
+          await reloadSenderInfo();
           alert('Données synchronisées avec succès !');
           peerStatus.value = 'Import complete';
           // cleanup
@@ -333,7 +335,7 @@ const editingSenderName = ref<string>('');
 const editingSenderPhone = ref<string>('');
 const editingSenderEmail = ref<string>('');
 
-onMounted(async () => {
+const reloadSenderInfo = async () => {
   try {
     const info = await settingsStore.fetchSenderInfo();
     editingSenderAddress.value = String(info.senderAddress || '');
@@ -346,7 +348,9 @@ onMounted(async () => {
     editingSenderPhone.value = '';
     editingSenderEmail.value = '';
   }
-});
+};
+
+onMounted(reloadSenderInfo);
 
 const saveSenderAddress = async () => {
   try {

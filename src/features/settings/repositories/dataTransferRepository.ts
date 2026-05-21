@@ -1,5 +1,5 @@
 import { db } from '@/db/database';
-import type { Document, Inventory, Lease, Property, Rent, Tenant } from '@/db/types';
+import type { Document, Inventory, Lease, Property, Rent, Settings, Tenant } from '@/db/types';
 
 export type RawExportData = {
   properties: Property[];
@@ -8,25 +8,27 @@ export type RawExportData = {
   rents: Rent[];
   documents: Document[];
   inventories: Inventory[];
+  settings: Settings[];
 };
 
 export async function fetchRawExportData(): Promise<RawExportData> {
-  const [properties, tenants, leases, rents, documents, inventories] = await Promise.all([
+  const [properties, tenants, leases, rents, documents, inventories, settings] = await Promise.all([
     db.properties.toArray(),
     db.tenants.toArray(),
     db.leases.toArray(),
     db.rents.toArray(),
     db.documents.toArray(),
     db.inventories.toArray(),
+    db.settings.toArray(),
   ]);
 
-  return { properties, tenants, leases, rents, documents, inventories };
+  return { properties, tenants, leases, rents, documents, inventories, settings };
 }
 
 export async function clearBusinessData(): Promise<void> {
   await db.transaction(
     'rw',
-    [db.properties, db.tenants, db.leases, db.rents, db.documents, db.inventories],
+    [db.properties, db.tenants, db.leases, db.rents, db.documents, db.inventories, db.settings],
     async () => {
       await Promise.all([
         db.properties.clear(),
@@ -35,6 +37,7 @@ export async function clearBusinessData(): Promise<void> {
         db.rents.clear(),
         db.documents.clear(),
         db.inventories.clear(),
+        db.settings.clear(),
       ]);
     }
   );
@@ -47,10 +50,11 @@ export async function importBusinessData(params: {
   rents?: unknown[];
   documents?: unknown[];
   inventories?: unknown[];
+  settings?: unknown[];
 }): Promise<void> {
   await db.transaction(
     'rw',
-    [db.properties, db.tenants, db.leases, db.rents, db.documents, db.inventories],
+    [db.properties, db.tenants, db.leases, db.rents, db.documents, db.inventories, db.settings],
     async () => {
       await Promise.all([
         db.properties.clear(),
@@ -59,6 +63,7 @@ export async function importBusinessData(params: {
         db.rents.clear(),
         db.documents.clear(),
         db.inventories.clear(),
+        db.settings.clear(),
       ]);
 
       if (params.properties.length) await db.properties.bulkAdd(params.properties as any);
@@ -67,6 +72,7 @@ export async function importBusinessData(params: {
       if (params.rents?.length) await db.rents.bulkAdd(params.rents as any);
       if (params.documents?.length) await db.documents.bulkAdd(params.documents as any);
       if (params.inventories?.length) await db.inventories.bulkAdd(params.inventories as any);
+      if (params.settings?.length) await db.settings.bulkAdd(params.settings as any);
     }
   );
 }
