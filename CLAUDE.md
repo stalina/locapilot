@@ -46,6 +46,51 @@ This rule applies without exception alongside the spec maintenance rule.
 - **Pattern:** `resetApp` in `beforeEach`, navigate via `navigateFromSidebar`, use `data-testid` or role-based locators. See `e2e/settings.spec.ts` for a reference.
 - **Scope:** One test per feature covering the golden path. Edge-case coverage belongs in unit tests, not E2E.
 
+---
+
+## Mandatory Commit, Push and PR Rule
+
+> **Once `type-check` and all tests pass, always commit on a new branch, push to origin, and open a pull request.**
+
+This rule applies without exception at the end of every implementation task.
+
+### Steps to follow
+
+1. `npm run type-check && npm test` — must be green before committing
+2. `git checkout -b <branch>` — branch name: `feat/`, `fix/`, or `chore/` prefix + kebab-case description
+3. `git add <files>` — stage only the files changed for this task (never `git add .` blindly)
+4. `git commit -m "<message>"` — conventional commit format: `type(scope): description`
+5. `git push -u origin <branch>`
+6. Create the PR via GitHub API (curl) — title mirrors the commit, body includes Summary, Test plan, and `Closes #<issue>` if applicable
+
+### Commit message format
+
+```
+feat(scope): short description in imperative mood
+
+- bullet 1
+- bullet 2
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+### PR body format
+
+```markdown
+## Summary
+
+- bullet points
+
+## Test plan
+
+- [ ] type-check passes
+- [ ] unit tests pass
+- [ ] E2E tests pass
+- [ ] manual verification steps
+
+Closes #<issue>
+```
+
 ## Functional Specifications
 
 All functional specs live in `specs/` — one Markdown file per domain with data models, business rules, Mermaid diagrams, and Gherkin user stories.
