@@ -1,16 +1,30 @@
 ## Summary
 
-Add E2E regression tests (Playwright) and openspec user-guide for regression scenarios.
+<!-- What does this PR do? One or two sentences. -->
 
-## What I changed
-- Added multiple e2e tests under `e2e/` covering leases, rents, documents, inventories, settings
-- Added openspec proposal and user-guide under `openspec/changes/add-e2e-regression-tests`
-- Added `e2e` npm script
+## Changes
+
+<!-- Bullet list of what changed (code, config, specs). -->
+
+-
+
+## Specs updated
+
+<!-- Were functional specs in specs/ updated or created? -->
+
+- [ ] Relevant spec(s) updated in `specs/` (new story, new scenario, or data model change)
+- [ ] Not applicable (refactor, chore, dependency update, config change)
 
 ## How to test
-1. Run `npm install` (if needed)
-2. Run `npm run e2e`
 
-## Notes
-- Tests are written to be tolerant if features are not present (they are skipped)
-- Some tests depend on dev server content and seeded data
+<!-- Steps to verify the change works. -->
+
+1.
+2.
+
+## Checklist
+
+- [ ] `npm run type-check` passes
+- [ ] `npm test` passes
+- [ ] `npm run lint` passes
+- [ ] Tested in the browser (for UI changes)
