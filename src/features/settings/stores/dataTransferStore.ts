@@ -7,7 +7,9 @@ import {
 } from '../repositories/dataTransferRepository';
 import {
   deserializeDocuments,
+  deserializeTenantDocuments,
   serializeDocuments,
+  serializeTenantDocuments,
   validateExportDataShape,
   type ExportDataPayload,
 } from '../services/dataTransferService';
@@ -22,6 +24,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
   ): Promise<{ json: string; data: ExportDataPayload }> {
     const raw = await fetchRawExportData();
     const documents = await serializeDocuments(raw.documents as any);
+    const tenantDocuments = await serializeTenantDocuments(raw.tenantDocuments as any);
 
     const data: ExportDataPayload = {
       properties: raw.properties,
@@ -29,7 +32,11 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
       leases: raw.leases,
       rents: raw.rents,
       documents,
+      tenantDocuments,
+      tenantAudits: raw.tenantAudits,
       inventories: raw.inventories,
+      communications: raw.communications,
+      chargesAdjustments: raw.chargesAdjustments,
       settings: raw.settings,
       exportedAt: new Date().toISOString(),
       version,
@@ -60,8 +67,12 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     try {
       validateExportDataShape(data);
 
-      const docs = Array.isArray((data as any).documents) ? (data as any).documents : [];
+      const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+      const docs = asArray((data as any).documents);
       const docsToAdd = deserializeDocuments(docs);
+      const tenantDocs = asArray((data as any).tenantDocuments);
+      const tenantDocsToAdd = deserializeTenantDocuments(tenantDocs);
 
       await importBusinessData({
         properties: (data as any).properties,
@@ -69,8 +80,12 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
         leases: (data as any).leases,
         rents: (data as any).rents,
         documents: docsToAdd,
+        tenantDocuments: tenantDocsToAdd,
+        tenantAudits: asArray((data as any).tenantAudits),
         inventories: (data as any).inventories,
-        settings: Array.isArray((data as any).settings) ? (data as any).settings : [],
+        communications: asArray((data as any).communications),
+        chargesAdjustments: asArray((data as any).chargesAdjustments),
+        settings: asArray((data as any).settings),
       });
     } catch (e) {
       console.error('Import error:', e);

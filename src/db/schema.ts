@@ -336,6 +336,7 @@ export async function exportData(): Promise<string> {
     tenantAudits: await db.tenantAudits.toArray(),
     inventories: await db.inventories.toArray(),
     communications: await db.communications.toArray(),
+    chargesAdjustments: await db.chargesAdjustments.toArray(),
     settings: await db.settings.toArray(),
   };
 
@@ -343,51 +344,47 @@ export async function exportData(): Promise<string> {
 }
 
 /**
- * Import data from JSON export
+ * Import data from JSON export.
+ *
+ * Note: this raw JSON path does not serialize Blob document content. For the
+ * user-facing backup/restore (which preserves files) use the dataTransfer store.
  */
 export async function importData(jsonData: string): Promise<void> {
   const data = JSON.parse(jsonData);
 
-  await db.transaction(
-    'rw',
-    [
-      db.properties,
-      db.tenants,
-      db.leases,
-      db.rents,
-      db.documents,
-      db.inventories,
-      db.communications,
-      db.settings,
-    ],
-    async () => {
-      // Clear existing data
-      await Promise.all([
-        db.properties.clear(),
-        db.tenants.clear(),
-        db.leases.clear(),
-        db.rents.clear(),
-        db.documents.clear(),
-        db.tenantDocuments.clear(),
-        db.tenantAudits.clear(),
-        db.inventories.clear(),
-        db.communications.clear(),
-        db.settings.clear(),
-      ]);
+  // Every table cleared/written below must be part of the transaction scope,
+  // otherwise Dexie throws at runtime (cf. issue #55).
+  const tables = [
+    db.properties,
+    db.tenants,
+    db.leases,
+    db.rents,
+    db.documents,
+    db.tenantDocuments,
+    db.tenantAudits,
+    db.inventories,
+    db.communications,
+    db.chargesAdjustments,
+    db.settings,
+  ];
 
-      // Import new data
-      if (data.properties) await db.properties.bulkAdd(data.properties);
-      if (data.tenants) await db.tenants.bulkAdd(data.tenants);
-      if (data.leases) await db.leases.bulkAdd(data.leases);
-      if (data.rents) await db.rents.bulkAdd(data.rents);
-      if (data.documents) await db.documents.bulkAdd(data.documents);
-      if (data.tenantDocuments) await db.tenantDocuments.bulkAdd(data.tenantDocuments);
-      if (data.tenantAudits) await db.tenantAudits.bulkAdd(data.tenantAudits);
-      if (data.inventories) await db.inventories.bulkAdd(data.inventories);
-      if (data.communications) await db.communications.bulkAdd(data.communications);
-      if (data.settings) await db.settings.bulkAdd(data.settings);
-    }
-  );
+  await db.transaction('rw', tables, async () => {
+    // Clear existing data
+    await Promise.all(tables.map(table => table.clear()));
+
+    // Import new data
+    if (data.properties) await db.properties.bulkAdd(data.properties);
+    if (data.tenants) await db.tenants.bulkAdd(data.tenants);
+    if (data.leases) await db.leases.bulkAdd(data.leases);
+    if (data.rents) await db.rents.bulkAdd(data.rents);
+    if (data.documents) await db.documents.bulkAdd(data.documents);
+    if (data.tenantDocuments) await db.tenantDocuments.bulkAdd(data.tenantDocuments);
+    if (data.tenantAudits) await db.tenantAudits.bulkAdd(data.tenantAudits);
+    if (data.inventories) await db.inventories.bulkAdd(data.inventories);
+    if (data.communications) await db.communications.bulkAdd(data.communications);
+    if (data.chargesAdjustments) await db.chargesAdjustments.bulkAdd(data.chargesAdjustments);
+    if (data.settings) await db.settings.bulkAdd(data.settings);
+  });
 
   console.log('✅ Data imported successfully');
 }
