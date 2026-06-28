@@ -98,9 +98,7 @@ export async function serializeDocuments(
   ) as Promise<SerializedDocument[]>;
 }
 
-export function deserializeDocuments(
-  documents: Array<Partial<SerializedDocument> & { data?: unknown }>
-): Array<Record<string, unknown>> {
+export function deserializeDocuments(documents: unknown[]): Array<Record<string, unknown>> {
   return documents.map(d => deserializeBlobRecord(d as Record<string, unknown>));
 }
 
@@ -113,7 +111,7 @@ export async function serializeTenantDocuments(
 }
 
 export function deserializeTenantDocuments(
-  tenantDocuments: Array<Partial<SerializedTenantDocument> & { data?: unknown }>
+  tenantDocuments: unknown[]
 ): Array<Record<string, unknown>> {
   return tenantDocuments.map(d => deserializeBlobRecord(d as Record<string, unknown>));
 }
