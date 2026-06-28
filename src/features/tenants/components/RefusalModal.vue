@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 import Modal from '@/shared/components/Modal.vue';
 import Button from '@/shared/components/Button.vue';
 
