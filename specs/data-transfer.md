@@ -152,3 +152,87 @@ And I import the backup file on device B
 Then device B has all the same properties, tenants, leases, documents, and settings as device A
 And photos and other binary documents are also present
 ```
+
+---
+
+### Story: Synchronise data between two devices via P2P
+
+**As a** landlord  
+**I want to** transfer my data directly from one browser to another without a file  
+**So that** I can switch devices quickly without going through a manual export/import
+
+> ⚠️ This feature is experimental. Authentication uses a shared PIN communicated out-of-band.
+
+#### Scenario: Successful P2P synchronisation with correct PIN
+
+```gherkin
+Given I am on device A (host) and open Settings > Synchronisation P2P
+When I click "Héberger"
+Then a session ID and a 6-digit PIN are displayed
+And the PIN is NOT included in the session ID
+
+Given I am on device B (client) and open Settings > Synchronisation P2P
+When I enter the session ID and the PIN communicated verbally by device A
+And I click "Se connecter"
+Then a WebRTC connection is established
+And device B sends an auth message containing the PIN
+And device A verifies the PIN matches
+
+Given the PIN matches
+When device A confirms the transfer in the confirmation dialog
+Then device A encrypts its full export payload (AES-GCM) and sends it
+And device B decrypts the payload
+And device B shows a confirmation dialog before importing
+And device B imports the data, replacing its local database
+And a success message is shown: "Données synchronisées avec succès !"
+```
+
+#### Scenario: Connection rejected with wrong PIN
+
+```gherkin
+Given device A is hosting with PIN "123456"
+When device B connects and sends PIN "000000"
+Then device A sends an auth_failed message and closes the connection
+And device A shows status: "Connexion rejetée — PIN incorrect"
+And device B shows status: "Authentification échouée — PIN incorrect"
+And no data is transferred
+```
+
+#### Scenario: Host rejects the transfer after authentication
+
+```gherkin
+Given device B has authenticated successfully with the correct PIN
+When device A is prompted "Un appareil vient de s'authentifier..."
+And device A clicks "Annuler"
+Then no data is sent
+And device A shows status: "Transfert annulé par l'hôte"
+And no data is transferred to device B
+```
+
+#### Scenario: Client cancels import after receiving data
+
+```gherkin
+Given device B has received the encrypted payload from device A
+When device B is prompted "Recevoir des données... va remplacer vos données locales"
+And device B clicks "Annuler"
+Then no import is performed
+And device B's local database remains unchanged
+```
+
+#### Scenario: Version mismatch between devices
+
+```gherkin
+Given device A runs version "1.0.0" and device B runs version "1.1.0"
+When device B enters device A's session ID
+Then an error is shown: "Version mismatch: remote=... local=..."
+And the connection is not attempted
+```
+
+#### Scenario: Second device attempts to connect while host is busy
+
+```gherkin
+Given device A is already connected to device B
+When device C attempts to connect to device A's session ID
+Then device A closes device C's connection immediately
+And device C receives a connection error
+```
