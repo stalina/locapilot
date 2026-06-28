@@ -14,6 +14,7 @@ import { formatAnnoncePlaceholders, defaultAnnonceTemplate } from '@/shared/util
 import { useNotification } from '@/shared/composables/useNotification';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
+import PropertyDocumentsList from '../components/PropertyDocumentsList.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -163,7 +164,7 @@ async function copyAnnonce() {
       // Use DOM parsing to safely convert HTML to text
       const container = document.createElement('div');
       container.innerHTML = html;
-      let decoded = (container.innerText || container.textContent || '');
+      let decoded = container.innerText || container.textContent || '';
       // Normalize line endings and collapse multiple blank lines
       decoded = decoded
         .replace(/\r/g, '')
@@ -374,6 +375,17 @@ async function copyAnnonce() {
               :editable="true"
               @update="() => propertiesStore.fetchPropertyById(propertyId)"
             />
+          </Card>
+
+          <!-- Official Documents -->
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-file-certificate"></i>
+                Documents officiels
+              </h2>
+            </div>
+            <PropertyDocumentsList :property-id="propertyId" />
           </Card>
         </div>
 
