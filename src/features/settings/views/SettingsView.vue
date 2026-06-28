@@ -26,8 +26,10 @@ const isImporting = computed(() => dataTransferStore.isImporting);
 // PeerJS sync
 const isHosting = ref(false);
 const hostId = ref<string | null>(null);
+const generatedPin = ref('');
 const peerStatus = ref('');
 const connectId = ref('');
+const pairingPin = ref('');
 let peerService: PeerSyncService | null = null;
 
 onMounted(() => {
@@ -97,10 +99,13 @@ const buildPeerId = () => {
   return `lcp-${appVersion}-${hh}-${mm}-${ss}-${rand}`;
 };
 
+const generatePin = () => String(Math.floor(Math.random() * 900000) + 100000);
+
 const startHosting = async () => {
   if (isHosting.value) return;
   isHosting.value = true;
   peerStatus.value = 'Creating peer...';
+  generatedPin.value = generatePin();
 
   // Create service with handlers
   peerService = new PeerSyncService(
@@ -114,33 +119,45 @@ const startHosting = async () => {
         hostId.value = String(info || '');
         isHosting.value = true;
       }
-      if (status === 'connection-open') {
-        // a client connected and channel is open - send export
+      if (status === 'auth-ok') {
+        // Client authenticated — ask user before sending data
         (async () => {
           try {
-            peerStatus.value = 'Connection open - sending export payload';
+            const ok = confirm(
+              "Un appareil vient de s'authentifier et souhaite recevoir vos données. Envoyer la synchronisation ?"
+            );
+            if (!ok) {
+              peerStatus.value = "Transfert annulé par l'hôte";
+              return;
+            }
+            peerStatus.value = 'Envoi des données en cours...';
             const { json } = await dataTransferStore.exportData(rawAppVersion);
             peerService?.sendExport(json);
           } catch (e) {
             console.error('Failed to send export from host', e);
-            peerStatus.value = 'Failed to send export';
+            peerStatus.value = "Échec de l'envoi";
           }
         })();
+      }
+      if (status === 'auth-failed') {
+        peerStatus.value = 'Connexion rejetée — PIN incorrect';
       }
       if (status === 'stopped') {
         isHosting.value = false;
         hostId.value = null;
+        generatedPin.value = '';
       }
     }
   );
 
   try {
     const id = buildPeerId();
-    await peerService.startHosting(id);
+    await peerService.startHosting(id, generatedPin.value);
   } catch (e) {
     console.error('startHosting error', e);
     peerStatus.value = 'Failed to host';
     isHosting.value = false;
+    generatedPin.value = '';
   }
 };
 
@@ -153,11 +170,13 @@ const stopHosting = () => {
   peerService = null;
   isHosting.value = false;
   hostId.value = null;
+  generatedPin.value = '';
   peerStatus.value = '';
 };
 
 const connectToHost = async () => {
   if (!connectId.value) return alert('Entrez un ID de session');
+  if (!pairingPin.value) return alert("Entrez le code PIN fourni par l'hôte");
 
   // validate version in id: expect lcp-<version>-...
   const parts = connectId.value.split('-');
@@ -173,19 +192,19 @@ const connectToHost = async () => {
   }
 
   try {
-    peerStatus.value = 'Connecting...';
+    peerStatus.value = 'Connexion en cours...';
 
     peerService = new PeerSyncService(
       async (data: any) => {
         if (!data || data.type !== 'export' || !data.payload) return;
         try {
           const parsed = JSON.parse(data.payload);
-          // confirm with user
+          // confirm with user before destructive import
           const ok = confirm(
             'Recevoir des données depuis un autre appareil va remplacer vos données locales. Continuer ?'
           );
           if (!ok) {
-            peerStatus.value = 'Import cancelled by user';
+            peerStatus.value = 'Import annulé';
             return;
           }
 
@@ -194,7 +213,8 @@ const connectToHost = async () => {
           await settingsStore.loadSettings();
           await reloadSenderInfo();
           alert('Données synchronisées avec succès !');
-          peerStatus.value = 'Import complete';
+          peerStatus.value = 'Synchronisation terminée';
+          pairingPin.value = '';
           // cleanup
           try {
             peerService?.disconnect();
@@ -208,8 +228,15 @@ const connectToHost = async () => {
       },
       (status, info) => {
         peerStatus.value = String(status) + (info ? ` - ${info}` : '');
-        if (status === 'connection-open') {
-          peerStatus.value = 'Connected - waiting for data';
+        if (status === 'auth-pending') {
+          peerStatus.value = 'Authentification en cours...';
+        }
+        if (status === 'auth-ok') {
+          peerStatus.value = 'Authentifié — en attente des données...';
+        }
+        if (status === 'auth-failed') {
+          peerStatus.value = 'Authentification échouée — PIN incorrect';
+          pairingPin.value = '';
         }
         if (status === 'error') {
           console.error('Peer error', info);
@@ -220,10 +247,10 @@ const connectToHost = async () => {
       }
     );
 
-    await peerService.connect(connectId.value);
+    await peerService.connect(connectId.value, pairingPin.value);
   } catch (e) {
     console.error('connectToHost error', e);
-    peerStatus.value = 'Failed to connect';
+    peerStatus.value = 'Échec de la connexion';
   }
 };
 
@@ -583,30 +610,49 @@ watch(
         <!-- Peer-to-peer Sync -->
         <div class="setting-card">
           <div class="setting-info">
-            <h3>Synchronisation Peer-to-peer</h3>
-            <p>Transférez vos données directement entre deux navigateurs via une connexion P2P.</p>
-            <p style="margin-top: 8px">
-              Status: <strong>{{ peerStatus }}</strong>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
+              <h3 style="margin: 0">Synchronisation Peer-to-peer</h3>
+              <span class="badge-experimental">Expérimental</span>
+            </div>
+            <p>
+              Transférez vos données directement entre deux navigateurs via une connexion P2P
+              chiffrée.
             </p>
-            <p v-if="hostId">
-              Share this ID to the other device: <code>{{ hostId }}</code>
+            <p class="experimental-warning">
+              ⚠️ Fonctionnalité expérimentale. Vérifiez toujours l'identité de l'appareil connecté
+              avant d'accepter un transfert.
             </p>
+            <p v-if="peerStatus" style="margin-top: 8px">
+              Statut : <strong>{{ peerStatus }}</strong>
+            </p>
+            <div v-if="hostId" class="peer-session-info">
+              <p>
+                ID de session : <code>{{ hostId }}</code>
+              </p>
+              <p>
+                Code PIN : <strong class="peer-pin">{{ generatedPin }}</strong>
+              </p>
+              <p style="font-size: 0.8em; color: var(--color-text-muted)">
+                Communiquez ce code PIN verbalement à l'autre appareil
+              </p>
+            </div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 8px; min-width: 260px">
             <div style="display: flex; gap: 8px">
               <Button v-if="!isHosting" @click="startHosting" variant="secondary">Héberger</Button>
               <Button v-else @click="stopHosting" variant="outline">Arrêter</Button>
             </div>
-            <div style="display: flex; gap: 8px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
               <input
                 v-model="connectId"
-                placeholder="Entrez l'ID d'hôte"
-                style="
-                  flex: 1;
-                  padding: 8px;
-                  border-radius: 6px;
-                  border: 1px solid var(--color-border);
-                "
+                placeholder="ID de session de l'hôte"
+                style="padding: 8px; border-radius: 6px; border: 1px solid var(--color-border)"
+              />
+              <input
+                v-model="pairingPin"
+                placeholder="Code PIN (6 chiffres)"
+                maxlength="6"
+                style="padding: 8px; border-radius: 6px; border: 1px solid var(--color-border)"
               />
               <Button @click="connectToHost" variant="secondary">Se connecter</Button>
             </div>
@@ -732,6 +778,47 @@ watch(
 .about-text {
   margin-top: var(--spacing-2) !important;
   line-height: 1.6;
+}
+
+.badge-experimental {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7em;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(180, 120, 0);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.experimental-warning {
+  margin-top: var(--spacing-2) !important;
+  color: rgb(180, 120, 0) !important;
+  font-size: 0.8em !important;
+}
+
+.peer-session-info {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.peer-session-info p {
+  margin: 0;
+}
+
+.peer-pin {
+  font-size: 1.3em;
+  letter-spacing: 0.15em;
+  color: var(--color-primary);
+  font-family: monospace;
 }
 
 @media (max-width: 768px) {

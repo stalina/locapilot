@@ -5,8 +5,6 @@ import Peer from 'peerjs';
 const APP_VERSION = (import.meta as any).__APP_VERSION__ || '';
 // @ts-ignore
 const BUILD_SECRET_KEY = (import.meta as any).__BUILD_SECRET_KEY__ || '';
-// application name from package.json is available via import.meta.env.PACKAGE_NAME is not standard,
-// so rely on explicit package name here
 const APP_NAME = 'locapilot';
 
 // Crypto helpers
@@ -68,6 +66,9 @@ export type PeerStatus =
   | 'hosting'
   | 'client-connected'
   | 'connection-open'
+  | 'auth-pending'
+  | 'auth-ok'
+  | 'auth-failed'
   | 'connected'
   | 'importing'
   | 'warning'
@@ -82,6 +83,7 @@ export class PeerSyncService {
   private conn: any = null;
   private onData?: OnDataCb;
   private onStatus?: OnStatusCb;
+  private pairingPin: string = '';
 
   constructor(onData?: OnDataCb, onStatus?: OnStatusCb) {
     this.onData = onData;
@@ -96,21 +98,50 @@ export class PeerSyncService {
     }
   }
 
-  async startHosting(id: string) {
+  private get debugLevel(): number {
+    return (import.meta as any).env?.DEV ? 2 : 0;
+  }
+
+  async startHosting(id: string, pin: string) {
     if (this.peer) return;
+    this.pairingPin = pin;
     this.notify('creating');
-    this.peer = new Peer(id, { debug: 2 });
+    this.peer = new Peer(id, { debug: this.debugLevel });
 
     this.peer.on('open', (peerId: string) => {
       this.notify('hosting', peerId);
     });
 
     this.peer.on('connection', (c: any) => {
+      // Reject concurrent connections
+      if (this.conn) {
+        c.close();
+        return;
+      }
       this.conn = c;
       this.notify('client-connected');
 
       this.conn.on('open', () => {
         this.notify('connection-open');
+        this.notify('auth-pending');
+      });
+
+      this.conn.on('data', (msg: any) => {
+        if (msg?.type === 'auth') {
+          if (msg.pin === this.pairingPin) {
+            this.conn.send({ type: 'auth_ok' });
+            this.notify('auth-ok');
+          } else {
+            this.conn.send({ type: 'auth_failed' });
+            this.notify('auth-failed');
+            try {
+              this.conn.close();
+            } catch {
+              // ignore
+            }
+            this.conn = null;
+          }
+        }
       });
 
       this.conn.on('close', () => {
@@ -145,10 +176,11 @@ export class PeerSyncService {
       }
       this.peer = null;
     }
+    this.pairingPin = '';
     this.notify('stopped');
   }
 
-  async connect(hostId: string) {
+  async connect(hostId: string, pin: string) {
     if (this.peer) {
       try {
         this.peer.destroy();
@@ -157,10 +189,11 @@ export class PeerSyncService {
       }
       this.peer = null;
     }
+    this.pairingPin = pin;
 
     // create an ephemeral peer id to avoid passing undefined to Peer constructor
     const ephemeralId = `peer-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`;
-    this.peer = new Peer(ephemeralId, { debug: 2 });
+    this.peer = new Peer(ephemeralId, { debug: this.debugLevel });
 
     this.peer.on('open', (id: string) => {
       this.notify('connected', id);
@@ -168,15 +201,21 @@ export class PeerSyncService {
 
       this.conn.on('open', () => {
         this.notify('connection-open');
+        // Send pairing authentication immediately after channel opens
+        this.conn.send({ type: 'auth', pin: this.pairingPin });
+        this.notify('auth-pending');
       });
 
       this.conn.on('data', async (data: any) => {
         try {
-          // Expect encrypted shape: { type: 'export', iv, payload }
-          if (data?.type === 'export' && data.iv && data.payload) {
+          if (data?.type === 'auth_ok') {
+            this.notify('auth-ok');
+          } else if (data?.type === 'auth_failed') {
+            this.notify('auth-failed');
+            this.disconnect();
+          } else if (data?.type === 'export' && data.iv && data.payload) {
             try {
               const decrypted = await decryptPayload(data.iv, data.payload);
-
               await this.onData?.({ type: 'export', payload: decrypted });
             } catch (e) {
               console.error('Failed to decrypt incoming payload', e);
@@ -218,6 +257,7 @@ export class PeerSyncService {
       }
       this.peer = null;
     }
+    this.pairingPin = '';
     this.notify('stopped');
   }
 

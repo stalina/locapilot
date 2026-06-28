@@ -25,6 +25,27 @@ npm run build          # Production build
 npm run type-check && npm test
 ```
 
+---
+
+## Mandatory Test Coverage Rule
+
+> **Every functional change MUST be covered by tests.**
+
+This rule applies without exception alongside the spec maintenance rule.
+
+### Unit tests (Vitest)
+
+- **Where:** Place the `.spec.ts` file next to the source file it tests (e.g. `myService.spec.ts` beside `myService.ts`).
+- **What to cover:** All new functions, class methods, and branches introduced. Mock external dependencies with `vi.mock()`.
+- **Pattern:** `describe` → `it` with explicit assertions. See `src/features/rents/services/rentsService.spec.ts` for a reference.
+
+### E2E tests (Playwright)
+
+- **Where:** `e2e/` directory. Add a new `test.describe` block to the relevant spec file (e.g. `e2e/settings.spec.ts`).
+- **What to cover:** The main happy-path scenario only — verify that the feature works end-to-end in the real browser.
+- **Pattern:** `resetApp` in `beforeEach`, navigate via `navigateFromSidebar`, use `data-testid` or role-based locators. See `e2e/settings.spec.ts` for a reference.
+- **Scope:** One test per feature covering the golden path. Edge-case coverage belongs in unit tests, not E2E.
+
 ## Functional Specifications
 
 All functional specs live in `specs/` — one Markdown file per domain with data models, business rules, Mermaid diagrams, and Gherkin user stories.
