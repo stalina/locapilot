@@ -34,6 +34,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          BUILD_SECRET_KEY: ${{ secrets.BUILD_SECRET_KEY }}
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
