@@ -47,15 +47,38 @@ const errors = ref({
 });
 
 onMounted(async () => {
-  await Promise.all([propertiesStore.fetchProperties(), tenantsStore.fetchTenants()]);
+  await Promise.all([
+    propertiesStore.fetchProperties(),
+    tenantsStore.fetchTenants(),
+    leasesStore.fetchLeases(),
+  ]);
 });
 
 const isEditMode = computed(() => !!props.lease);
 
 const modalTitle = computed(() => (isEditMode.value ? 'Modifier le bail' : 'Nouveau bail'));
 
+const expiringPropertyIds = computed(() => {
+  const today = new Date();
+  const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  return new Set(
+    leasesStore.leases
+      .filter(l => {
+        if (l.status !== 'active' || !l.endDate) return false;
+        const endDate = new Date(l.endDate);
+        return endDate >= today && endDate <= in30Days;
+      })
+      .map(l => l.propertyId)
+  );
+});
+
 const availableProperties = computed(() =>
-  propertiesStore.properties.filter(p => p.status === 'vacant' || p.id === props.lease?.propertyId)
+  propertiesStore.properties.filter(
+    p =>
+      p.status === 'vacant' ||
+      (p.id !== undefined && expiringPropertyIds.value.has(p.id)) ||
+      p.id === props.lease?.propertyId
+  )
 );
 
 const availableTenants = computed(() =>
