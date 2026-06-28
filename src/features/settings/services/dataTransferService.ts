@@ -1,6 +1,7 @@
-import type { Document } from '@/db/types';
+import type { Document, TenantDocument } from '@/db/types';
 
 export type SerializedDocument = Omit<Document, 'data'> & { data: string | null };
+export type SerializedTenantDocument = Omit<TenantDocument, 'data'> & { data: string | null };
 
 export type ExportDataPayload = {
   properties: unknown[];
@@ -8,7 +9,11 @@ export type ExportDataPayload = {
   leases: unknown[];
   rents: unknown[];
   documents: SerializedDocument[];
+  tenantDocuments: SerializedTenantDocument[];
+  tenantAudits: unknown[];
   inventories: unknown[];
+  communications: unknown[];
+  chargesAdjustments: unknown[];
   settings: unknown[];
   exportedAt: string;
   version: string;
@@ -39,57 +44,78 @@ export function tryParseDataUrl(input: string): { mime: string; b64: string } | 
   return { mime: matches[1] ?? 'application/octet-stream', b64: matches[2] ?? '' };
 }
 
+// Serialize a single record whose `data` field may hold a Blob, into a base64
+// data URL. Shared by documents and tenantDocuments (cf. issue #55).
+async function serializeBlobRecord(
+  record: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const copy: any = { ...record };
+  try {
+    const data = (record as any).data;
+    if (data instanceof Blob) {
+      const ab = await data.arrayBuffer();
+      const b64 = arrayBufferToBase64(ab);
+      copy.data = `data:${(record as any).mimeType};base64,${b64}`;
+    } else if (typeof data === 'string') {
+      copy.data = data;
+    } else {
+      copy.data = null;
+    }
+  } catch {
+    copy.data = null;
+  }
+  return copy;
+}
+
+function deserializeBlobRecord(record: Record<string, unknown>): Record<string, unknown> {
+  const copy: any = { ...record };
+  try {
+    const data = (record as any).data;
+    if (typeof data === 'string' && data.startsWith('data:')) {
+      const parsed = tryParseDataUrl(data);
+      if (parsed) {
+        const blob = base64ToBlob(parsed.b64, parsed.mime);
+        copy.data = blob;
+        copy.mimeType = parsed.mime;
+        copy.size = blob.size;
+      } else {
+        copy.data = null;
+      }
+    } else {
+      copy.data = null;
+    }
+  } catch {
+    copy.data = null;
+  }
+  return copy;
+}
+
 export async function serializeDocuments(
   documentsRaw: Array<Partial<Document> & { data?: unknown }>
 ): Promise<SerializedDocument[]> {
   return Promise.all(
-    documentsRaw.map(async d => {
-      const copy: any = { ...d };
-      try {
-        const data = (d as any).data;
-        if (data instanceof Blob) {
-          const ab = await data.arrayBuffer();
-          const b64 = arrayBufferToBase64(ab);
-          copy.data = `data:${(d as any).mimeType};base64,${b64}`;
-        } else if (typeof data === 'string') {
-          copy.data = data;
-        } else {
-          copy.data = null;
-        }
-      } catch {
-        copy.data = null;
-      }
-      return copy as SerializedDocument;
-    })
-  );
+    documentsRaw.map(d => serializeBlobRecord(d as Record<string, unknown>))
+  ) as Promise<SerializedDocument[]>;
 }
 
 export function deserializeDocuments(
   documents: Array<Partial<SerializedDocument> & { data?: unknown }>
 ): Array<Record<string, unknown>> {
-  return documents.map(d => {
-    const copy: any = { ...d };
+  return documents.map(d => deserializeBlobRecord(d as Record<string, unknown>));
+}
 
-    try {
-      if (typeof d.data === 'string' && d.data.startsWith('data:')) {
-        const parsed = tryParseDataUrl(d.data);
-        if (parsed) {
-          const blob = base64ToBlob(parsed.b64, parsed.mime);
-          copy.data = blob;
-          copy.mimeType = parsed.mime;
-          copy.size = blob.size;
-        } else {
-          copy.data = null;
-        }
-      } else {
-        copy.data = null;
-      }
-    } catch {
-      copy.data = null;
-    }
+export async function serializeTenantDocuments(
+  tenantDocumentsRaw: Array<Partial<TenantDocument> & { data?: unknown }>
+): Promise<SerializedTenantDocument[]> {
+  return Promise.all(
+    tenantDocumentsRaw.map(d => serializeBlobRecord(d as Record<string, unknown>))
+  ) as Promise<SerializedTenantDocument[]>;
+}
 
-    return copy;
-  });
+export function deserializeTenantDocuments(
+  tenantDocuments: Array<Partial<SerializedTenantDocument> & { data?: unknown }>
+): Array<Record<string, unknown>> {
+  return tenantDocuments.map(d => deserializeBlobRecord(d as Record<string, unknown>));
 }
 
 export function validateExportDataShape(data: any): asserts data is ExportDataPayload {
