@@ -236,3 +236,25 @@ When device C attempts to connect to device A's session ID
 Then device A closes device C's connection immediately
 And device C receives a connection error
 ```
+
+#### Scenario: Production build fails if BUILD_SECRET_KEY is not set
+
+```gherkin
+Given the project is being built with NODE_ENV=production
+And the BUILD_SECRET_KEY environment variable is not set
+When the build command is executed
+Then the build exits with a non-zero code
+And an error message is printed: "[BUILD ERROR] BUILD_SECRET_KEY is required for production builds."
+And no build artefact is produced
+```
+
+#### Scenario: Production build succeeds when BUILD_SECRET_KEY is set
+
+```gherkin
+Given the project is being built with NODE_ENV=production
+And BUILD_SECRET_KEY is set to a non-empty secret value
+When the build command is executed
+Then the build completes successfully
+And the secret is injected into the bundle as part of the AES key derivation seed
+And the plaintext secret value is NOT present in the output bundle
+```

@@ -8,6 +8,16 @@ import { fileURLToPath } from 'node:url';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+// Fail-fast: BUILD_SECRET_KEY must be set in production so every deployment
+// derives a unique AES key. An empty key makes all instances share the same key.
+if (process.env.NODE_ENV === 'production' && !process.env.BUILD_SECRET_KEY) {
+  console.error(
+    '\n[BUILD ERROR] BUILD_SECRET_KEY is required for production builds.\n' +
+      'Add it as a repository secret (Settings > Secrets and variables > Actions > BUILD_SECRET_KEY).\n'
+  );
+  process.exit(1);
+}
+
 // Determine base path: use /locapilot/ in production build or when explicitly testing PWA
 const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV === 'production';
 const basePath = isPWABuild ? '/locapilot/' : '/';
