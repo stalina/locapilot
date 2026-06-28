@@ -87,6 +87,7 @@ export interface Document {
     | 'invoice'
     | 'insurance'
     | 'photo'
+    | 'diagnostic'
     | 'other';
   relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant' | 'inventory';
   relatedEntityId?: number;

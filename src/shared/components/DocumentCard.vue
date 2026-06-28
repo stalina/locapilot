@@ -61,6 +61,13 @@ const typeConfig = computed(() => {
         color: 'success',
         gradient: 'linear-gradient(135deg, #10b981, #059669)',
       };
+    case 'diagnostic':
+      return {
+        label: props.document.description || 'Diagnostic',
+        icon: 'home-search',
+        color: 'info',
+        gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      };
     case 'other':
     default:
       return {
@@ -321,6 +328,11 @@ onUnmounted(() => {
 .badge-success {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
   color: #065f46;
+}
+
+.badge-info {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
 }
 
 .badge-default {
