@@ -76,7 +76,7 @@ const availableProperties = computed(() =>
   propertiesStore.properties.filter(
     p =>
       p.status === 'vacant' ||
-      expiringPropertyIds.value.has(p.id) ||
+      (p.id !== undefined && expiringPropertyIds.value.has(p.id)) ||
       p.id === props.lease?.propertyId
   )
 );
