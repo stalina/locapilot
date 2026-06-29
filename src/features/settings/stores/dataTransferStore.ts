@@ -37,6 +37,8 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
       inventories: raw.inventories,
       communications: raw.communications,
       chargesAdjustments: raw.chargesAdjustments,
+      irlIndices: raw.irlIndices,
+      rentRevisions: raw.rentRevisions,
       settings: raw.settings,
       exportedAt: new Date().toISOString(),
       version,
@@ -85,6 +87,8 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
         inventories: (data as any).inventories,
         communications: asArray((data as any).communications),
         chargesAdjustments: asArray((data as any).chargesAdjustments),
+        irlIndices: asArray((data as any).irlIndices),
+        rentRevisions: asArray((data as any).rentRevisions),
         settings: asArray((data as any).settings),
       });
     } catch (e) {

@@ -291,6 +291,188 @@ export interface MandatLocationData {
 }
 
 /**
+ * Interface pour les données de génération du courrier de révision de loyer (IRL)
+ */
+export interface RentRevisionLetterData {
+  year: number;
+  tenantName: string;
+  tenantFullName: string;
+  oldRent: string;
+  newRent: string;
+  previousIrlLabel: string;
+  currentIrlLabel: string;
+  previousIrl: string;
+  currentIrl: string;
+  charges: string;
+  total: string;
+  effectiveDate: string;
+  today: string;
+  // En-tête expéditeur (propriétaire) — aligné sur les autres templates
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+  // Bloc bien loué
+  propertyName: string;
+  propertyAddress: string;
+  propertyPostalCode: string;
+  propertyTown: string;
+}
+
+/**
+ * Données de la proposition de révision nécessaires à la génération du courrier.
+ */
+export interface RentRevisionInput {
+  leaseId: number;
+  year: number;
+  referenceQuarter: 1 | 2 | 3 | 4;
+  oldRent: number;
+  newRent: number;
+  currentIrl: number;
+  previousIrl: number;
+  charges: number;
+  effectiveDate: Date;
+}
+
+/**
+ * Prépare les données pour la génération du courrier de révision de loyer.
+ */
+export async function prepareRentRevisionLetterData(
+  revision: RentRevisionInput
+): Promise<RentRevisionLetterData> {
+  let ownerFullName = '';
+  let ownerAddress = '';
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+  try {
+    const nameSetting = await db.settings.where('key').equals('senderName').first();
+    if (nameSetting?.value) ownerFullName = String(nameSetting.value);
+    const addressSetting = await db.settings.where('key').equals('senderAddress').first();
+    if (addressSetting?.value) ownerAddress = String(addressSetting.value);
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) ownerEmail = String(emailSetting.value);
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) ownerPhoneNumber = String(phoneSetting.value);
+  } catch {
+    // Ignorer si les clés n'existent pas
+  }
+
+  let tenantName = '';
+  let tenantFullName = '';
+  let propertyName = '';
+  let propertyAddress = '';
+  let propertyPostalCode = '';
+  let propertyTown = '';
+  try {
+    const lease = await db.leases.get(revision.leaseId);
+    if (lease) {
+      const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
+      tenantName = tenantsInfo.names;
+      tenantFullName = tenantsInfo.fullNames;
+      if (lease.propertyId) {
+        const property = await db.properties.get(lease.propertyId);
+        if (property) {
+          propertyName = property.name || '';
+          propertyAddress = property.address || '';
+          propertyPostalCode = property.postalCode || '';
+          propertyTown = property.town || '';
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Unable to resolve tenant/property for revision letter', err);
+  }
+
+  const fmt = (n: number) => n.toLocaleString('fr-FR');
+  const total = revision.newRent + revision.charges;
+
+  return {
+    year: revision.year,
+    tenantName,
+    tenantFullName,
+    oldRent: fmt(revision.oldRent),
+    newRent: fmt(revision.newRent),
+    previousIrlLabel: `T${revision.referenceQuarter} ${revision.year - 1}`,
+    currentIrlLabel: `T${revision.referenceQuarter} ${revision.year}`,
+    previousIrl: fmt(revision.previousIrl),
+    currentIrl: fmt(revision.currentIrl),
+    charges: fmt(revision.charges),
+    total: fmt(total),
+    effectiveDate: new Date(revision.effectiveDate).toLocaleDateString('fr-FR'),
+    today: new Date().toLocaleDateString('fr-FR'),
+    ownerFullName,
+    ownerAddress,
+    ownerEmail,
+    ownerPhoneNumber,
+    propertyName,
+    propertyAddress,
+    propertyPostalCode,
+    propertyTown,
+  };
+}
+
+/**
+ * Génère un courrier de révision de loyer (IRL) au format DOCX.
+ */
+export async function generateRentRevisionLetter(
+  data: RentRevisionLetterData,
+  templatePath: string = `${import.meta.env.BASE_URL}templateRevisionLoyer.docx`
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_revisionLoyer_${data.year}.docx`;
+
+    return { blob: out, filename };
+  } catch (error) {
+    console.error('Erreur génération courrier de révision de loyer :', error);
+    throw error;
+  }
+}
+
+/**
+ * Sauvegarde le courrier de révision de loyer dans la base documentaire.
+ */
+export async function saveRentRevisionLetterToDb(
+  leaseId: number,
+  year: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'other',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: `Courrier révision loyer ${year}`,
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
+}
+
+/**
  * Génère un courrier de régularisation des charges au format DOCX
  * @param data - Données à insérer dans le template
  * @param templatePath - Chemin vers le template DOCX (par défaut: /templateRegulCharge.docx)

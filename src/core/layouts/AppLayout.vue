@@ -71,6 +71,10 @@
       </nav>
 
       <div class="sidebar-footer">
+        <RouterLink to="/indexation" class="nav-item" @click="closeSidebar">
+          <i class="mdi mdi-chart-line"></i>
+          <span>Indexation IRL</span>
+        </RouterLink>
         <RouterLink to="/settings" class="nav-item" @click="closeSidebar">
           <i class="mdi mdi-cog"></i>
           <span>Paramètres</span>

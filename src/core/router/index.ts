@@ -44,6 +44,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Détail Bail' },
   },
   {
+    path: '/indexation',
+    name: 'indexation',
+    component: () => import('@features/indexation/views/IndexationView.vue'),
+    meta: { title: 'Indexation IRL' },
+  },
+  {
     path: '/rents',
     name: 'rents',
     component: () => import('@features/rents/views/RentsView.vue'),

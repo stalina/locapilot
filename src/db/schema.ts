@@ -176,6 +176,33 @@ export interface ChargesAdjustmentRow {
   updatedAt: Date;
 }
 
+export interface IrlIndex {
+  id?: number;
+  year: number;
+  quarter: 1 | 2 | 3 | 4; // trimestre
+  value: number; // Indice INSEE de Référence des Loyers (ex: 145.17)
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RentRevision {
+  id?: number;
+  leaseId: number;
+  year: number; // année de la révision (date anniversaire)
+  anniversaryDate: Date; // date anniversaire du bail pour cette révision
+  effectiveDate: Date; // date d'effet de la révision
+  referenceQuarter: 1 | 2 | 3 | 4; // trimestre de référence IRL
+  oldRent: number; // loyer avant révision
+  newRent: number; // loyer révisé (arrondi)
+  currentIrl: number; // IRL du trimestre de référence (année de révision)
+  previousIrl: number; // IRL du même trimestre l'année précédente
+  charges: number; // provision sur charges (inchangée)
+  status: 'pending' | 'applied' | 'rejected';
+  documentId?: number; // courrier de révision généré
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ========== Database Class ==========
 
 export class LocapilotDB extends Dexie {
@@ -190,6 +217,8 @@ export class LocapilotDB extends Dexie {
   tenantAudits!: EntityTable<TenantAudit, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   chargesAdjustments!: EntityTable<ChargesAdjustmentRow, 'id'>;
+  irlIndices!: EntityTable<IrlIndex, 'id'>;
+  rentRevisions!: EntityTable<RentRevision, 'id'>;
 
   constructor() {
     super('locapilot');
@@ -297,6 +326,23 @@ export class LocapilotDB extends Dexie {
       settings: '++id, &key',
       chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
     });
+
+    // Version 7: Add IRL indexation tables (irlIndices + rentRevisions) — issue #41
+    this.version(7).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
+      irlIndices: '++id, year, quarter, [year+quarter]',
+      rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
+    });
   }
 }
 
@@ -337,6 +383,8 @@ export async function exportData(): Promise<string> {
     inventories: await db.inventories.toArray(),
     communications: await db.communications.toArray(),
     chargesAdjustments: await db.chargesAdjustments.toArray(),
+    irlIndices: await db.irlIndices.toArray(),
+    rentRevisions: await db.rentRevisions.toArray(),
     settings: await db.settings.toArray(),
   };
 
@@ -365,6 +413,8 @@ export async function importData(jsonData: string): Promise<void> {
     db.inventories,
     db.communications,
     db.chargesAdjustments,
+    db.irlIndices,
+    db.rentRevisions,
     db.settings,
   ];
 
@@ -383,6 +433,8 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.inventories) await db.inventories.bulkAdd(data.inventories);
     if (data.communications) await db.communications.bulkAdd(data.communications);
     if (data.chargesAdjustments) await db.chargesAdjustments.bulkAdd(data.chargesAdjustments);
+    if (data.irlIndices) await db.irlIndices.bulkAdd(data.irlIndices);
+    if (data.rentRevisions) await db.rentRevisions.bulkAdd(data.rentRevisions);
     if (data.settings) await db.settings.bulkAdd(data.settings);
   });
 
