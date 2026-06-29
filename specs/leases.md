@@ -295,36 +295,61 @@ Then that lease appears in the results
 **I want to** record the annual charges reconciliation for a lease  
 **So that** I can calculate whether tenants owe additional charges or are entitled to a refund
 
-#### Scenario: Create a charges adjustment for a year
+The charges adjustment table opens on the lease detail view and automatically lists one row per year, from the lease start year up to the current year. For each year:
+
+- The **provision paid** (`chargesProvisionPaid`) is computed automatically from the `charges` of the rents marked paid that year.
+- The landlord enters the **actual annual charges** either directly as a single total (`annualCharges`) or, optionally, broken down into named columns (`customCharges`). As soon as at least one breakdown column exists, the total becomes the sum of those columns and is no longer entered directly.
+- The **balance** (régularisation) = `provision paid − actual annual charges`. A **positive** balance is an overpayment to refund to the tenant; a **negative** balance is an additional amount the tenant owes.
+
+Every edit is persisted immediately (upsert by lease + year).
+
+#### Scenario: Enter the actual annual charges total for a year
 
 ```gherkin
-Given an active lease with monthly charges provision of "80 €"
-When I navigate to the lease's charges adjustment tab
-And I click "Add adjustment for 2025"
-And I fill in annualCharges "1050" (actual charges total)
-And I save
-Then a ChargesAdjustmentRow for 2025 is saved
-And the UI shows that the tenant paid 12 × 80 = 960 € in provisions
-And the balance shows −90 € (tenant owes 90 €)
+Given an active lease started in 2025 with a monthly charges provision of "80 €"
+And all 12 rents of 2025 were paid, so the provision paid is computed as "960 €"
+When I navigate to the lease's charges adjustment table
+And I enter the actual annual charges total "1050 €" for 2025
+Then the ChargesAdjustmentRow for 2025 is saved with annualCharges = 1050
+And the balance shows −90 € (the tenant owes 90 €)
 ```
 
-#### Scenario: Add custom charge columns
+#### Scenario: Refund when provisions exceed actual charges
 
 ```gherkin
-Given I am editing a charges adjustment row for 2025
+Given a charges adjustment row for 2025 with provision paid "960 €"
+When I enter the actual annual charges total "800 €"
+Then the balance shows +160 € (an overpayment to refund to the tenant)
+```
+
+#### Scenario: Break the total down into custom charge columns
+
+```gherkin
+Given a charges adjustment row for 2025 with provision paid "960 €"
 When I add a custom column named "Water" with value "240"
 And another column "Heating" with value "810"
-Then the breakdown table shows Water: 240 € and Heating: 810 €
-And the total custom charges sum is displayed
+Then the breakdown shows Water: 240 € and Heating: 810 €
+And the actual annual charges total becomes the sum 1050 € (no longer entered directly)
+And the balance shows −90 € (the tenant owes 90 €)
 ```
 
 #### Scenario: Prevent duplicate year entry
 
 ```gherkin
 Given a charges adjustment for 2025 already exists on a lease
-When I try to create another adjustment for 2025 on the same lease
+When a value is changed for 2025 on the same lease
 Then the existing record is updated (upsert behavior)
 And no duplicate row is created
+```
+
+#### Scenario: Generate the régularisation letter for a year
+
+```gherkin
+Given a charges adjustment row for 2025 with a computed balance
+When I click the letter icon for 2025
+Then a "courrier de régularisation" DOCX is generated with the provision, total charges and balance
+And I can choose to save it to the document library or download it only
+And once saved, the icon offers to re-download the stored letter
 ```
 
 ---

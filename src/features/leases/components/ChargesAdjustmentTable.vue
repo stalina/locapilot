@@ -8,6 +8,11 @@ import { useConfirm } from '@/shared/composables/useConfirm';
 import type { ChargesAdjustmentRow } from '@/db/types';
 import { fetchRentsByLeaseId } from '../repositories/leaseRentsRepository';
 import {
+  computeCustomTotal,
+  computeTotalCharges as computeTotalChargesPure,
+  computeRegulation as computeRegulationPure,
+} from '../services/chargesAdjustmentCalculations';
+import {
   prepareRegulationLetterData,
   generateRegulationLetter,
   saveRegulationLetterToDb,
@@ -15,7 +20,6 @@ import {
 } from '@/shared/services/documentGenerator';
 
 const props = withDefaults(defineProps<{ leaseId: number }>(), { leaseId: 0 });
-const emit = defineEmits<{}>();
 
 const leasesStore = useLeasesStore();
 const documentsStore = useDocumentsStore();
@@ -160,31 +164,32 @@ async function confirmAddColumn() {
         Object.fromEntries(Object.entries(custom).map(([k, v]) => [k, Number(v) || 0]))
       )
     );
-    const payload = {
+    // Le détail fait foi : le total réel devient la somme des colonnes.
+    r.annualCharges = computeCustomTotal(r);
+    await leasesStore.upsertChargesAdjustment({
       leaseId: r.leaseId,
       year: r.year,
       monthlyRent: r.monthlyRent ?? 0,
-      annualCharges: r.annualCharges ?? 0,
+      annualCharges: r.annualCharges,
       chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
       rentsPaidCount: r.rentsPaidCount ?? 0,
       rentsPaidTotal: r.rentsPaidTotal ?? 0,
       customCharges: r.customCharges,
-    };
-    console.log('Upsert charges adjustment (add column):', payload);
-    await leasesStore.upsertChargesAdjustment(payload);
+    });
   }
 
   showAddColumnModal.value = false;
 }
 
-function computeCustomTotal(r: ChargesAdjustmentRow) {
-  if (!r.customCharges) return 0;
-  const values = Object.values(r.customCharges).map(v => Number(v) || 0);
-  return values.reduce((s, v) => s + v, 0);
+// Un détail en colonnes est utilisé dès qu'au moins une colonne personnalisée existe.
+const hasBreakdown = computed(() => columns.value.length > 0);
+
+function computeTotalCharges(r: ChargesAdjustmentRow) {
+  return computeTotalChargesPure(r, hasBreakdown.value);
 }
 
 function computeRegulation(r: ChargesAdjustmentRow) {
-  return (Number(r.chargesProvisionPaid) || 0) - computeCustomTotal(r);
+  return computeRegulationPure(r, hasBreakdown.value);
 }
 
 // Vérifie si un document de régularisation existe pour une année donnée
@@ -222,7 +227,7 @@ async function downloadExistingRegulationLetter(year: number) {
 
 async function generateRegulLetter(r: ChargesAdjustmentRow) {
   try {
-    const data = await prepareRegulationLetterData(r, computeCustomTotal, computeRegulation);
+    const data = await prepareRegulationLetterData(r, computeTotalCharges, computeRegulation);
     const { blob, filename } = await generateRegulationLetter(data);
 
     // Demander à l'utilisateur s'il veut sauvegarder dans la base documentaire
@@ -258,18 +263,19 @@ async function onCellChange(r: ChargesAdjustmentRow, key: string, value: number)
       Object.fromEntries(Object.entries(r.customCharges).map(([k, v]) => [k, Number(v) || 0]))
     )
   );
-  const payload = {
+  // Le détail fait foi : on persiste le total réel dans annualCharges pour rester cohérent
+  // avec le courrier et l'export.
+  r.annualCharges = computeCustomTotal(r);
+  await leasesStore.upsertChargesAdjustment({
     leaseId: r.leaseId,
     year: r.year,
     monthlyRent: r.monthlyRent ?? 0,
-    annualCharges: r.annualCharges ?? 0,
+    annualCharges: r.annualCharges,
     chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
     rentsPaidCount: r.rentsPaidCount ?? 0,
     rentsPaidTotal: r.rentsPaidTotal ?? 0,
     customCharges: r.customCharges,
-  };
-  console.log('Upsert charges adjustment (cell change):', payload);
-  await leasesStore.upsertChargesAdjustment(payload);
+  });
 }
 
 function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
@@ -277,7 +283,25 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   void onCellChange(r, key, v);
 }
 
-// (onRowUpdate removed - not used)
+// Saisie directe du total des charges réelles (quand aucun détail en colonnes n'est utilisé)
+async function onTotalChange(r: ChargesAdjustmentRow, value: number) {
+  r.annualCharges = Number(value) || 0;
+  await leasesStore.upsertChargesAdjustment({
+    leaseId: r.leaseId,
+    year: r.year,
+    monthlyRent: r.monthlyRent ?? 0,
+    annualCharges: r.annualCharges,
+    chargesProvisionPaid: r.chargesProvisionPaid ?? 0,
+    rentsPaidCount: r.rentsPaidCount ?? 0,
+    rentsPaidTotal: r.rentsPaidTotal ?? 0,
+    customCharges: r.customCharges,
+  });
+}
+
+function handleTotalInput(e: Event, r: ChargesAdjustmentRow) {
+  const v = Number((e.target as HTMLInputElement).value || 0);
+  void onTotalChange(r, v);
+}
 </script>
 
 <template>
@@ -316,13 +340,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
             <td class="info-td">
               <span class="nowrap">
                 {{
-                  (
-                    Number(
-                      r.annualCharges
-                        ? r.annualCharges / 12
-                        : (leasesStore.currentLease?.charges ?? 0)
-                    ) || 0
-                  ).toLocaleString('fr-FR')
+                  (Number(leasesStore.currentLease?.charges ?? 0) || 0).toLocaleString('fr-FR')
                 }}&nbsp;€
               </span>
             </td>
@@ -345,7 +363,19 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
             </td>
 
             <td class="total-td">
-              <span class="nowrap">{{ computeCustomTotal(r).toLocaleString('fr-FR') }}&nbsp;€</span>
+              <input
+                v-if="!hasBreakdown"
+                type="number"
+                class="input charge-input"
+                :value="Number(r.annualCharges) || 0"
+                @change="e => handleTotalInput(e, r)"
+                min="0"
+                step="1"
+                :aria-label="'Total charges réelles ' + r.year"
+              />
+              <span v-else class="nowrap"
+                >{{ computeTotalCharges(r).toLocaleString('fr-FR') }}&nbsp;€</span
+              >
             </td>
             <td class="reg-td">
               <div style="display: flex; align-items: center; gap: 8px; justify-content: center">

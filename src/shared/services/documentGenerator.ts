@@ -544,13 +544,13 @@ export async function saveRegulationLetterToDb(
 /**
  * Prépare les données pour la génération du courrier de régularisation
  * @param adjustmentRow - Ligne de régularisation des charges
- * @param computeCustomTotal - Fonction de calcul du total des charges personnalisées
- * @param computeRegulation - Fonction de calcul de la régularisation
+ * @param computeTotalCharges - Fonction de calcul du total des charges réelles de l'année
+ * @param computeRegulation - Fonction de calcul de la régularisation (provision − charges réelles)
  * @returns Promise contenant les données formatées pour le template
  */
 export async function prepareRegulationLetterData(
   adjustmentRow: ChargesAdjustmentRow,
-  computeCustomTotal: (row: ChargesAdjustmentRow) => number,
+  computeTotalCharges: (row: ChargesAdjustmentRow) => number,
   computeRegulation: (row: ChargesAdjustmentRow) => number
 ): Promise<RegulationLetterData> {
   // Charger l'adresse de l'expéditeur depuis les settings
@@ -613,7 +613,7 @@ export async function prepareRegulationLetterData(
   return {
     year: adjustmentRow.year,
     provisionPaid: Number(adjustmentRow.chargesProvisionPaid) || 0,
-    totalCharges: computeCustomTotal(adjustmentRow),
+    totalCharges: computeTotalCharges(adjustmentRow),
     regulation: computeRegulation(adjustmentRow),
     ownerAddress,
     ownerFullName,
