@@ -121,12 +121,39 @@ export interface TenantAudit {
   documentIds?: number[]; // linked document ids used as evidence
 }
 
+export type InventoryCondition = 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
+
 export interface InventoryItem {
   room: string;
   item: string;
-  condition: 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
+  condition: InventoryCondition;
   notes?: string;
   photos?: number[]; // Document IDs
+}
+
+/** A single inspected element within a room (e.g. "Murs", "Sol", "Fenêtres"). */
+export interface InventoryRoomItem {
+  label: string;
+  condition: InventoryCondition;
+  notes?: string;
+  photos?: number[]; // Document IDs - photos organisées par élément/pièce
+}
+
+/** A room with its inspected elements (structured replacement for roomsData). */
+export interface InventoryRoom {
+  name: string;
+  items: InventoryRoomItem[];
+}
+
+/**
+ * Acceptance / signature of an inventory.
+ * "À minima" : case d'acceptation horodatée (issue #46).
+ */
+export interface InventorySignature {
+  tenantAccepted: boolean;
+  landlordAccepted: boolean;
+  acceptedAt?: Date; // horodatage de l'acceptation
+  tenantName?: string;
 }
 
 export interface Inventory {
@@ -136,7 +163,12 @@ export interface Inventory {
   date: Date;
   observations?: string;
   photos?: number[]; // Document IDs - harmonisé avec Property.photos
+  /** Structured per-room inspection data (preferred over the legacy roomsData). */
+  rooms?: InventoryRoom[];
+  /** @deprecated Legacy flexible per-room data; kept for backward compatibility. */
   roomsData?: Record<string, any>;
+  /** Acceptance/signature record. */
+  signature?: InventorySignature;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -329,6 +361,24 @@ export class LocapilotDB extends Dexie {
 
     // Version 7: Add IRL indexation tables (irlIndices + rentRevisions) — issue #41
     this.version(7).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
+      irlIndices: '++id, year, quarter, [year+quarter]',
+      rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
+    });
+
+    // Version 8: Inventories gain structured `rooms` and `signature` fields — issue #46.
+    // Non-indexed object fields: no index changes required, no data migration needed.
+    this.version(8).stores({
       properties: '++id, name, address, type, surface, status, createdAt',
       tenants: '++id, firstName, lastName, email, phone, status, createdAt',
       leases: '++id, propertyId, startDate, endDate, status, createdAt',

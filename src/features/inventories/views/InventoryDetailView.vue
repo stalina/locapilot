@@ -10,6 +10,7 @@ import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
 import InventoryPhotoGallery from '@/shared/components/InventoryPhotoGallery.vue';
 import InventoryFormModal from '@/features/inventories/components/InventoryFormModal.vue';
+import { CONDITION_LABEL } from '@/features/inventories/services/inventoryComparison';
 import type { Tenant } from '@/db/schema';
 
 const route = useRoute();
@@ -25,6 +26,7 @@ const inventoryId = Number(route.params.id);
 onMounted(async () => {
   await Promise.all([
     inventoriesStore.fetchInventoryById(inventoryId),
+    inventoriesStore.fetchInventories(),
     leasesStore.fetchLeases(),
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
@@ -32,6 +34,30 @@ onMounted(async () => {
 });
 
 const inventory = computed(() => inventoriesStore.currentInventory);
+
+const rooms = computed(() => inventory.value?.rooms ?? []);
+
+// La comparaison nécessite un état d'entrée ET un état de sortie sur le bail.
+const canCompare = computed(() => {
+  if (!inventory.value) return false;
+  const siblings = inventoriesStore.inventories.filter(i => i.leaseId === inventory.value!.leaseId);
+  return siblings.some(i => i.type === 'checkin') && siblings.some(i => i.type === 'checkout');
+});
+
+const conditionVariant = (condition: string) => {
+  const map: Record<string, string> = {
+    excellent: 'success',
+    good: 'success',
+    fair: 'warning',
+    poor: 'warning',
+    damaged: 'danger',
+  };
+  return (map[condition] ?? 'default') as 'success' | 'warning' | 'danger' | 'default';
+};
+
+const handleCompare = () => {
+  if (inventory.value) router.push(`/inventories/compare/${inventory.value.leaseId}`);
+};
 
 const lease = computed(() => {
   if (!inventory.value) return null;
@@ -141,6 +167,15 @@ const handleGoBack = () => {
           </div>
         </div>
         <div class="header-actions">
+          <Button
+            v-if="canCompare"
+            variant="primary"
+            icon="compare-horizontal"
+            @click="handleCompare"
+            data-testid="compare-inventory-button"
+          >
+            Comparer entrée/sortie
+          </Button>
           <Button variant="default" icon="pencil" @click="handleEdit"> Modifier </Button>
           <Button variant="danger" icon="delete" @click="handleDelete"> Supprimer </Button>
         </div>
@@ -201,6 +236,53 @@ const handleGoBack = () => {
           Observations
         </h2>
         <p class="observations-text">{{ inventory.observations }}</p>
+      </Card>
+
+      <!-- Rooms / état des pièces -->
+      <Card v-if="rooms.length > 0" class="rooms-card">
+        <h2 class="card-title"><i class="mdi mdi-floor-plan"></i> État des pièces</h2>
+        <div v-for="(room, i) in rooms" :key="i" class="room-detail">
+          <h3 class="room-detail-name">{{ room.name }}</h3>
+          <ul class="room-items">
+            <li v-for="(item, j) in room.items" :key="j" class="room-item">
+              <span class="room-item-label">{{ item.label }}</span>
+              <Badge :variant="conditionVariant(item.condition)">
+                {{ CONDITION_LABEL[item.condition] }}
+              </Badge>
+              <span v-if="item.notes" class="room-item-notes">{{ item.notes }}</span>
+            </li>
+          </ul>
+        </div>
+      </Card>
+
+      <!-- Signature / acceptation -->
+      <Card v-if="inventory.signature" class="signature-card">
+        <h2 class="card-title"><i class="mdi mdi-draw"></i> Acceptation</h2>
+        <ul class="signature-list">
+          <li>
+            <i
+              class="mdi"
+              :class="
+                inventory.signature.landlordAccepted ? 'mdi-check-circle' : 'mdi-circle-outline'
+              "
+            ></i>
+            Bailleur : {{ inventory.signature.landlordAccepted ? 'accepté' : 'non accepté' }}
+          </li>
+          <li>
+            <i
+              class="mdi"
+              :class="
+                inventory.signature.tenantAccepted ? 'mdi-check-circle' : 'mdi-circle-outline'
+              "
+            ></i>
+            Locataire : {{ inventory.signature.tenantAccepted ? 'accepté' : 'non accepté' }}
+          </li>
+          <li v-if="inventory.signature.acceptedAt" class="signature-date">
+            <i class="mdi mdi-clock-check-outline"></i>
+            Horodatage :
+            {{ new Date(inventory.signature.acceptedAt).toLocaleString('fr-FR') }}
+          </li>
+        </ul>
       </Card>
 
       <!-- Photos -->
@@ -323,8 +405,71 @@ const handleGoBack = () => {
   white-space: pre-wrap;
 }
 
-.photos-card {
+.photos-card,
+.rooms-card,
+.signature-card {
   margin-bottom: var(--space-6, 1.5rem);
+}
+
+.room-detail {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.room-detail-name {
+  font-size: var(--text-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 var(--space-2, 0.5rem);
+}
+
+.room-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.room-item-label {
+  min-width: 160px;
+  color: var(--text-primary, #0f172a);
+}
+
+.room-item-notes {
+  color: var(--text-tertiary, #94a3b8);
+  font-style: italic;
+}
+
+.signature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary, #64748b);
+}
+
+.signature-list i {
+  margin-right: var(--space-2, 0.5rem);
+  color: var(--success-600, #16a34a);
+}
+
+.signature-list .mdi-circle-outline {
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.signature-date {
+  color: var(--text-tertiary, #94a3b8);
 }
 
 @media (max-width: 768px) {
