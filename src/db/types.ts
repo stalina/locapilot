@@ -12,6 +12,8 @@ export type {
   TenantDocument,
   TenantAudit,
   ChargesAdjustmentRow,
+  IrlIndex,
+  RentRevision,
 } from './schema';
 
 // Application-specific settings type

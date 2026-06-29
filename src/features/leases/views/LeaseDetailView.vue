@@ -11,6 +11,7 @@ import Badge from '@/shared/components/Badge.vue';
 import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
+import RentRevisionCard from '@/features/indexation/components/RentRevisionCard.vue';
 import type { Tenant } from '@/db/schema';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import {
@@ -412,6 +413,11 @@ const handleDownloadExistingMandat = async () => {
           <!-- Charges adjustment table -->
           <Card>
             <ChargesAdjustmentTable v-if="lease?.id" :leaseId="lease.id" />
+          </Card>
+
+          <!-- Révision annuelle du loyer (IRL) -->
+          <Card>
+            <RentRevisionCard v-if="lease?.id" :leaseId="lease.id" @applied="handleEditSuccess" />
           </Card>
 
           <Card v-if="lease?.documentId">

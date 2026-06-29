@@ -14,6 +14,8 @@ export type ExportDataPayload = {
   inventories: unknown[];
   communications: unknown[];
   chargesAdjustments: unknown[];
+  irlIndices: unknown[];
+  rentRevisions: unknown[];
   settings: unknown[];
   exportedAt: string;
   version: string;

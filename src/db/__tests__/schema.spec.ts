@@ -23,7 +23,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(6);
+      expect(db.verno).toBe(7);
     });
 
     it('should have all required tables', async () => {
@@ -40,8 +40,10 @@ describe('Database Schema', () => {
       expect(tables).toContain('tenantAudits');
       expect(tables).toContain('settings');
       expect(tables).toContain('chargesAdjustments');
+      expect(tables).toContain('irlIndices');
+      expect(tables).toContain('rentRevisions');
 
-      expect(tables).toHaveLength(11);
+      expect(tables).toHaveLength(13);
     });
   });
 
@@ -105,6 +107,25 @@ describe('Database Schema', () => {
       expect(schema.primKey.auto).toBe(true);
       expect(schema.indexes.map(i => i.name)).toContain('leaseId');
       expect(schema.indexes.map(i => i.name)).toContain('year');
+      expect(schema.indexes.map(i => i.name)).toContain('[leaseId+year]');
+    });
+
+    it('should have correct indexes for irlIndices table', () => {
+      const schema = db.irlIndices.schema;
+
+      expect(schema.primKey.name).toBe('id');
+      expect(schema.primKey.auto).toBe(true);
+      expect(schema.indexes.map(i => i.name)).toContain('year');
+      expect(schema.indexes.map(i => i.name)).toContain('quarter');
+      expect(schema.indexes.map(i => i.name)).toContain('[year+quarter]');
+    });
+
+    it('should have correct indexes for rentRevisions table', () => {
+      const schema = db.rentRevisions.schema;
+
+      expect(schema.primKey.name).toBe('id');
+      expect(schema.primKey.auto).toBe(true);
+      expect(schema.indexes.map(i => i.name)).toContain('leaseId');
       expect(schema.indexes.map(i => i.name)).toContain('[leaseId+year]');
     });
   });

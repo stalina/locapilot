@@ -9,6 +9,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Properties     | [properties.md](./properties.md)         | Real estate assets, statuses, photos, announcements      |
 | Tenants        | [tenants.md](./tenants.md)               | Tenant profiles, candidacy workflow, audit trail         |
 | Leases         | [leases.md](./leases.md)                 | Rental contracts, lifecycle, charges adjustments         |
+| Indexation     | [indexation.md](./indexation.md)         | Annual IRL rent revision, quarterly indices, letters     |
 | Rents          | [rents.md](./rents.md)                   | Monthly payments, auto-generation, overdue tracking      |
 | Documents      | [documents.md](./documents.md)           | File attachments for all entities                        |
 | Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |
@@ -26,6 +27,8 @@ erDiagram
     Lease ||--o{ Rent : "generates"
     Lease ||--o{ Inventory : "has check-in / check-out"
     Lease ||--o{ ChargesAdjustmentRow : "has yearly adjustments"
+    Lease ||--o{ RentRevision : "has annual IRL revisions"
+    IrlIndex ||--o{ RentRevision : "used to compute"
     Property ||--o{ Document : "has documents/photos"
     Tenant ||--o{ TenantDocument : "has attached files"
     Tenant ||--o{ TenantAudit : "has audit trail"

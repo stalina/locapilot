@@ -97,8 +97,11 @@ erDiagram
     Lease ||--o{ Rent : "generates monthly"
     Lease ||--o{ Inventory : "has check-in / check-out"
     Lease ||--o{ ChargesAdjustmentRow : "has yearly adjustments"
+    Lease ||--o{ RentRevision : "has annual IRL revisions"
     Lease ||--o| Document : "has signed PDF"
 ```
+
+> Annual IRL rent revision is documented in its own domain — see [indexation.md](./indexation.md).
 
 ---
 

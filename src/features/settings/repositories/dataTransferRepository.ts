@@ -4,9 +4,11 @@ import type {
   Communication,
   Document,
   Inventory,
+  IrlIndex,
   Lease,
   Property,
   Rent,
+  RentRevision,
   Settings,
   Tenant,
   TenantAudit,
@@ -24,6 +26,8 @@ export type RawExportData = {
   inventories: Inventory[];
   communications: Communication[];
   chargesAdjustments: ChargesAdjustmentRow[];
+  irlIndices: IrlIndex[];
+  rentRevisions: RentRevision[];
   settings: Settings[];
 };
 
@@ -40,6 +44,8 @@ const businessTables = () => [
   db.inventories,
   db.communications,
   db.chargesAdjustments,
+  db.irlIndices,
+  db.rentRevisions,
   db.settings,
 ];
 
@@ -55,6 +61,8 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     inventories,
     communications,
     chargesAdjustments,
+    irlIndices,
+    rentRevisions,
     settings,
   ] = await Promise.all([
     db.properties.toArray(),
@@ -67,6 +75,8 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     db.inventories.toArray(),
     db.communications.toArray(),
     db.chargesAdjustments.toArray(),
+    db.irlIndices.toArray(),
+    db.rentRevisions.toArray(),
     db.settings.toArray(),
   ]);
 
@@ -81,6 +91,8 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     inventories,
     communications,
     chargesAdjustments,
+    irlIndices,
+    rentRevisions,
     settings,
   };
 }
@@ -103,6 +115,8 @@ export async function importBusinessData(params: {
   inventories?: unknown[];
   communications?: unknown[];
   chargesAdjustments?: unknown[];
+  irlIndices?: unknown[];
+  rentRevisions?: unknown[];
   settings?: unknown[];
 }): Promise<void> {
   const tables = businessTables();
@@ -122,6 +136,8 @@ export async function importBusinessData(params: {
       await db.communications.bulkAdd(params.communications as any);
     if (params.chargesAdjustments?.length)
       await db.chargesAdjustments.bulkAdd(params.chargesAdjustments as any);
+    if (params.irlIndices?.length) await db.irlIndices.bulkAdd(params.irlIndices as any);
+    if (params.rentRevisions?.length) await db.rentRevisions.bulkAdd(params.rentRevisions as any);
     if (params.settings?.length) await db.settings.bulkAdd(params.settings as any);
   });
 }

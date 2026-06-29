@@ -56,6 +56,10 @@
           <i class="mdi mdi-file-document"></i>
           <span>Baux</span>
         </RouterLink>
+        <RouterLink to="/indexation" class="nav-item" @click="closeSidebar">
+          <i class="mdi mdi-chart-line"></i>
+          <span>Indexation IRL</span>
+        </RouterLink>
         <RouterLink to="/rents" class="nav-item" @click="closeSidebar">
           <i class="mdi mdi-cash-multiple"></i>
           <span>Loyers</span>
