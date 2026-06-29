@@ -4,6 +4,8 @@ import PrimeVue from 'primevue/config';
 import router from '@core/router';
 import { initializeDatabase } from '@/db/schema';
 import { useAppStore } from '@core/store/appStore';
+import { installErrorHandling } from '@core/errorHandler';
+import { logger } from '@/shared/utils/logger';
 
 import './assets/styles/variables.css';
 import './assets/styles/global.css';
@@ -17,7 +19,7 @@ import { seedDemoData } from '@/db/seed';
 
 // Initialize database
 initializeDatabase().catch(error => {
-  console.error('Failed to initialize database:', error);
+  logger.error('Failed to initialize database', { source: 'bootstrap' }, error);
 });
 
 // Create app
@@ -31,6 +33,9 @@ app.use(PrimeVue, {
   ripple: true,
 });
 
+// Global error capture + structured reporting
+installErrorHandling(app);
+
 // Initialize app store and seed database
 const appStore = useAppStore();
 appStore.initializeNetworkListeners();
@@ -38,7 +43,9 @@ appStore.initializeApp();
 
 // Seed demo data in development so dashboard shows content
 if (import.meta.env.DEV) {
-  seedDemoData().catch(err => console.error('Failed to seed demo data', err));
+  seedDemoData().catch(err =>
+    logger.error('Failed to seed demo data', { source: 'bootstrap' }, err)
+  );
 }
 
 // Mount app

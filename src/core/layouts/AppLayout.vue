@@ -82,7 +82,11 @@
     <!-- Main Content -->
     <div class="main-wrapper">
       <main class="app-main">
-        <RouterView />
+        <RouterView v-slot="{ Component, route }">
+          <ErrorBoundary :key="route.path" :label="`route:${route.path}`">
+            <component :is="Component" />
+          </ErrorBoundary>
+        </RouterView>
       </main>
     </div>
   </div>
@@ -92,6 +96,7 @@
 import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { useAppStore } from '@core/store/appStore';
+import ErrorBoundary from '@/shared/components/ErrorBoundary.vue';
 
 const appStore = useAppStore();
 const isSidebarOpen = ref(false);

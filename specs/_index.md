@@ -4,17 +4,18 @@ This directory contains the functional specifications for all domains of the Loc
 
 ## Domains
 
-| Domain        | File                                   | Description                                         |
-| ------------- | -------------------------------------- | --------------------------------------------------- |
-| Properties    | [properties.md](./properties.md)       | Real estate assets, statuses, photos, announcements |
-| Tenants       | [tenants.md](./tenants.md)             | Tenant profiles, candidacy workflow, audit trail    |
-| Leases        | [leases.md](./leases.md)               | Rental contracts, lifecycle, charges adjustments    |
-| Rents         | [rents.md](./rents.md)                 | Monthly payments, auto-generation, overdue tracking |
-| Documents     | [documents.md](./documents.md)         | File attachments for all entities                   |
-| Inventories   | [inventories.md](./inventories.md)     | Check-in / check-out property inspections           |
-| Dashboard     | [dashboard.md](./dashboard.md)         | Portfolio overview and activity summary             |
-| Settings      | [settings.md](./settings.md)           | Application configuration                           |
-| Data Transfer | [data-transfer.md](./data-transfer.md) | Backup export and restore import                    |
+| Domain         | File                                     | Description                                              |
+| -------------- | ---------------------------------------- | -------------------------------------------------------- |
+| Properties     | [properties.md](./properties.md)         | Real estate assets, statuses, photos, announcements      |
+| Tenants        | [tenants.md](./tenants.md)               | Tenant profiles, candidacy workflow, audit trail         |
+| Leases         | [leases.md](./leases.md)                 | Rental contracts, lifecycle, charges adjustments         |
+| Rents          | [rents.md](./rents.md)                   | Monthly payments, auto-generation, overdue tracking      |
+| Documents      | [documents.md](./documents.md)           | File attachments for all entities                        |
+| Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |
+| Dashboard      | [dashboard.md](./dashboard.md)           | Portfolio overview and activity summary                  |
+| Settings       | [settings.md](./settings.md)             | Application configuration                                |
+| Data Transfer  | [data-transfer.md](./data-transfer.md)   | Backup export and restore import                         |
+| Error Handling | [error-handling.md](./error-handling.md) | Global error capture, error boundary, structured logging |
 
 ## Entity Relationships
 
