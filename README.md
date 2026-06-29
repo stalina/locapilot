@@ -70,6 +70,10 @@ npm run type-check       # TypeScript
 
 ## 🏗️ Architecture
 
+> 📖 **Documentation technique détaillée** dans [`docs/`](./docs/README.md) :
+> [architecture en couches](./docs/architecture.md), [décisions d'architecture (ADR)](./docs/adr/README.md)
+> et [système de migrations Dexie](./docs/migrations-dexie.md).
+
 ```
 src/
 ├── core/              # Infrastructure globale
@@ -110,6 +114,7 @@ src/
 ### Base de données (IndexedDB via Dexie.js)
 
 Tables principales :
+
 - `properties` - Biens immobiliers avec caractéristiques
 - `tenants` - Locataires (actifs et candidats)
 - `leases` - Baux avec relations property ↔ tenant
@@ -117,6 +122,7 @@ Tables principales :
 - `documents` - Fichiers avec métadonnées
 
 Relations :
+
 - Un bien peut avoir plusieurs baux successifs
 - Un locataire peut avoir plusieurs baux successifs
 - Un bail génère automatiquement des loyers mensuels
