@@ -62,6 +62,7 @@ export async function createLease(
     endDate: string;
     propertyName?: string;
     tenantFullName?: string;
+    tenantFullNames?: string[];
   } = { startDate: '2026-01-01', endDate: '2026-12-31' }
 ) {
   await navigateFromSidebar(page, /Baux|Leases/i, /\/leases/);
@@ -88,8 +89,15 @@ export async function createLease(
     await propertySelect.selectOption({ index: 1 });
   }
 
-  // Tenant
-  if (options.tenantFullName) {
+  // Tenant(s)
+  if (options.tenantFullNames && options.tenantFullNames.length > 0) {
+    for (const name of options.tenantFullNames) {
+      const tenantLabel = modal
+        .locator('[data-testid="lease-tenants"] label', { hasText: name })
+        .first();
+      await tenantLabel.locator('input[type=checkbox]').check();
+    }
+  } else if (options.tenantFullName) {
     const tenantLabel = modal
       .locator('[data-testid="lease-tenants"] label', { hasText: options.tenantFullName })
       .first();

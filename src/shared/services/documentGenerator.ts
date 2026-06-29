@@ -2,7 +2,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
 import { db } from '@/db/database';
-import type { ChargesAdjustmentRow } from '@/db/types';
+import type { ChargesAdjustmentRow, Tenant } from '@/db/types';
 
 /**
  * Utilitaire pour charger un fichier en binaire
@@ -10,6 +10,72 @@ import type { ChargesAdjustmentRow } from '@/db/types';
 async function loadBinary(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url);
   return response.arrayBuffer();
+}
+
+/**
+ * Joint une liste de chaînes avec des virgules, le dernier élément étant
+ * séparé par « et » (ex: "A, B et C"). Les chaînes vides sont ignorées.
+ */
+function joinWithAnd(parts: string[]): string {
+  const filtered = parts.filter(Boolean);
+  if (filtered.length === 0) return '';
+  if (filtered.length === 1) return filtered[0]!;
+  const last = filtered[filtered.length - 1]!;
+  return `${filtered.slice(0, -1).join(', ')} et ${last}`;
+}
+
+/**
+ * Informations agrégées de l'ensemble des locataires d'un bail.
+ *
+ * Un bail peut comporter plusieurs co-locataires (`tenantIds[]`). Les documents
+ * générés (mandat, quittance, attestation, courrier de régularisation) doivent
+ * lister TOUS les locataires, et non uniquement le premier.
+ */
+export interface ResolvedTenantsInfo {
+  /** Noms complets de tous les locataires, ex: "M. Dupont Jean et Mme Martin Marie" */
+  fullNames: string;
+  /** Civilité + nom de famille de tous les locataires, ex: "M. Dupont et Mme Martin" */
+  names: string;
+  /** Emails de tous les locataires, séparés par des virgules */
+  emails: string;
+  /** Téléphones de tous les locataires, séparés par des virgules */
+  phoneNumbers: string;
+}
+
+/**
+ * Résout les informations agrégées de tous les locataires d'un bail à partir
+ * de la liste de leurs identifiants.
+ */
+export async function resolveTenantsInfo(
+  tenantIds: number[] | undefined
+): Promise<ResolvedTenantsInfo> {
+  const empty: ResolvedTenantsInfo = { fullNames: '', names: '', emails: '', phoneNumbers: '' };
+  if (!Array.isArray(tenantIds) || tenantIds.length === 0) return empty;
+
+  const tenants = await db.tenants.bulkGet(tenantIds);
+  const resolved = tenants.filter((t): t is Tenant => !!t);
+  if (resolved.length === 0) return empty;
+
+  const fullNamesList: string[] = [];
+  const namesList: string[] = [];
+  const emailsList: string[] = [];
+  const phonesList: string[] = [];
+
+  for (const tenant of resolved) {
+    const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
+    const prefix = civLabel ? civLabel + ' ' : '';
+    fullNamesList.push(`${prefix}${tenant.lastName} ${tenant.firstName}`.trim());
+    namesList.push(`${prefix}${tenant.lastName}`.trim());
+    if (tenant.email) emailsList.push(tenant.email);
+    if (tenant.phone) phonesList.push(tenant.phone);
+  }
+
+  return {
+    fullNames: joinWithAnd(fullNamesList),
+    names: joinWithAnd(namesList),
+    emails: emailsList.join(', '),
+    phoneNumbers: phonesList.join(', '),
+  };
 }
 
 /**
@@ -342,15 +408,10 @@ export async function prepareRegulationLetterData(
 
   try {
     const lease = await db.leases.get(adjustmentRow.leaseId);
-    if (lease && Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
-      const tenantId = (lease as any).tenantIds[0];
-      const tenant = await db.tenants.get(tenantId);
-      if (tenant) {
-        const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
-        tenantFullName =
-          `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
-        tenantName = `${civLabel ? civLabel + ' ' : ''}${tenant.lastName}`.trim();
-      }
+    if (lease) {
+      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      tenantFullName = tenantsInfo.fullNames;
+      tenantName = tenantsInfo.names;
     }
 
     // Résoudre les détails de la propriété
@@ -497,14 +558,9 @@ export async function prepareKeyHandoverAttestationData(
 
   try {
     const lease = await db.leases.get(leaseId);
-    if (lease && Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
-      const tenantId = (lease as any).tenantIds[0];
-      const tenant = await db.tenants.get(tenantId);
-      if (tenant) {
-        const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
-        tenantFullName =
-          `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
-      }
+    if (lease) {
+      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      tenantFullName = tenantsInfo.fullNames;
     }
 
     // Résoudre les détails de la propriété
@@ -655,16 +711,9 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
       // Prefer the contractual amounts from the lease (mandat)
       rentAmount = (lease as any).rent || rentAmount;
       chargeAmount = (lease as any).charges || chargeAmount;
-      // Récupérer le locataire
-      if (Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
-        const tenantId = (lease as any).tenantIds[0];
-        const tenant = await db.tenants.get(tenantId);
-        if (tenant) {
-          const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
-          tenantFullName =
-            `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
-        }
-      }
+      // Récupérer les locataires
+      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      tenantFullName = tenantsInfo.fullNames;
 
       // Récupérer la propriété
       if ((lease as any).propertyId) {
@@ -916,18 +965,11 @@ export async function prepareMandatLocationData(leaseId: number): Promise<Mandat
     ];
     month = monthNames[now.getMonth()] || 'janvier';
 
-    // Récupérer le locataire
-    if (Array.isArray((lease as any).tenantIds) && (lease as any).tenantIds.length > 0) {
-      const tenantId = (lease as any).tenantIds[0];
-      const tenant = await db.tenants.get(tenantId);
-      if (tenant) {
-        const civLabel = tenant.civility === 'mr' ? 'M.' : tenant.civility === 'mme' ? 'Mme' : '';
-        tenantFullName =
-          `${civLabel ? civLabel + ' ' : ''}${tenant.lastName} ${tenant.firstName}`.trim();
-        tenantEmail = tenant.email || '';
-        tenantPhoneNumber = tenant.phone || '';
-      }
-    }
+    // Récupérer les locataires
+    const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+    tenantFullName = tenantsInfo.fullNames;
+    tenantEmail = tenantsInfo.emails;
+    tenantPhoneNumber = tenantsInfo.phoneNumbers;
 
     // Récupérer la propriété
     if ((lease as any).propertyId) {
