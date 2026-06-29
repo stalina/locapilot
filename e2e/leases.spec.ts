@@ -86,4 +86,41 @@ test.describe('Baux - e2e', () => {
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/\.docx$/i);
   });
+
+  test('Régularisation des charges : saisir le total réel et voir le solde', async ({ page }) => {
+    await resetApp(page);
+
+    const year = new Date().getFullYear();
+    const { name: propertyName } = await createProperty(page);
+    const { fullName: tenantFullName } = await createTenant(page);
+    await createLease(page, {
+      startDate: `${year}-01-01`,
+      endDate: `${year}-12-31`,
+      propertyName,
+      tenantFullName,
+    });
+
+    // Ouvrir le détail du bail
+    const leaseCard = page.locator('.lease-card', { hasText: propertyName }).first();
+    await expect(leaseCard).toBeVisible({ timeout: 10_000 });
+    await leaseCard.click();
+    await expect(page).toHaveURL(/\/leases\/\d+/, { timeout: 10_000 });
+
+    // Le tableau de régularisation des charges est présent avec une ligne pour l'année courante
+    const chargesTable = page.locator('.charges-adjustment');
+    await expect(chargesTable).toContainText('Régularisation des charges', { timeout: 10_000 });
+    const yearRow = chargesTable.locator('.charges-table tbody tr', { hasText: String(year) });
+    await expect(yearRow).toBeVisible({ timeout: 10_000 });
+
+    // Saisir le total des charges réelles (aucun détail en colonnes => saisie directe)
+    const totalInput = yearRow.locator(`input[aria-label="Total charges réelles ${year}"]`);
+    await expect(totalInput).toBeVisible();
+    await totalInput.fill('500');
+    await totalInput.blur();
+
+    // La provision payée est 0 (aucun loyer payé) => solde = 0 − 500 = −500 € (le locataire doit)
+    const badge = yearRow.locator('.reg-badge');
+    await expect(badge).toContainText('500', { timeout: 10_000 });
+    await expect(badge).toHaveClass(/reg-neg/);
+  });
 });
