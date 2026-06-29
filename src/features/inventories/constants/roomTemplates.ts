@@ -3,61 +3,160 @@ import type { InventoryRoom, InventoryRoomItem } from '@/db/types';
 /**
  * Modèles pré-remplis d'états des lieux (issue #46).
  *
- * Chaque pièce standard est livrée avec la liste des éléments à inspecter.
- * Lors de l'application d'un modèle, chaque élément est initialisé à l'état
- * « good » (bon état) que l'utilisateur ajuste ensuite.
+ * Le contenu est calqué sur un constat d'état des lieux entrant réel
+ * (appartement T2) : pièces et éléments inspectés, dans le même ordre que le
+ * document de référence. Lors de l'application d'un modèle, chaque élément est
+ * initialisé à l'état « good » (bon état) que l'utilisateur ajuste ensuite.
+ *
+ * Sections (dans l'ordre) : relevé des compteurs, liste des clés, boîte aux
+ * lettres / annexes, accès / entrée, cuisine + séjour, salle de bains, chambre,
+ * balcon.
  */
 
 /** Éléments communs présents dans (quasiment) toutes les pièces. */
-const COMMON_ITEMS = ['Murs', 'Sol', 'Plafond', 'Plinthes', 'Porte', 'Fenêtres', 'Éclairage'];
+const COMMON_ITEMS = [
+  'Murs',
+  'Sol',
+  'Plafond',
+  'Plinthes',
+  'Porte',
+  'Fenêtres',
+  'Interrupteurs',
+  'Prises électriques',
+  'Éclairage plafond',
+];
 
-/** Catalogue des pièces standard et de leurs éléments à inspecter. */
+/** Catalogue des pièces / sections standard et de leurs éléments à inspecter. */
 export const STANDARD_ROOM_TEMPLATES: Record<string, string[]> = {
-  Entrée: [...COMMON_ITEMS, 'Interphone', 'Placard'],
-  Séjour: [...COMMON_ITEMS, 'Prises électriques', 'Volets'],
-  Cuisine: [
-    ...COMMON_ITEMS,
-    'Plan de travail',
-    'Évier',
-    'Robinetterie',
-    'Meubles hauts et bas',
-    'Plaque de cuisson',
-    'Hotte',
-    'Réfrigérateur',
+  'Relevé des compteurs': [
+    'Compteur eau',
+    'Compteur gaz',
+    'Compteur électricité',
+    'Détecteur de fumée',
   ],
-  Chambre: [...COMMON_ITEMS, 'Placard', 'Volets', 'Prises électriques'],
-  'Salle de bain': [
-    ...COMMON_ITEMS,
-    'Baignoire / Douche',
-    'Lavabo',
-    'Robinetterie',
-    'Meuble vasque',
-    'Miroir',
-    'VMC / Ventilation',
+  'Liste des clés': [
+    'Clé entrée logement',
+    'Clé boîte aux lettres',
+    'Boîtier parking',
+    'Badge porte',
+    'Code porte',
   ],
-  WC: [
+  'Boîte aux lettres / annexes': [
+    'Boîte aux lettres',
+    'Serrure boîte aux lettres',
+    'Parking intérieur',
+  ],
+  'Accès / entrée': [
     'Murs',
     'Sol',
     'Plafond',
-    'Porte',
-    'Cuvette',
-    "Chasse d'eau",
-    'Lave-mains',
-    'VMC / Ventilation',
+    'Plinthes',
+    'Porte palière',
+    'Plaque / poignée',
+    'Judas',
+    'Serrure',
+    'Sonnette',
+    'Portier audio / vidéo',
+    'Interrupteurs',
+    'Prises électriques',
+    'Éclairage plafond',
+    'Tableau électrique',
+    "Thermostat d'ambiance",
+    'Armoire / penderie',
   ],
+  'Cuisine + séjour': [
+    'Murs',
+    'Sol',
+    'Plafond',
+    'Plinthes',
+    'Crédence murale',
+    'Porte-fenêtre',
+    'Vitrages',
+    'Interrupteurs',
+    'Prises électriques',
+    'Prises RJ45',
+    'Éclairages plafond',
+    'Évier',
+    'Robinetterie',
+    'Vidage',
+    'Siphon',
+    'Meuble sous évier',
+    'Plan de travail',
+    'Éléments bas',
+    'Éléments hauts',
+    'Robinet machine à laver',
+    'Radiateur',
+    'Ventilation VMC',
+    'Plaque de cuisson',
+    'Four',
+    'Hotte aspirante',
+  ],
+  'Salle de bains': [
+    'Murs',
+    'Faïence murale / crédence',
+    'Sol',
+    'Plafond',
+    'Plinthes',
+    'Porte',
+    'Plaque / poignée',
+    'Serrure',
+    'Interrupteur',
+    'Prises électriques',
+    'Éclairage mural',
+    'Éclairage plafond',
+    'Lavabo / vasque',
+    'Robinetterie lavabo',
+    'Vidage',
+    'Siphon',
+    'Bac douche',
+    'Robinetterie douche',
+    'Flexible',
+    'Douchette',
+    'Vidage / siphon douche',
+    'Rideau de douche',
+    'Bloc WC',
+    "Chasse d'eau",
+    'Cuvette',
+    'Abattant',
+    'Chauffage (sèche-serviette)',
+    'Ventilation VMC',
+    'Meuble sous vasque',
+    'Miroir',
+  ],
+  Chambre: [
+    'Murs',
+    'Sol',
+    'Plafond',
+    'Plinthes',
+    'Porte',
+    'Plaque / poignée',
+    'Serrure',
+    'Porte-fenêtre',
+    'Vitrages',
+    'Volet',
+    'Interrupteurs',
+    'Prises électriques',
+    'Prise RJ45',
+    'Éclairage plafond',
+    'Radiateur',
+  ],
+  Balcon: ['Murs', 'Sol', 'Garde-corps'],
 };
 
 /**
  * Modèle par défaut appliqué lors de la création d'un état des lieux pour un
- * logement standard (T2 type). L'utilisateur peut ajouter/supprimer des pièces.
+ * logement standard (T2 type), dans l'ordre du document de référence.
+ * L'utilisateur peut ajouter/supprimer des pièces.
  */
 export const DEFAULT_TEMPLATE_ROOMS = [
-  'Entrée',
-  'Séjour',
-  'Cuisine',
+  'Relevé des compteurs',
+  'Liste des clés',
+  'Boîte aux lettres / annexes',
+  'Accès / entrée',
+  'Cuisine + séjour',
+  'Salle de bains',
   'Chambre',
-  'Salle de bain',
-  'WC',
+  'Balcon',
 ];
 
 /** Construit la liste des éléments d'une pièce, tous initialisés à « good ». */

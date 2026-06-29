@@ -90,7 +90,7 @@ The **abnormal wear report** lists only elements with a drop ≥ 2 levels, sorte
 - A lease can have at most one `checkin` inventory and one `checkout` inventory
 - Photos are stored as Document records with type `photo` linked via `relatedEntityType: inventory`
 - `rooms` holds the structured inspection (preferred); `roomsData` is kept for backward compatibility
-- A pre-filled **standard template** (Entrée, Séjour, Cuisine, Chambre, Salle de bain, WC) can be applied; every element starts at `good`
+- A pre-filled **standard template** (calqué sur un constat réel : Relevé des compteurs, Liste des clés, Boîte aux lettres / annexes, Accès / entrée, Cuisine + séjour, Salle de bains, Chambre, Balcon) can be applied; every element starts at `good`
 - Comparison requires both a `checkin` **and** a `checkout` inventory on the same lease
 - Abnormal wear = an element dropping ≥ 2 condition levels between check-in and check-out
 - Acceptance is recorded via `signature`; `acceptedAt` is set automatically as soon as a party accepts
@@ -301,7 +301,7 @@ And deletion requires explicit confirmation
 ```gherkin
 Given I am creating a new inventory
 When I click "Modèle standard"
-Then the rooms editor is filled with the standard rooms (Entrée, Séjour, Cuisine, Chambre, Salle de bain, WC)
+Then the rooms editor is filled with the standard sections (Relevé des compteurs, Liste des clés, Boîte aux lettres / annexes, Accès / entrée, Cuisine + séjour, Salle de bains, Chambre, Balcon)
 And every element is initialised with condition "Bon état"
 ```
 
@@ -309,8 +309,8 @@ And every element is initialised with condition "Bon état"
 
 ```gherkin
 Given I am editing the rooms of an inventory
-When I click the "+ Cuisine" chip
-Then a "Cuisine" room is appended with its standard elements
+When I click the "+ Chambre" chip
+Then a "Chambre" room is appended with its standard elements
 ```
 
 #### Scenario: Replace existing rooms confirmation
