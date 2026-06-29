@@ -323,3 +323,45 @@ When I try to create another adjustment for 2025 on the same lease
 Then the existing record is updated (upsert behavior)
 And no duplicate row is created
 ```
+
+---
+
+### Story: Generate lease documents with multiple tenants
+
+**As a** landlord  
+**I want to** generated documents (mandat de location, quittance de loyer, attestation de remise des clés, courrier de régularisation) to list every tenant on the lease  
+**So that** the documents are legally complete when a lease has co-tenants
+
+#### Scenario: Generate a document for a single-tenant lease
+
+```gherkin
+Given an active lease linking property "Studio Belleville" to tenant "M. Dupont Jean"
+When I generate the mandat de location for that lease
+Then the tenant field shows "M. Dupont Jean"
+```
+
+#### Scenario: Generate a document for a lease with two co-tenants
+
+```gherkin
+Given an active lease with co-tenants "M. Dupont Jean" and "Mme Martin Marie"
+When I generate the mandat de location for that lease
+Then the tenant full-name field shows "M. Dupont Jean et Mme Martin Marie"
+And the tenant email field lists both tenants' emails separated by commas
+And the tenant phone field lists both tenants' phone numbers separated by commas
+```
+
+#### Scenario: Generate a document for a lease with three or more co-tenants
+
+```gherkin
+Given an active lease with co-tenants "Dupont", "Martin" and "Bernard"
+When I generate any lease document
+Then the tenant names are joined as "Dupont, Martin et Bernard"
+```
+
+#### Scenario: Regulation letter short names list all co-tenants
+
+```gherkin
+Given an active lease with co-tenants "M. Dupont Jean" and "Mme Martin Marie"
+When I generate the courrier de régularisation
+Then the short tenant-name field shows "M. Dupont et Mme Martin"
+```
