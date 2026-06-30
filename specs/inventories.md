@@ -393,6 +393,33 @@ Then it states no abnormal deterioration was detected
 
 ---
 
+### Story: Generate a Word document for an inventory
+
+**As a** landlord
+**I want to** export an inventory (check-in or check-out) as a Word document
+**So that** I can print it and have it signed by both parties
+
+#### Scenario: Generate a check-in Word document
+
+```gherkin
+Given I am viewing a check-in inventory with rooms and items
+When I click "Document Word"
+Then a .docx file is downloaded
+And its filename matches "<date>_etatDesLieux_entree_<property>.docx"
+And the document contains the title "CONSTAT D'ÉTAT DES LIEUX ENTRANT", the parties, the property, one table per room (Élément / État / Commentaire), the condition legend and the signatures section
+```
+
+#### Scenario: Generate a check-out Word document
+
+```gherkin
+Given I am viewing a check-out inventory
+When I click "Document Word"
+Then a .docx file is downloaded
+And the document title reads "CONSTAT D'ÉTAT DES LIEUX SORTANT"
+```
+
+---
+
 ### Story: Record acceptance of an inventory
 
 **As a** landlord

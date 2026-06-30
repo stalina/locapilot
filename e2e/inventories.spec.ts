@@ -93,7 +93,7 @@ test.describe('Inventories - e2e', () => {
     await createInventory('checkin', '2026-01-02');
     await createInventory('checkout', '2026-12-31');
 
-    // Ouvre le détail d'un état des lieux puis lance la comparaison
+    // Ouvre le détail d'un état des lieux
     await page
       .locator('.inventory-card', { hasText: propertyName })
       .first()
@@ -101,6 +101,15 @@ test.describe('Inventories - e2e', () => {
         name: /Voir/i,
       })
       .click();
+
+    // Génère le document Word de l'état des lieux
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('[data-testid="generate-docx-button"]').click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/etatDesLieux_(entree|sortie).*\.docx$/);
+
+    // Lance la comparaison
     await page.locator('[data-testid="compare-inventory-button"]').click();
     await expect(page).toHaveURL(/\/inventories\/compare\//);
 

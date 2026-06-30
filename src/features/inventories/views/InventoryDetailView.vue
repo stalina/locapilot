@@ -11,6 +11,7 @@ import Card from '@/shared/components/Card.vue';
 import InventoryPhotoGallery from '@/shared/components/InventoryPhotoGallery.vue';
 import InventoryFormModal from '@/features/inventories/components/InventoryFormModal.vue';
 import { CONDITION_LABEL } from '@/features/inventories/services/inventoryComparison';
+import { generateInventoryDocx } from '@/features/inventories/services/inventoryDocxGenerator';
 import type { Tenant } from '@/db/schema';
 
 const route = useRoute();
@@ -57,6 +58,20 @@ const conditionVariant = (condition: string) => {
 
 const handleCompare = () => {
   if (inventory.value) router.push(`/inventories/compare/${inventory.value.leaseId}`);
+};
+
+const isGeneratingDocx = ref(false);
+const handleGenerateDocx = async () => {
+  if (!inventory.value) return;
+  isGeneratingDocx.value = true;
+  try {
+    await generateInventoryDocx(inventory.value);
+  } catch (error) {
+    console.error('Failed to generate inventory document:', error);
+    alert('Erreur lors de la génération du document Word');
+  } finally {
+    isGeneratingDocx.value = false;
+  }
 };
 
 const lease = computed(() => {
@@ -175,6 +190,15 @@ const handleGoBack = () => {
             data-testid="compare-inventory-button"
           >
             Comparer entrée/sortie
+          </Button>
+          <Button
+            variant="default"
+            icon="file-word"
+            :disabled="isGeneratingDocx"
+            @click="handleGenerateDocx"
+            data-testid="generate-docx-button"
+          >
+            {{ isGeneratingDocx ? 'Génération...' : 'Document Word' }}
           </Button>
           <Button variant="default" icon="pencil" @click="handleEdit"> Modifier </Button>
           <Button variant="danger" icon="delete" @click="handleDelete"> Supprimer </Button>
