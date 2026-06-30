@@ -11,7 +11,14 @@ import Card from '@/shared/components/Card.vue';
 import InventoryPhotoGallery from '@/shared/components/InventoryPhotoGallery.vue';
 import InventoryFormModal from '@/features/inventories/components/InventoryFormModal.vue';
 import { CONDITION_LABEL } from '@/features/inventories/services/inventoryComparison';
-import { generateInventoryDocx } from '@/features/inventories/services/inventoryDocxGenerator';
+import { useDocumentsStore } from '@/features/documents/stores/documentsStore';
+import { useConfirm } from '@/shared/composables/useConfirm';
+import {
+  prepareEtatDesLieuxData,
+  generateEtatDesLieux,
+  saveEtatDesLieuxToDb,
+  downloadBlob,
+} from '@/shared/services/documentGenerator';
 import type { Tenant } from '@/db/schema';
 
 const route = useRoute();
@@ -20,6 +27,8 @@ const inventoriesStore = useInventoriesStore();
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
+const documentsStore = useDocumentsStore();
+const { confirm } = useConfirm();
 
 const showEditModal = ref(false);
 const inventoryId = Number(route.params.id);
@@ -62,13 +71,32 @@ const handleCompare = () => {
 
 const isGeneratingDocx = ref(false);
 const handleGenerateDocx = async () => {
-  if (!inventory.value) return;
+  if (!inventory.value?.id) return;
   isGeneratingDocx.value = true;
   try {
-    await generateInventoryDocx(inventory.value);
+    const data = await prepareEtatDesLieuxData(inventory.value);
+    const { blob, filename } = await generateEtatDesLieux(data);
+
+    // Proposer d'enregistrer le document en l'associant au bail.
+    const shouldSave = await confirm({
+      title: "Enregistrer l'état des lieux",
+      message:
+        'Voulez-vous enregistrer ce document dans la base documentaire, associé au bail ? ' +
+        'Vous pourrez le retrouver dans la section Documents.',
+      confirmText: 'Enregistrer et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      await saveEtatDesLieuxToDb(inventory.value.leaseId, blob, filename, inventory.value.type);
+      await documentsStore.fetchDocuments();
+    }
+
+    downloadBlob(blob, filename);
   } catch (error) {
     console.error('Failed to generate inventory document:', error);
-    alert('Erreur lors de la génération du document Word');
+    alert("Erreur lors de la génération de l'état des lieux");
   } finally {
     isGeneratingDocx.value = false;
   }
@@ -198,7 +226,7 @@ const handleGoBack = () => {
             @click="handleGenerateDocx"
             data-testid="generate-docx-button"
           >
-            {{ isGeneratingDocx ? 'Génération...' : 'Document Word' }}
+            {{ isGeneratingDocx ? 'Génération...' : "Générer l'état des lieux" }}
           </Button>
           <Button variant="default" icon="pencil" @click="handleEdit"> Modifier </Button>
           <Button variant="danger" icon="delete" @click="handleDelete"> Supprimer </Button>

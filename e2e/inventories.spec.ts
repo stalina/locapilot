@@ -102,10 +102,13 @@ test.describe('Inventories - e2e', () => {
       })
       .click();
 
-    // Génère le document Word de l'état des lieux
+    // Génère le document Word de l'état des lieux (avec proposition d'enregistrement)
+    await page.locator('[data-testid="generate-docx-button"]').click();
+    const confirmDialog = page.locator('.confirm-dialog');
+    await expect(confirmDialog).toBeVisible();
     const [download] = await Promise.all([
       page.waitForEvent('download'),
-      page.locator('[data-testid="generate-docx-button"]').click(),
+      confirmDialog.getByRole('button', { name: /Enregistrer et télécharger/i }).click(),
     ]);
     expect(download.suggestedFilename()).toMatch(/etatDesLieux_(entree|sortie).*\.docx$/);
 

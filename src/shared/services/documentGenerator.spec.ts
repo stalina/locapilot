@@ -7,7 +7,9 @@ import {
   prepareKeyHandoverAttestationData,
   prepareRentReceiptData,
   prepareRegulationLetterData,
+  prepareEtatDesLieuxData,
 } from './documentGenerator';
+import type { Inventory } from '@/db/types';
 
 const now = new Date('2026-06-29T10:00:00.000Z');
 
@@ -185,6 +187,85 @@ describe('prepare*Data with multiple tenants', () => {
     expect(data.tenantFullName).toBe('M. Dupont Jean et Mme Martin Marie');
     expect(data.tenantEmail).toBe('jean@x.fr, marie@x.fr');
     expect(data.tenantPhoneNumber).toBe('0101, 0202');
+  });
+
+  it('prepareEtatDesLieuxData maps rooms, conditions, parties and signature', async () => {
+    const propertyId = await seedProperty();
+    const tenantIds = await seedTwoTenants();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds,
+      startDate: new Date('2026-01-01'),
+      rent: 800,
+      charges: 50,
+      deposit: 800,
+      paymentDay: 5,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const inventory: Inventory = {
+      leaseId,
+      type: 'checkin',
+      date: new Date('2026-01-02'),
+      observations: 'RAS',
+      rooms: [
+        {
+          name: 'Cuisine + séjour',
+          items: [
+            { label: 'Murs', condition: 'good', notes: 'Propre' },
+            { label: 'Évier', condition: 'damaged' },
+          ],
+        },
+      ],
+      signature: { landlordAccepted: true, tenantAccepted: false, acceptedAt: now },
+    };
+
+    const data = await prepareEtatDesLieuxData(inventory);
+
+    expect(data.kindLabel).toBe('ENTRANT');
+    expect(data.number).toBe('20260102');
+    expect(data.tenantFullNames).toBe('M. Dupont Jean et Mme Martin Marie');
+    expect(data.propertyType).toBe('Studio');
+    expect(data.propertyAddress).toContain('Studio Belleville');
+    expect(data.rooms).toHaveLength(1);
+    expect(data.rooms[0]!.items[0]).toEqual({
+      label: 'Murs',
+      condition: 'Bon état',
+      notes: 'Propre',
+    });
+    expect(data.rooms[0]!.items[1]).toEqual({ label: 'Évier', condition: 'Détérioré', notes: '' });
+    expect(data.landlordAccepted).toBe('Oui');
+    expect(data.tenantAccepted).toBe('Non');
+    expect(data.hasAcceptedAt).toBe(true);
+    expect(data.observations).toBe('RAS');
+  });
+
+  it('prepareEtatDesLieuxData uses SORTANT for a check-out inventory', async () => {
+    const propertyId = await seedProperty();
+    const tenantIds = await seedTwoTenants();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds,
+      startDate: new Date('2026-01-01'),
+      rent: 800,
+      charges: 50,
+      deposit: 800,
+      paymentDay: 5,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareEtatDesLieuxData({
+      leaseId,
+      type: 'checkout',
+      date: new Date('2026-12-31'),
+    } as Inventory);
+
+    expect(data.kindLabel).toBe('SORTANT');
+    expect(data.rooms).toEqual([]);
   });
 
   it('prepareKeyHandoverAttestationData lists both tenants', async () => {

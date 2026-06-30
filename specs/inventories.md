@@ -399,23 +399,37 @@ Then it states no abnormal deterioration was detected
 **I want to** export an inventory (check-in or check-out) as a Word document
 **So that** I can print it and have it signed by both parties
 
+The document is produced from the `templateEtatDesLieux.docx` template (docxtemplater),
+consistent with the other generated documents (mandat, quittance, remise des clés).
+
 #### Scenario: Generate a check-in Word document
 
 ```gherkin
 Given I am viewing a check-in inventory with rooms and items
-When I click "Document Word"
+When I click "Générer l'état des lieux"
+And I choose "Télécharger uniquement"
 Then a .docx file is downloaded
-And its filename matches "<date>_etatDesLieux_entree_<property>.docx"
+And its filename matches "<date>_etatDesLieux_entree.docx"
 And the document contains the title "CONSTAT D'ÉTAT DES LIEUX ENTRANT", the parties, the property, one table per room (Élément / État / Commentaire), the condition legend and the signatures section
+```
+
+#### Scenario: Save the document associated with the lease
+
+```gherkin
+Given I am viewing an inventory
+When I click "Générer l'état des lieux"
+And I choose "Enregistrer et télécharger"
+Then the document is saved in the documents store with type "inventory" linked to the lease
+And it also downloads to my computer
+And I can retrieve it later from the Documents section
 ```
 
 #### Scenario: Generate a check-out Word document
 
 ```gherkin
 Given I am viewing a check-out inventory
-When I click "Document Word"
-Then a .docx file is downloaded
-And the document title reads "CONSTAT D'ÉTAT DES LIEUX SORTANT"
+When I click "Générer l'état des lieux"
+Then the generated document title reads "CONSTAT D'ÉTAT DES LIEUX SORTANT"
 ```
 
 ---
