@@ -74,6 +74,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'États des lieux' },
   },
   {
+    path: '/inventories/compare/:leaseId',
+    name: 'inventory-comparison',
+    component: () => import('@features/inventories/views/InventoryComparisonView.vue'),
+    meta: { title: 'Comparaison entrée/sortie' },
+  },
+  {
     path: '/inventories/:id',
     name: 'inventory-detail',
     component: () => import('@features/inventories/views/InventoryDetailView.vue'),

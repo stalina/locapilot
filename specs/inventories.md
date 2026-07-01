@@ -8,19 +8,46 @@ An **inventory** (état des lieux) is a property condition report created at the
 
 ### Inventory
 
-| Field          | Type                   | Description                        |
-| -------------- | ---------------------- | ---------------------------------- |
-| `id`           | number                 | Auto-generated primary key         |
-| `leaseId`      | number                 | Reference to the parent lease      |
-| `type`         | enum                   | `checkin` \| `checkout`            |
-| `date`         | Date                   | Date of the inventory inspection   |
-| `observations` | string?                | General free-text observations     |
-| `photos`       | number[]?              | Array of Document IDs (photo type) |
-| `roomsData`    | Record\<string, any\>? | Flexible per-room item data        |
-| `createdAt`    | Date?                  | Creation timestamp                 |
-| `updatedAt`    | Date?                  | Last update timestamp              |
+| Field          | Type                   | Description                                     |
+| -------------- | ---------------------- | ----------------------------------------------- |
+| `id`           | number                 | Auto-generated primary key                      |
+| `leaseId`      | number                 | Reference to the parent lease                   |
+| `type`         | enum                   | `checkin` \| `checkout`                         |
+| `date`         | Date                   | Date of the inventory inspection                |
+| `observations` | string?                | General free-text observations                  |
+| `photos`       | number[]?              | Array of Document IDs (photo type)              |
+| `rooms`        | InventoryRoom[]?       | Structured per-room inspection data (preferred) |
+| `roomsData`    | Record\<string, any\>? | _Deprecated_ flexible per-room item data        |
+| `signature`    | InventorySignature?    | Timestamped acceptance record                   |
+| `createdAt`    | Date?                  | Creation timestamp                              |
+| `updatedAt`    | Date?                  | Last update timestamp                           |
 
-### InventoryItem (embedded in roomsData)
+### InventoryRoom
+
+| Field   | Type                | Description                          |
+| ------- | ------------------- | ------------------------------------ |
+| `name`  | string              | Room name (e.g. "Séjour", "Cuisine") |
+| `items` | InventoryRoomItem[] | Inspected elements within the room   |
+
+### InventoryRoomItem
+
+| Field       | Type      | Description                                            |
+| ----------- | --------- | ------------------------------------------------------ |
+| `label`     | string    | Element name (e.g. "Murs", "Sol", "Fenêtres")          |
+| `condition` | enum      | `excellent` \| `good` \| `fair` \| `poor` \| `damaged` |
+| `notes`     | string?   | Additional notes for this element                      |
+| `photos`    | number[]? | Document IDs for element-specific photos               |
+
+### InventorySignature
+
+| Field              | Type    | Description                                     |
+| ------------------ | ------- | ----------------------------------------------- |
+| `tenantAccepted`   | boolean | Tenant accepted/certified the inventory         |
+| `landlordAccepted` | boolean | Landlord accepted/certified the inventory       |
+| `acceptedAt`       | Date?   | Timestamp set as soon as one party accepts      |
+| `tenantName`       | string? | Optional free-text name of the accepting tenant |
+
+### InventoryItem (legacy, embedded in roomsData)
 
 | Field       | Type      | Description                                            |
 | ----------- | --------- | ------------------------------------------------------ |
@@ -29,6 +56,24 @@ An **inventory** (état des lieux) is a property condition report created at the
 | `condition` | enum      | `excellent` \| `good` \| `fair` \| `poor` \| `damaged` |
 | `notes`     | string?   | Additional notes for this item                         |
 | `photos`    | number[]? | Document IDs for item-specific photos                  |
+
+## Condition Scale & Comparison
+
+Conditions are ordered from best to worst: `excellent` (4) > `good` (3) > `fair` (2) > `poor` (1) > `damaged` (0).
+
+When comparing a check-in and a check-out inventory element by element, the drop in
+score determines the status:
+
+| Drop (levels) | Status          | Meaning                                   |
+| ------------- | --------------- | ----------------------------------------- |
+| improvement   | `improved`      | Condition is better at check-out          |
+| 0             | `unchanged`     | Identical condition                       |
+| 1             | `normal-wear`   | Normal rental wear and tear               |
+| ≥ 2           | `deterioration` | **Abnormal** wear — appears in the report |
+| —             | `added`         | Element only present at check-out         |
+| —             | `removed`       | Element only present at check-in          |
+
+The **abnormal wear report** lists only elements with a drop ≥ 2 levels, sorted by severity.
 
 ## Inventory Types
 
@@ -44,7 +89,11 @@ An **inventory** (état des lieux) is a property condition report created at the
 - `type` must be either `checkin` or `checkout`
 - A lease can have at most one `checkin` inventory and one `checkout` inventory
 - Photos are stored as Document records with type `photo` linked via `relatedEntityType: inventory`
-- `roomsData` structure is flexible to allow custom room/item configurations
+- `rooms` holds the structured inspection (preferred); `roomsData` is kept for backward compatibility
+- A pre-filled **standard template** (calqué sur un constat réel : Relevé des compteurs, Liste des clés, Boîte aux lettres / annexes, Accès / entrée, Cuisine + séjour, Salle de bains, Chambre, Balcon) can be applied; every element starts at `good`
+- Comparison requires both a `checkin` **and** a `checkout` inventory on the same lease
+- Abnormal wear = an element dropping ≥ 2 condition levels between check-in and check-out
+- Acceptance is recorded via `signature`; `acceptedAt` is set automatically as soon as a party accepts
 
 ## Relationships
 
@@ -237,4 +286,173 @@ Given an inventory is the only check-in record for an active lease
 When I attempt to delete it
 Then a warning message indicates this is the check-in record for an active lease
 And deletion requires explicit confirmation
+```
+
+---
+
+### Story: Apply a standard room template
+
+**As a** landlord
+**I want to** pre-fill an inventory with standard rooms and elements
+**So that** I don't have to type every room and element by hand
+
+#### Scenario: Apply the standard template
+
+```gherkin
+Given I am creating a new inventory
+When I click "Modèle standard"
+Then the rooms editor is filled with the standard sections (Relevé des compteurs, Liste des clés, Boîte aux lettres / annexes, Accès / entrée, Cuisine + séjour, Salle de bains, Chambre, Balcon)
+And every element is initialised with condition "Bon état"
+```
+
+#### Scenario: Add a single standard room
+
+```gherkin
+Given I am editing the rooms of an inventory
+When I click the "+ Chambre" chip
+Then a "Chambre" room is appended with its standard elements
+```
+
+#### Scenario: Replace existing rooms confirmation
+
+```gherkin
+Given the rooms editor already contains rooms
+When I click "Modèle standard"
+Then I am asked to confirm replacing the current rooms
+And the rooms are replaced only if I confirm
+```
+
+---
+
+### Story: Compare check-in and check-out states
+
+**As a** landlord
+**I want to** compare the entry and exit inventories side by side
+**So that** I can identify deterioration beyond normal wear
+
+#### Scenario: Comparison highlights abnormal deterioration
+
+```gherkin
+Given a lease has a check-in inventory where "Cuisine / Évier" is "Bon état"
+And a check-out inventory where "Cuisine / Évier" is "Mauvais état"
+When I open the comparison for that lease
+Then the row "Cuisine / Évier" is flagged as "Dégradation"
+And it is highlighted as abnormal wear
+```
+
+#### Scenario: Single-level drop counted as normal wear
+
+```gherkin
+Given an element is "Excellent" at check-in and "Bon état" at check-out
+When I open the comparison
+Then the element is flagged as "Usure normale"
+And it does not appear in the abnormal wear report
+```
+
+#### Scenario: Comparison unavailable without both states
+
+```gherkin
+Given a lease has a check-in inventory but no check-out inventory
+When I open the comparison view
+Then a message states the comparison requires both an entry and an exit state
+And it indicates which state is missing
+```
+
+---
+
+### Story: Generate an abnormal wear report
+
+**As a** landlord
+**I want to** produce a report of abnormal wear
+**So that** I can justify withholding part of the deposit
+
+#### Scenario: Wear report lists only abnormal deteriorations
+
+```gherkin
+Given a comparison contains 1 abnormal deterioration and 3 normal-wear elements
+When I view the abnormal wear report
+Then only the 1 abnormal deterioration is listed
+And items are sorted by severity (largest drop first)
+```
+
+#### Scenario: Print the wear report
+
+```gherkin
+Given a comparison is available
+When I click "Imprimer le rapport"
+Then the browser print dialog opens with the report content
+```
+
+#### Scenario: No abnormal wear
+
+```gherkin
+Given check-in and check-out conditions are identical
+When I view the abnormal wear report
+Then it states no abnormal deterioration was detected
+```
+
+---
+
+### Story: Generate a Word document for an inventory
+
+**As a** landlord
+**I want to** export an inventory (check-in or check-out) as a Word document
+**So that** I can print it and have it signed by both parties
+
+The document is produced from the `templateEtatDesLieux.docx` template (docxtemplater),
+consistent with the other generated documents (mandat, quittance, remise des clés).
+
+#### Scenario: Generate a check-in Word document
+
+```gherkin
+Given I am viewing a check-in inventory with rooms and items
+When I click "Générer l'état des lieux"
+And I choose "Télécharger uniquement"
+Then a .docx file is downloaded
+And its filename matches "<date>_etatDesLieux_entree.docx"
+And the document contains the title "CONSTAT D'ÉTAT DES LIEUX ENTRANT", the parties, the property, one table per room (Élément / État / Commentaire), the condition legend and the signatures section
+```
+
+#### Scenario: Save the document associated with the lease
+
+```gherkin
+Given I am viewing an inventory
+When I click "Générer l'état des lieux"
+And I choose "Enregistrer et télécharger"
+Then the document is saved in the documents store with type "inventory" linked to the lease
+And it also downloads to my computer
+And I can retrieve it later from the Documents section
+```
+
+#### Scenario: Generate a check-out Word document
+
+```gherkin
+Given I am viewing a check-out inventory
+When I click "Générer l'état des lieux"
+Then the generated document title reads "CONSTAT D'ÉTAT DES LIEUX SORTANT"
+```
+
+---
+
+### Story: Record acceptance of an inventory
+
+**As a** landlord
+**I want to** record a timestamped acceptance of the inventory
+**So that** both parties acknowledge the documented condition
+
+#### Scenario: Timestamped acceptance
+
+```gherkin
+Given I am editing an inventory
+When I check "Le bailleur accepte et certifie cet état des lieux"
+Then a timestamp of the acceptance is recorded and displayed
+And the acceptance is saved with the inventory
+```
+
+#### Scenario: Removing all acceptances clears the timestamp
+
+```gherkin
+Given an inventory has a recorded acceptance
+When I uncheck all acceptance boxes
+Then the acceptance timestamp is cleared
 ```

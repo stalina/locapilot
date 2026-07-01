@@ -7,7 +7,8 @@ import Modal from '@/shared/components/Modal.vue';
 import Input from '@/shared/components/Input.vue';
 import Button from '@/shared/components/Button.vue';
 import InventoryPhotoGallery from '@/shared/components/InventoryPhotoGallery.vue';
-import type { Inventory } from '@/db/types';
+import InventoryRoomsEditor from '@/features/inventories/components/InventoryRoomsEditor.vue';
+import type { Inventory, InventoryRoom, InventorySignature } from '@/db/types';
 
 interface Props {
   modelValue: boolean;
@@ -28,12 +29,18 @@ const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 
 // Form data
+const defaultSignature = (): InventorySignature => ({
+  tenantAccepted: false,
+  landlordAccepted: false,
+});
+
 const formData = ref({
   leaseId: 0 as number,
   type: 'checkin' as Inventory['type'],
   date: new Date().toISOString().split('T')[0] as string,
   observations: '',
-  roomsData: {} as Record<string, any>,
+  rooms: [] as InventoryRoom[],
+  signature: defaultSignature(),
 });
 
 const errors = ref<Record<string, string>>({});
@@ -65,7 +72,10 @@ watch(
         type: newInventory.type,
         date: new Date(newInventory.date).toISOString().split('T')[0] as string,
         observations: newInventory.observations || '',
-        roomsData: newInventory.roomsData || {},
+        rooms: newInventory.rooms ? JSON.parse(JSON.stringify(newInventory.rooms)) : [],
+        signature: newInventory.signature
+          ? { ...defaultSignature(), ...newInventory.signature }
+          : defaultSignature(),
       };
     } else {
       resetForm();
@@ -74,13 +84,27 @@ watch(
   { immediate: true }
 );
 
+// Pose / retire l'horodatage d'acceptation dès qu'une partie (dé)coche.
+watch(
+  () => [formData.value.signature.tenantAccepted, formData.value.signature.landlordAccepted],
+  ([tenant, landlord]) => {
+    const anyAccepted = tenant || landlord;
+    if (anyAccepted && !formData.value.signature.acceptedAt) {
+      formData.value.signature.acceptedAt = new Date();
+    } else if (!anyAccepted) {
+      formData.value.signature.acceptedAt = undefined;
+    }
+  }
+);
+
 function resetForm() {
   formData.value = {
     leaseId: 0,
     type: 'checkin',
     date: new Date().toISOString().split('T')[0] as string,
     observations: '',
-    roomsData: {},
+    rooms: [],
+    signature: defaultSignature(),
   };
   errors.value = {};
 }
@@ -105,10 +129,24 @@ async function handleSubmit() {
   isSubmitting.value = true;
 
   try {
+    // Horodatage de l'acceptation : posé dès qu'au moins une partie accepte,
+    // conservé si déjà présent, retiré si plus aucune acceptation.
+    const sig = formData.value.signature;
+    const anyAccepted = sig.tenantAccepted || sig.landlordAccepted;
+    const signature: InventorySignature = {
+      tenantAccepted: sig.tenantAccepted,
+      landlordAccepted: sig.landlordAccepted,
+      ...(sig.tenantName ? { tenantName: sig.tenantName } : {}),
+      ...(anyAccepted ? { acceptedAt: sig.acceptedAt ?? new Date() } : {}),
+    };
+
     const inventoryData: Omit<Inventory, 'id' | 'createdAt' | 'updatedAt'> = {
       leaseId: formData.value.leaseId,
       type: formData.value.type,
       date: new Date(formData.value.date || new Date()),
+      // Désérialise les proxies réactifs en objets clonables par IndexedDB.
+      rooms: JSON.parse(JSON.stringify(formData.value.rooms)) as InventoryRoom[],
+      signature,
       ...(formData.value.observations && { observations: formData.value.observations }),
     };
 
@@ -190,6 +228,44 @@ function handleClose() {
               placeholder="Notez ici vos observations générales sur l'état du logement..."
               data-testid="inventory-observations"
             ></textarea>
+          </div>
+        </div>
+
+        <!-- État des pièces -->
+        <div class="form-section full-width">
+          <h4 class="section-title">État des pièces</h4>
+          <InventoryRoomsEditor v-model="formData.rooms" />
+        </div>
+
+        <!-- Acceptation / signature -->
+        <div class="form-section full-width">
+          <h4 class="section-title">Acceptation</h4>
+          <div class="signature-box">
+            <label class="checkbox-line">
+              <input
+                v-model="formData.signature.landlordAccepted"
+                type="checkbox"
+                data-testid="signature-landlord"
+              />
+              <span>Le bailleur accepte et certifie cet état des lieux</span>
+            </label>
+            <label class="checkbox-line">
+              <input
+                v-model="formData.signature.tenantAccepted"
+                type="checkbox"
+                data-testid="signature-tenant"
+              />
+              <span>Le locataire accepte et certifie cet état des lieux</span>
+            </label>
+            <p
+              v-if="formData.signature.acceptedAt"
+              class="signature-timestamp"
+              data-testid="signature-timestamp"
+            >
+              <i class="mdi mdi-clock-check-outline"></i>
+              Acceptation horodatée le
+              {{ new Date(formData.signature.acceptedAt).toLocaleString('fr-FR') }}
+            </p>
           </div>
         </div>
 
@@ -292,6 +368,40 @@ function handleClose() {
 .error-message {
   font-size: var(--text-sm, 0.875rem);
   color: var(--error-500, #ef4444);
+}
+
+.signature-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-4, 1rem);
+  background: var(--neutral-50, #f9fafb);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 0.75rem);
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-primary, #0f172a);
+  cursor: pointer;
+}
+
+.checkbox-line input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--primary-600, #4f46e5);
+}
+
+.signature-timestamp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--success-600, #16a34a);
 }
 
 .photos-info {

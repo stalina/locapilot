@@ -2,7 +2,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
 import { db } from '@/db/database';
-import type { ChargesAdjustmentRow, Tenant } from '@/db/types';
+import type { ChargesAdjustmentRow, Tenant, Inventory, InventoryCondition } from '@/db/types';
 
 /**
  * Utilitaire pour charger un fichier en binaire
@@ -1201,4 +1201,202 @@ export async function prepareMandatLocationData(leaseId: number): Promise<Mandat
     rentStart,
     today: new Date().toLocaleDateString('fr-FR'),
   };
+}
+
+// ========== État des lieux (entrée / sortie) — issue #46 ==========
+
+/**
+ * Libellés français des conditions, alignés sur
+ * `features/inventories/services/inventoryComparison.ts` (source de vérité).
+ */
+const INVENTORY_CONDITION_LABELS: Record<InventoryCondition, string> = {
+  excellent: 'Excellent',
+  good: 'Bon état',
+  fair: 'État moyen',
+  poor: 'Mauvais état',
+  damaged: 'Détérioré',
+};
+
+export interface EtatDesLieuxData {
+  type: 'checkin' | 'checkout';
+  kindLabel: string; // ENTRANT | SORTANT
+  number: string;
+  dateLabel: string;
+  ownerName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  tenantFullNames: string;
+  tenantEmails: string;
+  propertyType: string;
+  propertyAddress: string;
+  rooms: { name: string; items: { label: string; condition: string; notes: string }[] }[];
+  legend: string;
+  observations: string;
+  landlordAccepted: string; // Oui | Non
+  tenantAccepted: string; // Oui | Non
+  hasAcceptedAt: boolean;
+  acceptedAtLabel: string;
+}
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  apartment: 'Appartement',
+  house: 'Maison',
+  studio: 'Studio',
+  commercial: 'Local commercial',
+  parking: 'Parking',
+  other: 'Autre',
+};
+
+/**
+ * Prépare les données du template d'état des lieux à partir d'un état des lieux
+ * (résout bail, locataires, propriété et coordonnées du propriétaire).
+ */
+export async function prepareEtatDesLieuxData(inventory: Inventory): Promise<EtatDesLieuxData> {
+  let ownerName = '';
+  let ownerAddress = '';
+  let ownerEmail = '';
+  let ownerPhone = '';
+  try {
+    const nameSetting = await db.settings.where('key').equals('senderName').first();
+    if (nameSetting?.value) ownerName = String(nameSetting.value);
+    const addressSetting = await db.settings.where('key').equals('senderAddress').first();
+    if (addressSetting?.value) ownerAddress = String(addressSetting.value);
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) ownerEmail = String(emailSetting.value);
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) ownerPhone = String(phoneSetting.value);
+  } catch {
+    // settings absents : valeurs vides
+  }
+
+  let tenantFullNames = '';
+  let tenantEmails = '';
+  let propertyType = '';
+  let propertyAddress = '';
+  try {
+    const lease = await db.leases.get(inventory.leaseId);
+    if (lease) {
+      const info = await resolveTenantsInfo(lease.tenantIds);
+      tenantFullNames = info.fullNames;
+      tenantEmails = info.emails;
+      if (lease.propertyId) {
+        const property = await db.properties.get(lease.propertyId);
+        if (property) {
+          propertyType = PROPERTY_TYPE_LABELS[property.type] ?? 'Autre';
+          propertyAddress = [
+            property.name,
+            property.address,
+            [property.postalCode, property.town].filter(Boolean).join(' '),
+          ]
+            .filter(Boolean)
+            .join(', ');
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Unable to resolve lease/property for inventory document', err);
+  }
+
+  const date = new Date(inventory.date);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateLabel = date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const number = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+
+  const rooms = (inventory.rooms ?? []).map(room => ({
+    name: room.name,
+    items: room.items.map(item => ({
+      label: item.label,
+      condition: INVENTORY_CONDITION_LABELS[item.condition] ?? item.condition,
+      notes: item.notes ?? '',
+    })),
+  }));
+
+  const sig = inventory.signature;
+
+  return {
+    type: inventory.type,
+    kindLabel: inventory.type === 'checkin' ? 'ENTRANT' : 'SORTANT',
+    number,
+    dateLabel,
+    ownerName,
+    ownerAddress,
+    ownerEmail,
+    ownerPhone,
+    tenantFullNames,
+    tenantEmails,
+    propertyType,
+    propertyAddress,
+    rooms,
+    legend: Object.values(INVENTORY_CONDITION_LABELS).join(' • '),
+    observations: inventory.observations ?? '',
+    landlordAccepted: sig?.landlordAccepted ? 'Oui' : 'Non',
+    tenantAccepted: sig?.tenantAccepted ? 'Oui' : 'Non',
+    hasAcceptedAt: !!sig?.acceptedAt,
+    acceptedAtLabel: sig?.acceptedAt ? new Date(sig.acceptedAt).toLocaleString('fr-FR') : '',
+  };
+}
+
+/**
+ * Génère le document d'état des lieux (entrée/sortie) au format DOCX à partir
+ * du template `templateEtatDesLieux.docx`.
+ */
+export async function generateEtatDesLieux(
+  data: EtatDesLieuxData,
+  templatePath: string = `${import.meta.env.BASE_URL}templateEtatDesLieux.docx`
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const kind = data.type === 'checkin' ? 'entree' : 'sortie';
+    const filename = `${data.number}_etatDesLieux_${kind}.docx`;
+
+    return { blob: out, filename };
+  } catch (error) {
+    console.error('Erreur génération état des lieux :', error);
+    throw error;
+  }
+}
+
+/** Sauvegarde le document d'état des lieux dans la base, associé au bail. */
+export async function saveEtatDesLieuxToDb(
+  leaseId: number,
+  blob: Blob,
+  filename: string,
+  type: 'checkin' | 'checkout'
+): Promise<number> {
+  const now = new Date();
+  const description = type === 'checkin' ? "État des lieux d'entrée" : 'État des lieux de sortie';
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'inventory',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description,
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
 }
