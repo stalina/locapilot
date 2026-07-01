@@ -1,5 +1,5 @@
 import { db } from '@/db/database';
-import type { Communication, Inventory, Lease, Property, Rent } from '@/db/types';
+import type { Communication, Inventory, Lease, Property, Reminder, Rent } from '@/db/types';
 
 export type DashboardRawData = {
   properties: Property[];
@@ -8,6 +8,7 @@ export type DashboardRawData = {
   allLeases: Lease[];
   allInventories: Inventory[];
   allCommunications: Communication[];
+  allReminders: Reminder[];
 };
 
 export async function fetchDashboardRawData(now = new Date()): Promise<DashboardRawData> {
@@ -20,11 +21,12 @@ export async function fetchDashboardRawData(now = new Date()): Promise<Dashboard
     .between(new Date(currentYear, currentMonth, 1), new Date(currentYear, currentMonth + 1, 0))
     .toArray();
 
-  const [allRents, allLeases, allInventories, allCommunications] = await Promise.all([
+  const [allRents, allLeases, allInventories, allCommunications, allReminders] = await Promise.all([
     db.rents.toArray(),
     db.leases.toArray(),
     db.inventories.toArray(),
     db.communications.toArray(),
+    db.reminders.toArray(),
   ]);
 
   return {
@@ -34,5 +36,6 @@ export async function fetchDashboardRawData(now = new Date()): Promise<Dashboard
     allLeases,
     allInventories,
     allCommunications,
+    allReminders,
   };
 }

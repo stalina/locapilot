@@ -426,6 +426,30 @@ watch(
     editingDefaultMsg.value = (v as any) || '';
   }
 );
+
+// Reminder thresholds editing (issue #40)
+const REMINDER_LEVEL_LABELS: Record<string, string> = {
+  amiable: 'Relance amiable',
+  recommandee: 'Relance recommandée',
+  'mise-en-demeure': 'Mise en demeure',
+};
+const editingReminderThresholds = ref(settingsStore.reminderThresholds.map(t => ({ ...t })));
+
+onMounted(() => {
+  editingReminderThresholds.value = settingsStore.reminderThresholds.map(t => ({ ...t }));
+});
+
+const saveReminderThresholds = async () => {
+  try {
+    await settingsStore.updateReminderThresholds(
+      editingReminderThresholds.value.map(t => ({ ...t }))
+    );
+    alert('Configuration des relances enregistrée');
+  } catch (e) {
+    console.error('Failed to save reminder thresholds', e);
+    alert('Erreur lors de la sauvegarde');
+  }
+};
 </script>
 
 <template>
@@ -565,6 +589,46 @@ watch(
             ></textarea>
             <div style="display: flex; gap: 8px; justify-content: flex-end">
               <Button @click="saveDefaultRejectionMessage" variant="primary">Enregistrer</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Relances des impayés -->
+      <section class="settings-section">
+        <h2>
+          <i class="mdi mdi-bell-alert"></i>
+          Relances des impayés
+        </h2>
+
+        <div class="setting-card">
+          <div class="setting-info">
+            <h3>Échéancier de relance</h3>
+            <p>
+              Configurez le nombre de jours de retard déclenchant chaque niveau de relance, et
+              activez ou désactivez chaque niveau.
+            </p>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+            <div
+              v-for="threshold in editingReminderThresholds"
+              :key="threshold.level"
+              style="display: flex; align-items: center; gap: 8px"
+            >
+              <label style="display: flex; align-items: center; gap: 6px">
+                <input v-model="threshold.enabled" type="checkbox" />
+                {{ REMINDER_LEVEL_LABELS[threshold.level] }}
+              </label>
+              <input
+                v-model.number="threshold.days"
+                type="number"
+                min="1"
+                style="width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px"
+              />
+              <span>jours de retard</span>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <Button @click="saveReminderThresholds" variant="primary">Enregistrer</Button>
             </div>
           </div>
         </div>

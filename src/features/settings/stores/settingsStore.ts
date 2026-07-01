@@ -1,12 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { fetchSettingValue, saveSettingValue } from '../repositories/settingsRepository';
+import type { ReminderLevel } from '@/db/types';
 
 interface NotificationSettings {
   enabled: boolean;
   rentReminders: boolean;
   leaseExpiration: boolean;
   paymentConfirmations: boolean;
+}
+
+export interface ReminderThresholdConfig {
+  level: ReminderLevel;
+  days: number;
+  enabled: boolean;
 }
 
 interface AppSettingsData {
@@ -42,6 +49,15 @@ j'espère que vous trouverez rapidement une location qui vous convient.
 Cordialement, `);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+
+  const defaultReminderThresholds: ReminderThresholdConfig[] = [
+    { level: 'amiable', days: 30, enabled: true },
+    { level: 'recommandee', days: 60, enabled: true },
+    { level: 'mise-en-demeure', days: 90, enabled: true },
+  ];
+  const reminderThresholds = ref<ReminderThresholdConfig[]>(
+    defaultReminderThresholds.map(t => ({ ...t }))
+  );
 
   // Default settings
   const defaultSettings: AppSettingsData = {
@@ -102,6 +118,7 @@ Cordialement, `);
       notifications.value = await getSetting('notifications', defaultSettings.notifications);
       autoSave.value = await getSetting('autoSave', defaultSettings.autoSave);
       compactMode.value = await getSetting('compactMode', defaultSettings.compactMode);
+      reminderThresholds.value = await getSetting('reminderThresholds', defaultReminderThresholds);
 
       // senderAddress is managed on demand via helper action
 
@@ -254,6 +271,12 @@ Cordialement, `);
     await setSetting('senderEmail', email);
   }
 
+  // Persist the configurable rent-arrears reminder thresholds (issue #40)
+  async function updateReminderThresholds(config: ReminderThresholdConfig[]): Promise<void> {
+    await setSetting('reminderThresholds', config);
+    reminderThresholds.value = config;
+  }
+
   async function fetchSenderInfo(): Promise<{
     senderAddress: string;
     senderName: string;
@@ -276,6 +299,7 @@ Cordialement, `);
     notifications,
     autoSave,
     compactMode,
+    reminderThresholds,
     isLoading,
     error,
 
@@ -300,6 +324,7 @@ Cordialement, `);
     updateSenderPhone,
     updateSenderEmail,
     fetchSenderInfo,
+    updateReminderThresholds,
     // Default message
     defaultRejectionMessage,
     currentDefaultRejectionMessage,

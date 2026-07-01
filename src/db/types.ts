@@ -18,6 +18,8 @@ export type {
   ChargesAdjustmentRow,
   IrlIndex,
   RentRevision,
+  Reminder,
+  ReminderLevel,
 } from './schema';
 
 // Application-specific settings type

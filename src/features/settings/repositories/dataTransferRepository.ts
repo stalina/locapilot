@@ -8,6 +8,7 @@ import type {
   Lease,
   Property,
   Rent,
+  Reminder,
   RentRevision,
   Settings,
   Tenant,
@@ -28,6 +29,7 @@ export type RawExportData = {
   chargesAdjustments: ChargesAdjustmentRow[];
   irlIndices: IrlIndex[];
   rentRevisions: RentRevision[];
+  reminders: Reminder[];
   settings: Settings[];
 };
 
@@ -46,6 +48,7 @@ const businessTables = () => [
   db.chargesAdjustments,
   db.irlIndices,
   db.rentRevisions,
+  db.reminders,
   db.settings,
 ];
 
@@ -63,6 +66,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     chargesAdjustments,
     irlIndices,
     rentRevisions,
+    reminders,
     settings,
   ] = await Promise.all([
     db.properties.toArray(),
@@ -77,6 +81,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     db.chargesAdjustments.toArray(),
     db.irlIndices.toArray(),
     db.rentRevisions.toArray(),
+    db.reminders.toArray(),
     db.settings.toArray(),
   ]);
 
@@ -93,6 +98,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     chargesAdjustments,
     irlIndices,
     rentRevisions,
+    reminders,
     settings,
   };
 }
@@ -117,6 +123,7 @@ export async function importBusinessData(params: {
   chargesAdjustments?: unknown[];
   irlIndices?: unknown[];
   rentRevisions?: unknown[];
+  reminders?: unknown[];
   settings?: unknown[];
 }): Promise<void> {
   const tables = businessTables();
@@ -138,6 +145,7 @@ export async function importBusinessData(params: {
       await db.chargesAdjustments.bulkAdd(params.chargesAdjustments as any);
     if (params.irlIndices?.length) await db.irlIndices.bulkAdd(params.irlIndices as any);
     if (params.rentRevisions?.length) await db.rentRevisions.bulkAdd(params.rentRevisions as any);
+    if (params.reminders?.length) await db.reminders.bulkAdd(params.reminders as any);
     if (params.settings?.length) await db.settings.bulkAdd(params.settings as any);
   });
 }

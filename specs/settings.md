@@ -17,9 +17,10 @@ The **settings** module allows the landlord to configure application-wide prefer
 
 ### Known Settings Keys
 
-| Key         | Type   | Description                                  |
-| ----------- | ------ | -------------------------------------------- |
-| `ownerName` | string | Landlord's full name — used in rent receipts |
+| Key                  | Type                        | Description                                                                 |
+| -------------------- | --------------------------- | --------------------------------------------------------------------------- |
+| `ownerName`          | string                      | Landlord's full name — used in rent receipts                                |
+| `reminderThresholds` | `ReminderThresholdConfig[]` | Rent-arrears reminder day thresholds — see [Reminders spec](./reminders.md) |
 
 ## Domain Rules
 

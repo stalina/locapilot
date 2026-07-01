@@ -129,6 +129,13 @@ function handleEventClick(event: any) {
         icon-color="warning"
         :trend="{ value: 3, direction: 'down' }"
       />
+
+      <StatCard
+        label="Relances à envoyer"
+        :value="stats.rentsNeedingReminder"
+        icon="bell-alert"
+        icon-color="error"
+      />
     </div>
 
     <!-- Content Grid -->

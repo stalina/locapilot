@@ -1,10 +1,13 @@
-import type { Communication, Inventory, Lease, Property, Rent } from '@/db/types';
+import type { Communication, Inventory, Lease, Property, Reminder, Rent } from '@/db/types';
+import type { ReminderThresholdConfig } from '@/features/settings/stores/settingsStore';
+import { computePendingReminders } from '@/features/reminders/services/remindersService';
 
 export type DashboardStats = {
   totalProperties: number;
   occupancyRate: number;
   monthlyRevenue: number;
   pendingRents: number;
+  rentsNeedingReminder: number;
 };
 
 export type DashboardActivityItem = {
@@ -61,7 +64,13 @@ function formatEventDate(d: Date): string {
 
 export function computeDashboardStats(
   properties: Property[],
-  rentsThisMonth: Rent[]
+  rentsThisMonth: Rent[],
+  reminderContext?: {
+    allRents: Rent[];
+    reminders: Reminder[];
+    thresholds: ReminderThresholdConfig[];
+    now?: Date;
+  }
 ): DashboardStats {
   const occupiedProperties = properties.filter(p => p.status === 'occupied');
   const occupancyRate =
@@ -72,11 +81,21 @@ export function computeDashboardStats(
   const paidRents = rentsThisMonth.filter(r => r.status === 'paid');
   const pendingRents = rentsThisMonth.filter(r => r.status === 'pending' || r.status === 'late');
 
+  const rentsNeedingReminder = reminderContext
+    ? computePendingReminders(
+        reminderContext.allRents,
+        reminderContext.reminders,
+        reminderContext.thresholds,
+        reminderContext.now
+      ).length
+    : 0;
+
   return {
     totalProperties: properties.length,
     occupancyRate,
     monthlyRevenue: paidRents.reduce((sum, r) => sum + r.amount, 0),
     pendingRents: pendingRents.length,
+    rentsNeedingReminder,
   };
 }
 

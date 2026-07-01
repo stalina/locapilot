@@ -2,7 +2,13 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
 import { db } from '@/db/database';
-import type { ChargesAdjustmentRow, Tenant, Inventory, InventoryCondition } from '@/db/types';
+import type {
+  ChargesAdjustmentRow,
+  Inventory,
+  InventoryCondition,
+  ReminderLevel,
+  Tenant,
+} from '@/db/types';
 
 /**
  * Utilitaire pour charger un fichier en binaire
@@ -1390,6 +1396,200 @@ export async function saveEtatDesLieuxToDb(
     size: blob.size,
     data: blob,
     description,
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
+}
+
+/**
+ * Interface pour les données de génération d'un courrier de relance d'impayé
+ */
+export interface ReminderLetterData {
+  levelLabel: string;
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+  date: string;
+  tenantFullName: string;
+  propertyAddress: string;
+  propertyPostalCode: string;
+  propertyTown: string;
+  dueDate: string;
+  rentPeriodLabel: string;
+  amountDue: string;
+  daysLate: number;
+}
+
+/** Libellé humain + fichier de template par défaut, pour chaque niveau de relance */
+const REMINDER_LEVEL_INFO: Record<ReminderLevel, { label: string; template: string }> = {
+  amiable: { label: 'Relance amiable', template: 'templateRelanceAmiable.docx' },
+  recommandee: { label: 'Relance recommandée', template: 'templateRelanceRecommandee.docx' },
+  'mise-en-demeure': { label: 'Mise en demeure', template: 'templateMiseEnDemeure.docx' },
+};
+
+/**
+ * Prépare les données pour la génération d'un courrier de relance d'impayé
+ * @param rentId - ID du loyer impayé
+ * @param level - Niveau de relance (amiable, recommandée, mise en demeure)
+ */
+export async function prepareReminderLetterData(
+  rentId: number,
+  level: ReminderLevel
+): Promise<ReminderLetterData> {
+  let ownerFullName = '';
+  let ownerAddress = '';
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+  try {
+    const nameSetting = await db.settings.where('key').equals('senderName').first();
+    if (nameSetting?.value) ownerFullName = String(nameSetting.value);
+    const addressSetting = await db.settings.where('key').equals('senderAddress').first();
+    if (addressSetting?.value) ownerAddress = String(addressSetting.value);
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) ownerEmail = String(emailSetting.value);
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) ownerPhoneNumber = String(phoneSetting.value);
+  } catch {
+    // Ignorer si les clés n'existent pas
+  }
+
+  let tenantFullName = '';
+  let propertyAddress = '';
+  let propertyPostalCode = '';
+  let propertyTown = '';
+  let dueDate = '';
+  let rentPeriodLabel = '';
+  let amountDue = '';
+  let daysLate = 0;
+
+  const rent = await db.rents.get(rentId);
+  if (!rent) throw new Error('Rent not found');
+
+  try {
+    const lease = await db.leases.get(rent.leaseId);
+    if (lease) {
+      const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
+      tenantFullName = tenantsInfo.fullNames;
+      if (lease.propertyId) {
+        const property = await db.properties.get(lease.propertyId);
+        if (property) {
+          propertyAddress = property.address || '';
+          propertyPostalCode = property.postalCode || '';
+          propertyTown = property.town || '';
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Unable to resolve tenant/property for reminder letter', err);
+  }
+
+  const due = new Date(rent.dueDate);
+  const monthNames = [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+  rentPeriodLabel = `${monthNames[due.getMonth()] || 'janvier'} ${due.getFullYear()}`;
+  dueDate = due.toLocaleDateString('fr-FR');
+
+  const now = new Date();
+  daysLate = Math.max(0, Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)));
+
+  const remaining = (rent.amount || 0) + (rent.charges || 0) - (rent.paidAmount || 0);
+  amountDue = remaining.toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return {
+    levelLabel: REMINDER_LEVEL_INFO[level].label,
+    ownerFullName,
+    ownerAddress,
+    ownerEmail,
+    ownerPhoneNumber,
+    date: now.toLocaleDateString('fr-FR'),
+    tenantFullName,
+    propertyAddress,
+    propertyPostalCode,
+    propertyTown,
+    dueDate,
+    rentPeriodLabel,
+    amountDue,
+    daysLate,
+  };
+}
+
+/**
+ * Génère un courrier de relance d'impayé (amiable / recommandée / mise en demeure) au format DOCX.
+ *
+ * Le texte des 3 modèles est une rédaction de bon effort et ne constitue pas un
+ * conseil juridique — à faire relire avant tout envoi réel, en particulier pour
+ * la mise en demeure.
+ */
+export async function generateReminderLetter(
+  data: ReminderLetterData,
+  level: ReminderLevel,
+  templatePath: string = `${import.meta.env.BASE_URL}${REMINDER_LEVEL_INFO[level].template}`
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_relance_${level}.docx`;
+
+    return { blob: out, filename };
+  } catch (error) {
+    console.error('Erreur génération courrier de relance :', error);
+    throw error;
+  }
+}
+
+/**
+ * Sauvegarde le courrier de relance dans la base documentaire.
+ */
+export async function saveReminderLetterToDb(
+  rentId: number,
+  level: ReminderLevel,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'other',
+    relatedEntityType: 'rent',
+    relatedEntityId: rentId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: REMINDER_LEVEL_INFO[level].label,
     createdAt: now,
     updatedAt: now,
   } as any);

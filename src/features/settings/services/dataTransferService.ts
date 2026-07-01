@@ -16,6 +16,7 @@ export type ExportDataPayload = {
   chargesAdjustments: unknown[];
   irlIndices: unknown[];
   rentRevisions: unknown[];
+  reminders: unknown[];
   settings: unknown[];
   exportedAt: string;
   version: string;
