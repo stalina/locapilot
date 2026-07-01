@@ -28,7 +28,7 @@ const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
 const documentsStore = useDocumentsStore();
-const { confirm } = useConfirm();
+const { confirm: confirmDialog } = useConfirm();
 
 const showEditModal = ref(false);
 const inventoryId = Number(route.params.id);
@@ -60,9 +60,9 @@ const conditionVariant = (condition: string) => {
     good: 'success',
     fair: 'warning',
     poor: 'warning',
-    damaged: 'danger',
+    damaged: 'error',
   };
-  return (map[condition] ?? 'default') as 'success' | 'warning' | 'danger' | 'default';
+  return (map[condition] ?? 'default') as 'success' | 'warning' | 'error' | 'default';
 };
 
 const handleCompare = () => {
@@ -78,7 +78,7 @@ const handleGenerateDocx = async () => {
     const { blob, filename } = await generateEtatDesLieux(data);
 
     // Proposer d'enregistrer le document en l'associant au bail.
-    const shouldSave = await confirm({
+    const shouldSave = await confirmDialog({
       title: "Enregistrer l'état des lieux",
       message:
         'Voulez-vous enregistrer ce document dans la base documentaire, associé au bail ? ' +

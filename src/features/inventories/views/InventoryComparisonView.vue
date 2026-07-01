@@ -127,13 +127,13 @@ function goBack() {
             <ul>
               <li>
                 État d'entrée :
-                <Badge :variant="checkin ? 'success' : 'danger'">
+                <Badge :variant="checkin ? 'success' : 'error'">
                   {{ checkin ? 'présent' : 'manquant' }}
                 </Badge>
               </li>
               <li>
                 État de sortie :
-                <Badge :variant="checkout ? 'success' : 'danger'">
+                <Badge :variant="checkout ? 'success' : 'error'">
                   {{ checkout ? 'présent' : 'manquant' }}
                 </Badge>
               </li>
