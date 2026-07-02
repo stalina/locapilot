@@ -16,8 +16,8 @@ letter — the same UX as the existing rent receipt and IRL revision letters.
 Three fixed, independently configurable escalation levels are supported, from softest to most formal:
 
 1. **Relance amiable** (friendly reminder) — default threshold: 1 day late (i.e. as soon as a rent is overdue)
-2. **Relance recommandée** (firmer reminder, mentions registered mail) — default: 60 days late
-3. **Mise en demeure** (formal notice) — default: 90 days late
+2. **Relance recommandée** (firmer reminder, mentions registered mail) — default: 31 days late (~1 month later)
+3. **Mise en demeure** (formal notice) — default: 61 days late (~1 month after that)
 
 > The wording of the three DOCX templates (`templateRelanceAmiable.docx`,
 > `templateRelanceRecommandee.docx`, `templateMiseEnDemeure.docx`) is a best-effort draft and is not
@@ -84,8 +84,8 @@ clear eligibility (the remaining balance is still late).
 ## Domain Rules
 
 - The 3 levels are fixed (amiable, recommandée, mise en demeure); each has its own day threshold
-  (default 1 / 60 / 90 — the amiable letter is offered as soon as a rent is overdue) and can be
-  individually enabled or disabled in Settings.
+  (default 1 / 31 / 61 — the amiable letter is offered as soon as a rent is overdue, then a level
+  roughly every 30 days) and can be individually enabled or disabled in Settings.
 - A disabled threshold is never proposed, even if its day count has been reached.
 - A rent with status `paid` is never proposed for a reminder.
 - A rent with status `partial` remains eligible (the outstanding balance is still overdue).
@@ -119,7 +119,7 @@ erDiagram
 
 ```gherkin
 Given I am on the Settings page, "Relances des impayés" section
-And the default thresholds are 1 / 60 / 90 days
+And the default thresholds are 1 / 31 / 61 days
 When I change the "Relance amiable" threshold to "15" days
 And I save
 Then the new threshold of 15 days is used for future reminder proposals
@@ -129,10 +129,10 @@ And the setting persists after a page reload
 #### Scenario: Disable a reminder level
 
 ```gherkin
-Given the "Relance recommandée" level is enabled at 60 days
+Given the "Relance recommandée" level is enabled at 31 days
 When I uncheck it and save
-Then a rent 65 days late is not proposed a "Relance recommandée"
-And it is proposed a "Mise en demeure" instead once 90 days are reached
+Then a rent 40 days late is not proposed a "Relance recommandée"
+And it is proposed a "Mise en demeure" instead once 61 days are reached
 ```
 
 ---
@@ -160,9 +160,9 @@ And the "Relance amiable" button no longer appears for this rent until the next 
 #### Scenario: Escalating to the next level
 
 ```gherkin
-Given a rent already had its "Relance amiable" sent 40 days ago
-And the rent is now 64 days late
-And the "Relance recommandée" threshold is 60 days
+Given a rent already had its "Relance amiable" sent 30 days ago
+And the rent is now 35 days late
+And the "Relance recommandée" threshold is 31 days
 When I open the Rents page
 Then the rent row shows a "Relance recommandée" button
 ```
@@ -170,8 +170,8 @@ Then the rent row shows a "Relance recommandée" button
 #### Scenario: Jumping directly to the most formal level
 
 ```gherkin
-Given a rent is 95 days late and has never had any reminder sent
-And thresholds are 1 / 60 / 90 days, all enabled
+Given a rent is 65 days late and has never had any reminder sent
+And thresholds are 1 / 31 / 61 days, all enabled
 When I open the Rents page
 Then the rent row shows a "Mise en demeure" button, not "Relance amiable"
 ```
@@ -188,8 +188,8 @@ And no reminder button appears on that rent row anymore
 #### Scenario: No reminder proposed once the highest level has been sent
 
 ```gherkin
-Given a rent had its "Mise en demeure" sent when it was 90 days late
-And the rent is now 120 days late, still unpaid
+Given a rent had its "Mise en demeure" sent when it was 61 days late
+And the rent is now 90 days late, still unpaid
 When I open the Rents page
 Then no reminder button appears for this rent — the most formal letter was already sent
 ```

@@ -50,12 +50,13 @@ Cordialement, `);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
-  // La relance amiable est proposée dès le 1er jour de retard (tout loyer en
-  // retard a daysLate >= 1) ; les niveaux suivants escaladent à 60 / 90 jours.
+  // Escalade ~mensuelle cohérente : la relance amiable est proposée dès le 1er
+  // jour de retard (tout loyer en retard a daysLate >= 1), puis un palier tous
+  // les ~30 jours (recommandée à 31 j, mise en demeure à 61 j).
   const defaultReminderThresholds: ReminderThresholdConfig[] = [
     { level: 'amiable', days: 1, enabled: true },
-    { level: 'recommandee', days: 60, enabled: true },
-    { level: 'mise-en-demeure', days: 90, enabled: true },
+    { level: 'recommandee', days: 31, enabled: true },
+    { level: 'mise-en-demeure', days: 61, enabled: true },
   ];
   const reminderThresholds = ref<ReminderThresholdConfig[]>(
     defaultReminderThresholds.map(t => ({ ...t }))
