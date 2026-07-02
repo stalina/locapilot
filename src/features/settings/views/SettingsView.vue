@@ -435,9 +435,15 @@ const REMINDER_LEVEL_LABELS: Record<string, string> = {
 };
 const editingReminderThresholds = ref(settingsStore.reminderThresholds.map(t => ({ ...t })));
 
-onMounted(() => {
-  editingReminderThresholds.value = settingsStore.reminderThresholds.map(t => ({ ...t }));
-});
+// Keep the editing form in sync with the store, including after the async
+// loadSettings() resolves (which runs in a separate onMounted hook).
+watch(
+  () => settingsStore.reminderThresholds,
+  value => {
+    editingReminderThresholds.value = value.map(t => ({ ...t }));
+  },
+  { immediate: true, deep: true }
+);
 
 const saveReminderThresholds = async () => {
   try {

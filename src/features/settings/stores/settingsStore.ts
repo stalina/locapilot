@@ -50,8 +50,10 @@ Cordialement, `);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
+  // La relance amiable est proposée dès le 1er jour de retard (tout loyer en
+  // retard a daysLate >= 1) ; les niveaux suivants escaladent à 60 / 90 jours.
   const defaultReminderThresholds: ReminderThresholdConfig[] = [
-    { level: 'amiable', days: 30, enabled: true },
+    { level: 'amiable', days: 1, enabled: true },
     { level: 'recommandee', days: 60, enabled: true },
     { level: 'mise-en-demeure', days: 90, enabled: true },
   ];

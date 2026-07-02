@@ -15,7 +15,7 @@ letter — the same UX as the existing rent receipt and IRL revision letters.
 
 Three fixed, independently configurable escalation levels are supported, from softest to most formal:
 
-1. **Relance amiable** (friendly reminder) — default threshold: 30 days late
+1. **Relance amiable** (friendly reminder) — default threshold: 1 day late (i.e. as soon as a rent is overdue)
 2. **Relance recommandée** (firmer reminder, mentions registered mail) — default: 60 days late
 3. **Mise en demeure** (formal notice) — default: 90 days late
 
@@ -84,7 +84,8 @@ clear eligibility (the remaining balance is still late).
 ## Domain Rules
 
 - The 3 levels are fixed (amiable, recommandée, mise en demeure); each has its own day threshold
-  (default 30 / 60 / 90) and can be individually enabled or disabled in Settings.
+  (default 1 / 60 / 90 — the amiable letter is offered as soon as a rent is overdue) and can be
+  individually enabled or disabled in Settings.
 - A disabled threshold is never proposed, even if its day count has been reached.
 - A rent with status `paid` is never proposed for a reminder.
 - A rent with status `partial` remains eligible (the outstanding balance is still overdue).
@@ -118,7 +119,7 @@ erDiagram
 
 ```gherkin
 Given I am on the Settings page, "Relances des impayés" section
-And the default thresholds are 30 / 60 / 90 days
+And the default thresholds are 1 / 60 / 90 days
 When I change the "Relance amiable" threshold to "15" days
 And I save
 Then the new threshold of 15 days is used for future reminder proposals
@@ -145,8 +146,8 @@ And it is proposed a "Mise en demeure" instead once 90 days are reached
 #### Scenario: First reminder for a newly-late rent
 
 ```gherkin
-Given a rent is 34 days late and has never had a reminder sent
-And the "Relance amiable" threshold is 30 days
+Given a rent is 3 days late and has never had a reminder sent
+And the "Relance amiable" threshold is 1 day
 When I open the Rents page
 Then the rent row shows a "Relance amiable" button
 When I click it and confirm
@@ -170,7 +171,7 @@ Then the rent row shows a "Relance recommandée" button
 
 ```gherkin
 Given a rent is 95 days late and has never had any reminder sent
-And thresholds are 30 / 60 / 90 days, all enabled
+And thresholds are 1 / 60 / 90 days, all enabled
 When I open the Rents page
 Then the rent row shows a "Mise en demeure" button, not "Relance amiable"
 ```
