@@ -17,6 +17,7 @@ Ces maquettes proposent une refonte complète et moderne de l'interface Locapilo
 ### Palette de couleurs
 
 **Couleurs principales**
+
 - Primary: Gradient bleu/violet (`#4f46e5` → `#4338ca`)
 - Accent: Teal (`#14b8a6`)
 - Success: Vert (`#22c55e`)
@@ -24,6 +25,7 @@ Ces maquettes proposent une refonte complète et moderne de l'interface Locapilo
 - Error: Rouge (`#ef4444`)
 
 **Couleurs sémantiques**
+
 - Neutral: Échelle de gris pour textes et backgrounds
 - Dégradés: Utilisés pour les cards de propriétés et états visuels
 
@@ -48,16 +50,20 @@ Ces maquettes proposent une refonte complète et moderne de l'interface Locapilo
 ## 📁 Fichiers
 
 ### `design-system.html`
+
 **Design System complet**
+
 - Palette de couleurs interactive
 - Échantillons typographiques
 - Composants UI (boutons, cards, badges, inputs)
 - Galerie d'icônes principales
 
 ### `01-dashboard.html`
+
 **Dashboard / Tableau de bord**
 
 Fonctionnalités :
+
 - **Sidebar navigation** : Menu latéral fixe avec gradient
 - **Stats cards** : 4 KPIs principaux (propriétés, occupation, revenus, impayés)
 - **Activité récente** : Timeline des derniers événements
@@ -65,30 +71,36 @@ Fonctionnalités :
 - **Quick actions** : Boutons d'actions rapides
 
 Design :
+
 - Layout 2 colonnes (sidebar 260px + contenu flexible)
 - Cards avec hover effects et trends (+/-)
 - Icônes contextuelles par type d'activité
 - Gradient sur sidebar pour distinction visuelle
 
 ### `02-properties.html`
+
 **Liste des propriétés**
 
 Fonctionnalités :
+
 - **Filtres avancés** : Recherche, statut, type
 - **Grid responsive** : Auto-fill minmax(340px, 1fr)
 - **Property cards** : Image gradient, badges status, détails (surface, pièces, étage)
 - **Actions rapides** : Modifier, voir détails
 
 Design :
+
 - Dégradés uniques par propriété pour différenciation visuelle
 - Badges en overlay sur images (Loué/Vacant)
 - Hover effects avec transformation et shadow
 - Footer avec prix en avant et actions
 
 ### `03-property-detail.html`
+
 **Détail d'une propriété**
 
 Fonctionnalités :
+
 - **Breadcrumb navigation** : Fil d'Ariane
 - **Header avec stats** : Loyer, charges, surface, date
 - **Section Caractéristiques** : Grid 2 colonnes de détails
@@ -97,15 +109,18 @@ Fonctionnalités :
 - **Timeline historique** : Événements chronologiques
 
 Design :
+
 - Layout 2 colonnes (2fr + 1fr)
 - Stats boxes avec fond coloré
 - Info grid pour données structurées
 - Timeline avec ligne verticale et points
 
 ### `04-rents-calendar.html`
+
 **Gestion des loyers avec calendrier**
 
 Fonctionnalités :
+
 - **Summary cards** : Vue globale (payés, en attente, impayés, total)
 - **Calendrier mensuel** : Vue calendrier avec loyers par jour
 - **Légende visuelle** : Codes couleur (payé, en attente, impayé)
@@ -113,15 +128,18 @@ Fonctionnalités :
 - **Actions contextuelles** : Quittance, relance, urgence
 
 Design :
+
 - Summary cards avec dégradés selon statut
 - Calendrier grid 7 colonnes (jours de la semaine)
 - Items cliquables dans calendrier avec badges colorés
 - Rent list avec grid aligné et hover effects
 
 ### `05-documents.html`
+
 **Bibliothèque documentaire**
 
 Fonctionnalités :
+
 - **Sidebar de navigation** : Dossiers, types de fichiers, compteurs
 - **Barre d'outils** : Recherche, vue grid/liste
 - **Zone d'upload** : Drag & drop avec feedback visuel
@@ -130,6 +148,7 @@ Fonctionnalités :
 - **Métadonnées** : Taille, date
 
 Design :
+
 - Layout sidebar (280px) + contenu
 - Icônes colorées par type de fichier (PDF rouge, Word bleu, Excel vert, Image cyan)
 - Upload zone avec border dashed et hover state
@@ -139,24 +158,28 @@ Design :
 ## 🎯 Principes de design
 
 ### Modernité
+
 - Dégradés subtils pour profondeur
 - Ombres douces (shadow-md, shadow-xl)
 - Border radius généreux (lg, xl, 2xl)
 - Transitions fluides (0.2s, 0.3s)
 
 ### Hiérarchie visuelle
+
 - Tailles de police progressives
 - Poids de police variables (300-800)
 - Couleurs sémantiques (primary, success, warning, error)
 - Espacement cohérent (scale 4, 8, 12, 16)
 
 ### Interactivité
+
 - Hover states sur tous les éléments cliquables
 - Transform effects (translateY, scale)
 - Shadow elevation au hover
 - Feedback visuel immédiat
 
 ### Accessibilité
+
 - Contrastes WCAG AA minimum
 - Icônes + texte pour clarté
 - Focus states visibles
@@ -206,11 +229,13 @@ Design :
 ## 📱 Responsive
 
 Les maquettes utilisent :
+
 - **Grid auto-fit/auto-fill** : S'adapte automatiquement
 - **minmax()** : Tailles minimales et maximales
 - **Breakpoints** : À définir selon besoins (mobile first)
 
 Suggestion de breakpoints :
+
 - Mobile: < 640px
 - Tablet: 640px - 1024px
 - Desktop: > 1024px
@@ -224,7 +249,7 @@ Suggestion de breakpoints :
 ```css
 :root {
   --primary-600: #4f46e5; /* Changer ici */
-  --accent-500: #14b8a6;  /* Changer ici */
+  --accent-500: #14b8a6; /* Changer ici */
   /* ... */
 }
 ```
@@ -248,16 +273,19 @@ Suggestion de breakpoints :
 ## 📝 Notes d'implémentation
 
 ### PWA
+
 - Penser aux icônes d'apps (192x192, 512x512)
 - Splash screens pour installation
 - Theme color cohérent avec palette
 
 ### Performance
+
 - Lazy load des images de propriétés
 - Virtual scrolling pour listes longues
 - Debounce sur recherches
 
 ### Accessibilité
+
 - ARIA labels sur boutons d'icônes
 - Focus trap dans modals
 - Keyboard navigation
