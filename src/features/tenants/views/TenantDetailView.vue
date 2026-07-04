@@ -10,6 +10,7 @@ import TenantFormModal from '../components/TenantFormModal.vue';
 import RefusalModal from '../components/RefusalModal.vue';
 import CreateLeaseModal from '../../leases/components/CreateLeaseModal.vue';
 import TenantDocumentsList from '../components/TenantDocumentsList.vue';
+import CommunicationsTimeline from '@/features/communications/components/CommunicationsTimeline.vue';
 import { computeTenantAge, getTenantStatusConfig } from '../services/tenantsService';
 import { fetchLastRefusalReason } from '../repositories/tenantAuditsRepository';
 
@@ -327,6 +328,15 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
               Documents
             </h2>
             <TenantDocumentsList v-if="tenant && tenant.id" :tenantId="tenant.id" />
+          </div>
+
+          <!-- Communications Timeline -->
+          <div class="card" v-if="tenant && tenant.id">
+            <h2 class="card-title">
+              <i class="mdi mdi-message-text"></i>
+              Communications
+            </h2>
+            <CommunicationsTimeline related-entity-type="tenant" :related-entity-id="tenant.id" />
           </div>
         </div>
 

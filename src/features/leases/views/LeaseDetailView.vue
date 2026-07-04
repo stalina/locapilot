@@ -12,6 +12,7 @@ import Card from '@/shared/components/Card.vue';
 import LeaseFormModal from '../components/LeaseFormModal.vue';
 import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
 import RentRevisionCard from '@/features/indexation/components/RentRevisionCard.vue';
+import CommunicationsTimeline from '@/features/communications/components/CommunicationsTimeline.vue';
 import type { Tenant } from '@/db/schema';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import {
@@ -418,6 +419,22 @@ const handleDownloadExistingMandat = async () => {
           <!-- Révision annuelle du loyer (IRL) -->
           <Card>
             <RentRevisionCard v-if="lease?.id" :leaseId="lease.id" @applied="handleEditSuccess" />
+          </Card>
+
+          <!-- Communications timeline -->
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-message-text"></i>
+                Communications
+              </h2>
+            </div>
+            <CommunicationsTimeline
+              v-if="lease?.id"
+              related-entity-type="lease"
+              :related-entity-id="lease.id"
+              mode="lease-aggregate"
+            />
           </Card>
 
           <Card v-if="lease?.documentId">

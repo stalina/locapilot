@@ -12,6 +12,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Indexation     | [indexation.md](./indexation.md)         | Annual IRL rent revision, quarterly indices, letters     |
 | Rents          | [rents.md](./rents.md)                   | Monthly payments, auto-generation, overdue tracking      |
 | Reminders      | [reminders.md](./reminders.md)           | Automated rent-arrears follow-up letters and escalation  |
+| Communications | [communications.md](./communications.md) | Journal of exchanges and generated letters per entity    |
 | Documents      | [documents.md](./documents.md)           | File attachments for all entities                        |
 | Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |
 | Dashboard      | [dashboard.md](./dashboard.md)           | Portfolio overview and activity summary                  |
@@ -37,6 +38,11 @@ erDiagram
     Rent ||--o{ Reminder : "has sent reminders"
     Reminder ||--|| Document : "has generated letter"
     Reminder ||--|| Communication : "historized as"
+    Communication }o--o| Property : "may relate to"
+    Communication }o--o| Tenant : "may relate to"
+    Communication }o--o| Lease : "may relate to"
+    Communication }o--o| Rent : "may relate to"
+    Communication }o--o{ Document : "may attach"
 ```
 
 ## Core Lifecycle Flow

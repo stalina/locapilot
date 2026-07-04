@@ -79,8 +79,8 @@ export async function seedDemoData(): Promise<void> {
     type: 'meeting',
     direction: 'outbound',
     subject: 'Visite appartement',
-    content: 'Visite programmée avec 3 candidats',
-    date: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 10, 0),
+    content: 'Visite réalisée avec 3 candidats',
+    date: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 10, 0),
     createdAt: now,
   });
 
