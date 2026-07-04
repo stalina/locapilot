@@ -1,43 +1,42 @@
 import { test, expect, type Page } from '@playwright/test';
 import { resetApp } from './utils/app';
 
+// Dexie declares schema version 9, which maps to IndexedDB version 90.
+const EXPECTED_IDB_VERSION = 90;
+
+// Wait until the *app* has opened (and migrated) the IndexedDB database, without
+// touching it ourselves. `indexedDB.databases()` only lists existing databases —
+// it never creates one — so this avoids the race where a bare
+// `indexedDB.open('locapilot')` would create an empty version-1 DB before Dexie
+// gets to create the real schema (which breaks data reads on slow CI runners).
+async function waitForDbReady(page: Page) {
+  await page.waitForFunction(
+    async expected => {
+      const dbs = (await indexedDB.databases?.()) ?? [];
+      return dbs.some(d => d.name === 'locapilot' && (d.version ?? 0) >= expected);
+    },
+    EXPECTED_IDB_VERSION,
+    { timeout: 15_000 }
+  );
+}
+
 // The app has no UI to backdate a rent's due date (rents are only ever
 // auto-generated for the current/next payment day), so to exercise the
 // "Relance" golden path we seed a full scenario — property, tenant, active
 // lease and one overdue rent — directly into IndexedDB in a single connection,
 // then load the Rents page so the app picks it up like it would after real
-// time had passed.
-//
-// Everything is seeded in one evaluate (no UI-creation flow, no leaseId parsed
-// from a URL) to keep it deterministic on slow CI runners. The seed polls until
-// the object stores exist so it never runs before the app has created the DB,
-// and resolves on tx.oncomplete so the writes are durable before the reload.
+// time had passed. Must be called only after waitForDbReady().
 async function seedScenario(page: Page, opts: { suffix: string; daysLate: number }) {
   const propertyName = `E2E Relance ${opts.suffix}`;
   const result = await page.evaluate(
     async ({ propertyName, daysLate }) => {
-      function openWhenReady(): Promise<IDBDatabase> {
-        return new Promise((resolve, reject) => {
-          let attempts = 0;
-          const tryOpen = () => {
-            const req = indexedDB.open('locapilot');
-            req.onsuccess = () => {
-              const db = req.result;
-              if (db.objectStoreNames.contains('rents') && db.objectStoreNames.contains('leases')) {
-                resolve(db);
-              } else {
-                db.close();
-                if (attempts++ > 50) reject(new Error('DB stores never appeared'));
-                else setTimeout(tryOpen, 100);
-              }
-            };
-            req.onerror = () => reject(req.error);
-          };
-          tryOpen();
-        });
-      }
+      const db: IDBDatabase = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('locapilot');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
 
-      function add(db: IDBDatabase, store: string, obj: any): Promise<number> {
+      function add(store: string, obj: any): Promise<number> {
         return new Promise((resolve, reject) => {
           const tx = db.transaction(store, 'readwrite');
           let id: number | undefined;
@@ -51,9 +50,8 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
         });
       }
 
-      const db = await openWhenReady();
       const now = new Date();
-      const propertyId = await add(db, 'properties', {
+      const propertyId = await add('properties', {
         name: propertyName,
         address: '1 rue du Test',
         postalCode: '75011',
@@ -66,7 +64,7 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
         createdAt: now,
         updatedAt: now,
       });
-      const tenantId = await add(db, 'tenants', {
+      const tenantId = await add('tenants', {
         civility: 'mme',
         firstName: 'Alice',
         lastName: 'Durand',
@@ -76,7 +74,7 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
         createdAt: now,
         updatedAt: now,
       });
-      const leaseId = await add(db, 'leases', {
+      const leaseId = await add('leases', {
         propertyId,
         tenantIds: [tenantId],
         startDate: new Date('2024-01-01'),
@@ -88,7 +86,7 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
         createdAt: now,
         updatedAt: now,
       });
-      const rentId = await add(db, 'rents', {
+      const rentId = await add('rents', {
         leaseId,
         dueDate: new Date(now.getTime() - daysLate * 86400000),
         amount: 900,
@@ -110,22 +108,58 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
 test.describe('Relances des impayés - e2e', () => {
   test('Générer une relance amiable pour un loyer en retard', async ({ page }, testInfo) => {
     await resetApp(page);
+    // Ensure the app created the DB (v90) before we seed, so our bare open never
+    // races Dexie into creating an empty version-1 database.
+    await waitForDbReady(page);
 
     // 10 days late: past the amiable threshold (1 day) but below the recommandée
     // threshold (31 days), so the proposed level is "amiable".
-    const { propertyName } = await seedScenario(page, {
+    await seedScenario(page, {
       suffix: `${testInfo.project.name}-${Date.now()}`,
       daysLate: 10,
     });
 
     await page.goto('/rents', { waitUntil: 'domcontentloaded' });
 
-    // The lease also has a virtual (current month) pending rent besides the
-    // seeded overdue one — narrow down to the row that is actually late.
-    const row = page
-      .locator('tr.rent-row', { hasText: propertyName })
-      .filter({ hasText: 'En retard' });
-    await expect(row).toBeVisible({ timeout: 10_000 });
+    // The only overdue rent in the whole table is the one we seeded (demo and
+    // virtual rents are never late), so match it by its "En retard" status
+    // rather than depending on the property name resolving in the row.
+    const row = page.locator('tr.rent-row').filter({ hasText: 'En retard' }).first();
+    try {
+      await expect(row).toBeVisible({ timeout: 10_000 });
+    } catch (e) {
+      // Diagnostics for CI: distinguish "seed lost" from "rendered but not late".
+      const diag = await page.evaluate(async () => {
+        const db: IDBDatabase = await new Promise((resolve, reject) => {
+          const req = indexedDB.open('locapilot');
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        const getAll = (s: string) =>
+          new Promise<any[]>((res, rej) => {
+            const r = db.transaction(s, 'readonly').objectStore(s).getAll();
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+          });
+        const [rents, leases, properties] = await Promise.all([
+          getAll('rents'),
+          getAll('leases'),
+          getAll('properties'),
+        ]);
+        db.close();
+        return {
+          rents: rents.map(r => ({ id: r.id, leaseId: r.leaseId, status: r.status })),
+          leaseIds: leases.map(l => l.id),
+          propertyNames: properties.map(p => p.name),
+        };
+      });
+      const renderedRows = await page
+        .locator('tr.rent-row')
+        .evaluateAll(els => els.map(el => (el.textContent || '').replace(/\s+/g, ' ').trim()));
+      console.log('RELANCE_DIAG db=', JSON.stringify(diag));
+      console.log('RELANCE_DIAG rows=', JSON.stringify(renderedRows));
+      throw e;
+    }
 
     const reminderButton = row.getByRole('button', { name: /Relance amiable/i });
     await expect(reminderButton).toBeVisible({ timeout: 10_000 });
