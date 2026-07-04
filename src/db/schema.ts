@@ -95,6 +95,7 @@ export interface Document {
   size: number;
   data: Blob; // File content
   description?: string;
+  expiresAt?: Date; // Optional validity end date (mainly for diagnostic documents)
   createdAt: Date;
   updatedAt: Date;
 }

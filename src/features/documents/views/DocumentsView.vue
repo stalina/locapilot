@@ -90,6 +90,11 @@ async function handleDelete(document: Document) {
   }
 }
 
+async function handleExpiryUpdate(document: Document, date: Date | null) {
+  if (!document.id) return;
+  await documentsStore.updateDocument(document.id, { expiresAt: date ?? undefined });
+}
+
 function handleSearch(query: string) {
   searchQuery.value = query;
 }
@@ -238,6 +243,7 @@ onMounted(async () => {
         :document="document"
         @download="handleDownload(document)"
         @delete="handleDelete(document)"
+        @update-expiry="handleExpiryUpdate(document, $event)"
       />
     </div>
   </div>

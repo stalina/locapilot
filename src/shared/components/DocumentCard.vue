@@ -11,6 +11,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   download: [];
   delete: [];
+  'update-expiry': [date: Date | null];
 }>();
 
 const photoPreviewUrl = ref<string | null>(null);
@@ -101,12 +102,34 @@ const formattedDate = computed(() => {
   });
 });
 
+const isDiagnostic = computed(() => props.document.type === 'diagnostic');
+
+const isExpired = computed(() => {
+  if (!props.document.expiresAt) return false;
+  const expiresAt = new Date(props.document.expiresAt);
+  return !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < Date.now();
+});
+
+const expiryInputValue = computed(() => {
+  if (!props.document.expiresAt) return '';
+  const expiresAt = new Date(props.document.expiresAt);
+  if (Number.isNaN(expiresAt.getTime())) return '';
+  const month = String(expiresAt.getMonth() + 1).padStart(2, '0');
+  const day = String(expiresAt.getDate()).padStart(2, '0');
+  return `${expiresAt.getFullYear()}-${month}-${day}`;
+});
+
 function handleDownload() {
   emit('download');
 }
 
 function handleDelete() {
   emit('delete');
+}
+
+function handleExpiryChange(e: Event) {
+  const value = (e.target as HTMLInputElement).value;
+  emit('update-expiry', value ? new Date(value) : null);
 }
 
 function loadPhotoPreview() {
@@ -203,6 +226,25 @@ onUnmounted(() => {
         <span class="meta-item">
           <i class="mdi mdi-calendar"></i>
           {{ formattedDate }}
+        </span>
+        <span
+          v-if="isDiagnostic"
+          class="meta-item expiry-item"
+          :class="{ expired: isExpired }"
+          data-testid="document-expiry"
+        >
+          <i class="mdi" :class="isExpired ? 'mdi-calendar-remove' : 'mdi-calendar-alert'"></i>
+          <label class="expiry-label">
+            {{ isExpired ? 'Expiré le' : 'Valide jusqu’au' }}
+            <input
+              type="date"
+              class="expiry-input"
+              data-testid="document-expiry-input"
+              :value="expiryInputValue"
+              @click.stop
+              @change="handleExpiryChange"
+            />
+          </label>
         </span>
       </div>
     </div>
@@ -367,6 +409,27 @@ onUnmounted(() => {
 
 .meta-item i {
   font-size: 1rem;
+}
+
+.expiry-item.expired {
+  color: var(--error-600, #dc2626);
+  font-weight: 600;
+}
+
+.expiry-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  cursor: pointer;
+}
+
+.expiry-input {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-sm, 0.25rem);
+  padding: 0 var(--space-1, 0.25rem);
+  font-size: var(--text-sm, 0.875rem);
+  color: inherit;
+  background: transparent;
 }
 
 .document-actions {

@@ -10,6 +10,8 @@ import {
   type DashboardEventItem,
   type DashboardStats,
 } from '../services/dashboardService';
+import { computeDashboardAlerts, type DashboardAlert } from '../services/dashboardAlertsService';
+import { computeActionSchedule, type ScheduleItem } from '../services/dashboardScheduleService';
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const stats = ref<DashboardStats>({
@@ -22,6 +24,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   const recentActivities = ref<DashboardActivityItem[]>([]);
   const upcomingEvents = ref<DashboardEventItem[]>([]);
+  const alerts = ref<DashboardAlert[]>([]);
+  const scheduleItems = ref<ScheduleItem[]>([]);
 
   const isLoading = ref(false);
   const error = ref<string | null>(null);
@@ -55,6 +59,21 @@ export const useDashboardStore = defineStore('dashboard', () => {
         communications: raw.allCommunications,
         now,
       });
+      alerts.value = computeDashboardAlerts({
+        leases: raw.allLeases,
+        properties: raw.properties,
+        rents: raw.allRents,
+        documents: raw.diagnosticDocuments,
+        now,
+      });
+      scheduleItems.value = computeActionSchedule({
+        leases: raw.allLeases,
+        properties: raw.properties,
+        revisions: raw.allRentRevisions,
+        adjustments: raw.allChargesAdjustments,
+        inventories: raw.allInventories,
+        now,
+      });
     } catch (e) {
       console.error('Failed to load dashboard data:', e);
       error.value = 'Failed to load dashboard data';
@@ -63,5 +82,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
-  return { stats, recentActivities, upcomingEvents, isLoading, error, loadDashboardData };
+  return {
+    stats,
+    recentActivities,
+    upcomingEvents,
+    alerts,
+    scheduleItems,
+    isLoading,
+    error,
+    loadDashboardData,
+  };
 });
