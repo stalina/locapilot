@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetApp } from './utils/app';
+import { navigateFromSidebar, resetApp } from './utils/app';
 
 // Dexie declares schema version 9, which maps to IndexedDB version 90.
 const EXPECTED_IDB_VERSION = 90;
@@ -119,7 +119,11 @@ test.describe('Relances des impayés - e2e', () => {
       daysLate: 10,
     });
 
-    await page.goto('/rents', { waitUntil: 'domcontentloaded' });
+    // Navigate through the app (not page.goto('/rents')): when e2e runs with
+    // ENABLE_PWA_IN_DEV=1 (as on CI) the dev server serves the app under the
+    // /locapilot/ base path, and a raw URL navigation lands on vite's
+    // "wrong base URL" helper page instead of the app.
+    await navigateFromSidebar(page, /Loyers|Rents/i, /\/rents/);
 
     // The only overdue rent in the whole table is the one we seeded (demo and
     // virtual rents are never late), so match it by its "En retard" status
