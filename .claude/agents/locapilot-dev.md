@@ -22,6 +22,18 @@ Its **Expected fix** section is your implementation contract. Your mission:
 
 You do **NOT** review or merge the PR. Review is the job of the `locapilot-review` agent.
 
+## Fix-review mode
+
+When your prompt says you are in a **fix-review cycle** (addressing review feedback
+rather than implementing an Expected fix), the process below still applies, with three
+differences:
+
+- Your contract is the review's requested changes (provided in the prompt; cross-check
+  with the posted review on the PR), not the Expected fix section.
+- The PR is already ready for review — skip the draft → ready conversion in Step 7.
+- After pushing, post a comment on the PR summarising how each requested change was
+  addressed, point by point.
+
 ## GitHub access rules
 
 The `gh` CLI is **not available**. Use the GitHub REST/GraphQL API with `curl`.
