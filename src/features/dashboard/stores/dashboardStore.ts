@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { fetchDashboardRawData } from '../repositories/dashboardRepository';
+import { useSettingsStore } from '@/features/settings/stores/settingsStore';
 import {
   buildRecentActivities,
   buildUpcomingEvents,
@@ -16,6 +17,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     occupancyRate: 0,
     monthlyRevenue: 0,
     pendingRents: 0,
+    rentsNeedingReminder: 0,
   });
 
   const recentActivities = ref<DashboardActivityItem[]>([]);
@@ -31,8 +33,15 @@ export const useDashboardStore = defineStore('dashboard', () => {
     try {
       const now = new Date();
       const raw = await fetchDashboardRawData(now);
+      const settingsStore = useSettingsStore();
+      await settingsStore.loadSettings();
 
-      stats.value = computeDashboardStats(raw.properties, raw.rentsThisMonth);
+      stats.value = computeDashboardStats(raw.properties, raw.rentsThisMonth, {
+        allRents: raw.allRents,
+        reminders: raw.allReminders,
+        thresholds: settingsStore.reminderThresholds,
+        now,
+      });
       recentActivities.value = buildRecentActivities({
         rents: raw.allRents,
         leases: raw.allLeases,

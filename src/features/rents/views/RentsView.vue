@@ -5,18 +5,38 @@ import { useRentsStore } from '../stores/rentsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
 import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
+import { useSettingsStore } from '@/features/settings/stores/settingsStore';
+import { useRemindersStore } from '@/features/reminders/stores/remindersStore';
+import { computePendingReminders } from '@/features/reminders/services/remindersService';
+import { useConfirm } from '@/shared/composables/useConfirm';
 import Button from '@/shared/components/Button.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Badge from '@/shared/components/Badge.vue';
 import RentPaymentModal from '../components/RentPaymentModal.vue';
 import RentFormModal from '../components/RentFormModal.vue';
 import type { Rent, Lease } from '../../../db/types';
-import { prepareRentReceiptData, generateRentReceipt } from '@/shared/services/documentGenerator';
+import {
+  prepareRentReceiptData,
+  generateRentReceipt,
+  prepareReminderLetterData,
+  generateReminderLetter,
+  saveReminderLetterToDb,
+  downloadBlob,
+} from '@/shared/services/documentGenerator';
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
 const tenantsStore = useTenantsStore();
+const settingsStore = useSettingsStore();
+const remindersStore = useRemindersStore();
+const { confirm } = useConfirm();
+
+const REMINDER_LEVEL_LABELS: Record<string, string> = {
+  amiable: 'Relance amiable',
+  recommandee: 'Relance recommandée',
+  'mise-en-demeure': 'Mise en demeure',
+};
 
 // Filters
 const route = useRoute();
@@ -131,6 +151,8 @@ onMounted(async () => {
     leasesStore.fetchLeases(),
     propertiesStore.fetchProperties(),
     tenantsStore.fetchTenants(),
+    settingsStore.loadSettings(),
+    remindersStore.fetchReminders(),
   ]);
   // Apply propertyId filter if present in query
   const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
@@ -229,6 +251,54 @@ const handleGenerateReceipt = async (rent: Rent) => {
   } catch (error) {
     console.error('Failed to generate rent receipt:', error);
     alert('Erreur lors de la génération de la quittance');
+  }
+};
+
+// Rent-arrears reminders (issue #40) — only real (persisted) rents are eligible
+const pendingRemindersByRentId = computed(() => {
+  const pending = computePendingReminders(
+    rentsStore.rents,
+    remindersStore.reminders,
+    settingsStore.reminderThresholds
+  );
+  const byRentId: Record<number, (typeof pending)[number]> = {};
+  for (const entry of pending) {
+    if (entry.rent.id) byRentId[entry.rent.id] = entry;
+  }
+  return byRentId;
+});
+
+const handleSendReminder = async (rent: Rent) => {
+  if (!rent.id) return;
+  const pending = pendingRemindersByRentId.value[rent.id];
+  if (!pending) return;
+
+  const confirmed = await confirm({
+    title: 'Envoyer une relance',
+    message: `Générer et télécharger une lettre de "${REMINDER_LEVEL_LABELS[pending.level]}" pour ce loyer en retard de ${pending.daysLate} jour(s) ?`,
+    confirmText: 'Générer et télécharger',
+    cancelText: 'Annuler',
+    type: 'warning',
+  });
+  if (!confirmed) return;
+
+  try {
+    const data = await prepareReminderLetterData(rent.id, pending.level);
+    const { blob, filename } = await generateReminderLetter(data, pending.level);
+    const documentId = await saveReminderLetterToDb(rent.id, pending.level, blob, filename);
+    await remindersStore.recordReminderSent({
+      rentId: rent.id,
+      level: pending.level,
+      thresholdDays: pending.thresholdDays,
+      documentId,
+      levelLabel: data.levelLabel,
+      amountDue: data.amountDue,
+      daysLate: data.daysLate,
+    });
+    downloadBlob(blob, filename);
+  } catch (error) {
+    console.error('Failed to send reminder:', error);
+    alert('Erreur lors de la génération de la relance');
   }
 };
 </script>
@@ -402,6 +472,14 @@ const handleGenerateReceipt = async (rent: Rent) => {
                   icon="receipt"
                   @click="handleGenerateReceipt(rent)"
                   >Quittance</Button
+                >
+                <Button
+                  v-if="rent.id && pendingRemindersByRentId[rent.id]"
+                  variant="warning"
+                  size="sm"
+                  icon="bell-alert"
+                  @click="() => handleSendReminder(rent)"
+                  >{{ REMINDER_LEVEL_LABELS[pendingRemindersByRentId[rent.id!]!.level] }}</Button
                 >
               </div>
             </td>

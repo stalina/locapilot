@@ -23,7 +23,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(8);
+      expect(db.verno).toBe(9);
     });
 
     it('should have all required tables', async () => {
@@ -42,8 +42,9 @@ describe('Database Schema', () => {
       expect(tables).toContain('chargesAdjustments');
       expect(tables).toContain('irlIndices');
       expect(tables).toContain('rentRevisions');
+      expect(tables).toContain('reminders');
 
-      expect(tables).toHaveLength(13);
+      expect(tables).toHaveLength(14);
     });
   });
 

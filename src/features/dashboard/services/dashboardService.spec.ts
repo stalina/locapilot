@@ -25,6 +25,26 @@ describe('dashboardService', () => {
     expect(stats.occupancyRate).toBe(66.7);
     expect(stats.monthlyRevenue).toBe(1200);
     expect(stats.pendingRents).toBe(2);
+    expect(stats.rentsNeedingReminder).toBe(0);
+  });
+
+  it('computeDashboardStats counts rents needing a reminder when a reminder context is given', () => {
+    const now = new Date('2026-06-15');
+    const properties: any[] = [];
+    const rentsThisMonth: any[] = [];
+    const allRents: any[] = [
+      { id: 1, status: 'late', dueDate: new Date('2026-05-01'), amount: 800, charges: 0 },
+      { id: 2, status: 'paid', dueDate: new Date('2026-05-01'), amount: 800, charges: 0 },
+    ];
+
+    const stats = computeDashboardStats(properties, rentsThisMonth, {
+      allRents,
+      reminders: [],
+      thresholds: [{ level: 'amiable', days: 30, enabled: true }],
+      now,
+    });
+
+    expect(stats.rentsNeedingReminder).toBe(1);
   });
 
   it('buildRecentActivities builds at most 6 items sorted desc by date', () => {

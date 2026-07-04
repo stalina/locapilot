@@ -175,7 +175,7 @@ export interface Inventory {
 
 export interface Communication {
   id?: number;
-  relatedEntityType: 'property' | 'tenant' | 'lease' | 'applicant';
+  relatedEntityType: 'property' | 'tenant' | 'lease' | 'applicant' | 'rent';
   relatedEntityId: number;
   type: 'email' | 'phone' | 'sms' | 'meeting' | 'letter';
   direction: 'inbound' | 'outbound';
@@ -235,6 +235,20 @@ export interface RentRevision {
   updatedAt: Date;
 }
 
+// Niveau d'une relance d'impayé, du plus doux au plus formel
+export type ReminderLevel = 'amiable' | 'recommandee' | 'mise-en-demeure';
+
+export interface Reminder {
+  id?: number;
+  rentId: number;
+  level: ReminderLevel;
+  thresholdDays: number; // seuil configuré au moment de l'envoi
+  sentDate: Date;
+  documentId: number; // courrier de relance généré
+  communicationId: number; // historisation dans le module Communications
+  createdAt: Date;
+}
+
 // ========== Database Class ==========
 
 export class LocapilotDB extends Dexie {
@@ -251,6 +265,7 @@ export class LocapilotDB extends Dexie {
   chargesAdjustments!: EntityTable<ChargesAdjustmentRow, 'id'>;
   irlIndices!: EntityTable<IrlIndex, 'id'>;
   rentRevisions!: EntityTable<RentRevision, 'id'>;
+  reminders!: EntityTable<Reminder, 'id'>;
 
   constructor() {
     super('locapilot');
@@ -393,6 +408,24 @@ export class LocapilotDB extends Dexie {
       irlIndices: '++id, year, quarter, [year+quarter]',
       rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
     });
+
+    // Version 9: Add reminders table for rent-arrears follow-up letters — issue #40
+    this.version(9).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
+      irlIndices: '++id, year, quarter, [year+quarter]',
+      rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
+      reminders: '++id, rentId, level, [rentId+level]',
+    });
   }
 }
 
@@ -435,6 +468,7 @@ export async function exportData(): Promise<string> {
     chargesAdjustments: await db.chargesAdjustments.toArray(),
     irlIndices: await db.irlIndices.toArray(),
     rentRevisions: await db.rentRevisions.toArray(),
+    reminders: await db.reminders.toArray(),
     settings: await db.settings.toArray(),
   };
 
@@ -465,6 +499,7 @@ export async function importData(jsonData: string): Promise<void> {
     db.chargesAdjustments,
     db.irlIndices,
     db.rentRevisions,
+    db.reminders,
     db.settings,
   ];
 
@@ -485,6 +520,7 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.chargesAdjustments) await db.chargesAdjustments.bulkAdd(data.chargesAdjustments);
     if (data.irlIndices) await db.irlIndices.bulkAdd(data.irlIndices);
     if (data.rentRevisions) await db.rentRevisions.bulkAdd(data.rentRevisions);
+    if (data.reminders) await db.reminders.bulkAdd(data.reminders);
     if (data.settings) await db.settings.bulkAdd(data.settings);
   });
 
