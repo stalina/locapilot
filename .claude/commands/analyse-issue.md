@@ -53,9 +53,7 @@ Relay this result to the user (decision, PR link, expected fix summary).
 ### 5. Hand off to locapilot-review
 
 - If `STATUS: blocked` → report the blocker and stop.
-- If `STATUS: implemented`:
-  - If `.claude/agents/locapilot-review.md` exists, launch the **locapilot-review**
-    agent with the PR URL, branch name and the `NOTES` content, instructing it to
-    review the implemented feature.
-  - If it does not exist yet, tell the user the PR is ready for review and that the
-    `locapilot-review` agent is not set up yet — the review must be done manually.
+- If `STATUS: implemented` → run the review loop exactly as specified in
+  `.claude/commands/review-pr.md` (steps 2–4): first review, at most ONE automatic
+  fix cycle by locapilot-dev if changes are requested, second review, then hand back
+  to the user in every case (merge or manual fix is their decision).
