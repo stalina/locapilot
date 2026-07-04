@@ -24,6 +24,42 @@ export async function fetchCommunicationsByEntity(
   return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
+/**
+ * Fetch every communication relevant to a lease: those scoped directly to the
+ * lease (`relatedEntityType='lease'`) AND those scoped to any of the lease's
+ * rents (`relatedEntityType='rent'`). Reminder letters are historized on the
+ * rent, so aggregating rent-scoped communications is what surfaces them on the
+ * lease timeline. Result is de-duplicated and sorted most-recent-first.
+ */
+export async function fetchCommunicationsForLease(leaseId: number): Promise<Communication[]> {
+  const rents = await db.rents.where('leaseId').equals(leaseId).toArray();
+  const rentIds = new Set(
+    rents.map(r => r.id).filter((id): id is number => typeof id === 'number')
+  );
+
+  const [leaseScoped, rentScoped] = await Promise.all([
+    db.communications
+      .where('relatedEntityType')
+      .equals('lease')
+      .and(c => c.relatedEntityId === leaseId)
+      .toArray(),
+    rentIds.size > 0
+      ? db.communications
+          .where('relatedEntityType')
+          .equals('rent')
+          .and(c => rentIds.has(c.relatedEntityId))
+          .toArray()
+      : Promise.resolve([] as Communication[]),
+  ]);
+
+  const byId = new Map<number | undefined, Communication>();
+  for (const c of [...leaseScoped, ...rentScoped]) {
+    byId.set(c.id, c);
+  }
+
+  return [...byId.values()].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 export async function createCommunication(
   communication: Omit<Communication, 'id' | 'createdAt'>,
   now = new Date()

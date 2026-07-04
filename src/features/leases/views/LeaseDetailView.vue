@@ -433,6 +433,7 @@ const handleDownloadExistingMandat = async () => {
               v-if="lease?.id"
               related-entity-type="lease"
               :related-entity-id="lease.id"
+              mode="lease-aggregate"
             />
           </Card>
 

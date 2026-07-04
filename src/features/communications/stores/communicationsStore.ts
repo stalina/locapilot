@@ -5,6 +5,7 @@ import {
   deleteCommunication as deleteCommunicationRepo,
   fetchAllCommunications,
   fetchCommunicationsByEntity,
+  fetchCommunicationsForLease as fetchCommunicationsForLeaseRepo,
   fetchReminderLinkedCommunicationIds,
   updateCommunication as updateCommunicationRepo,
 } from '../repositories/communicationsRepository';
@@ -85,6 +86,20 @@ export const useCommunicationsStore = defineStore('communications', {
     ): Promise<Communication[]> {
       const [rows, linkedIds] = await Promise.all([
         fetchCommunicationsByEntity(relatedEntityType, relatedEntityId),
+        fetchReminderLinkedCommunicationIds(),
+      ]);
+      this.reminderLinkedIds = [...linkedIds];
+      return rows;
+    },
+
+    /**
+     * Fetch the communications relevant to a lease, aggregating both
+     * lease-scoped entries and rent-scoped entries (which include historized
+     * reminder letters). Most-recent-first.
+     */
+    async fetchCommunicationsForLease(leaseId: number): Promise<Communication[]> {
+      const [rows, linkedIds] = await Promise.all([
+        fetchCommunicationsForLeaseRepo(leaseId),
         fetchReminderLinkedCommunicationIds(),
       ]);
       this.reminderLinkedIds = [...linkedIds];

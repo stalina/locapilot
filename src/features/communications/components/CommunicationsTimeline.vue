@@ -12,6 +12,12 @@ import {
 const props = defineProps<{
   relatedEntityType: CommunicationEntityType;
   relatedEntityId: number;
+  /**
+   * When 'lease-aggregate', the timeline shows communications scoped to the
+   * lease AND to each of its rents (so historized reminder letters surface).
+   * Defaults to a single-entity scope matching relatedEntityType.
+   */
+  mode?: 'entity' | 'lease-aggregate';
 }>();
 
 const store = useCommunicationsStore();
@@ -30,10 +36,14 @@ async function load() {
   if (!props.relatedEntityId) return;
   isLoading.value = true;
   try {
-    items.value = await store.fetchCommunicationsForEntity(
-      props.relatedEntityType,
-      props.relatedEntityId
-    );
+    if (props.mode === 'lease-aggregate') {
+      items.value = await store.fetchCommunicationsForLease(props.relatedEntityId);
+    } else {
+      items.value = await store.fetchCommunicationsForEntity(
+        props.relatedEntityType,
+        props.relatedEntityId
+      );
+    }
   } finally {
     isLoading.value = false;
   }
@@ -48,7 +58,7 @@ function formatDate(date: Date | string): string {
 }
 
 onMounted(load);
-watch(() => [props.relatedEntityType, props.relatedEntityId], load);
+watch(() => [props.relatedEntityType, props.relatedEntityId, props.mode], load);
 </script>
 
 <template>

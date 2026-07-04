@@ -5,6 +5,7 @@ import {
   deleteCommunication,
   fetchAllCommunications,
   fetchCommunicationsByEntity,
+  fetchCommunicationsForLease,
   fetchReminderLinkedCommunicationIds,
   updateCommunication,
 } from './communicationsRepository';
@@ -15,6 +16,7 @@ describe('communicationsRepository', () => {
     await db.communications.clear();
     await db.reminders.clear();
     await db.documents.clear();
+    await db.rents.clear();
   });
 
   it('creates a communication with a createdAt timestamp', async () => {
@@ -153,5 +155,87 @@ describe('communicationsRepository', () => {
     const linked = await fetchReminderLinkedCommunicationIds();
     expect(linked.has(commId)).toBe(true);
     expect(linked.has(9999)).toBe(false);
+  });
+
+  describe('fetchCommunicationsForLease', () => {
+    it('aggregates lease-scoped and rent-scoped communications, most-recent-first', async () => {
+      const leaseId = 50;
+      // A rent belonging to the lease
+      const rentId = (await db.rents.add({
+        leaseId,
+        dueDate: new Date('2026-05-01'),
+        amount: 1000,
+        charges: 0,
+        status: 'late',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any)) as number;
+
+      // Directly lease-scoped communication (older)
+      await createCommunication({
+        relatedEntityType: 'lease',
+        relatedEntityId: leaseId,
+        type: 'meeting',
+        direction: 'outbound',
+        content: 'visite du bail',
+        date: new Date('2026-04-01'),
+      });
+
+      // Reminder letter historized on the rent (newer)
+      await createCommunication({
+        relatedEntityType: 'rent',
+        relatedEntityId: rentId,
+        type: 'letter',
+        direction: 'outbound',
+        subject: 'Relance amiable',
+        content: 'Relance amiable envoyée pour un impayé.',
+        date: new Date('2026-06-01'),
+      });
+
+      // Noise: a communication on a rent of a DIFFERENT lease must not leak in
+      const otherRentId = (await db.rents.add({
+        leaseId: 999,
+        dueDate: new Date('2026-05-01'),
+        amount: 500,
+        charges: 0,
+        status: 'late',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any)) as number;
+      await createCommunication({
+        relatedEntityType: 'rent',
+        relatedEntityId: otherRentId,
+        type: 'letter',
+        direction: 'outbound',
+        content: 'relance autre bail',
+        date: new Date('2026-06-15'),
+      });
+
+      const result = await fetchCommunicationsForLease(leaseId);
+
+      expect(result).toHaveLength(2);
+      // Most-recent-first: the historized reminder letter comes first
+      expect(result[0].type).toBe('letter');
+      expect(result[0].content).toContain('Relance amiable');
+      expect(result[1].content).toBe('visite du bail');
+      // The other lease's reminder is excluded
+      expect(result.some(c => c.content === 'relance autre bail')).toBe(false);
+    });
+
+    it('returns lease-scoped communications when the lease has no rents', async () => {
+      const leaseId = 60;
+      await createCommunication({
+        relatedEntityType: 'lease',
+        relatedEntityId: leaseId,
+        type: 'phone',
+        direction: 'inbound',
+        content: 'appel bail',
+        date: new Date('2026-01-01'),
+      });
+
+      const result = await fetchCommunicationsForLease(leaseId);
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toBe('appel bail');
+    });
   });
 });
