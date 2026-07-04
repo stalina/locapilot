@@ -93,7 +93,7 @@ Closes #<issue>
 
 ## Functional Specifications
 
-All functional specs live in `specs/` — one Markdown file per domain with data models, business rules, Mermaid diagrams, and Gherkin user stories.
+All functional specs live in `docs/specs/` — one Markdown file per domain with data models, business rules, Mermaid diagrams, and Gherkin user stories.
 
 **Use the `/specs` slash command to navigate specs without loading all files:**
 
@@ -106,7 +106,7 @@ All functional specs live in `specs/` — one Markdown file per domain with data
 /specs scenario properties "delete"  # Full story+scenarios matching "delete"
 ```
 
-**Index and relationships:** `specs/_index.md`
+**Index and relationships:** `docs/specs/_index.md`
 
 ---
 
@@ -118,8 +118,8 @@ This rule applies without exception. Before closing any task:
 
 ### When adding a feature or new behavior
 
-1. Identify the domain(s) in `specs/` — use `/specs search <keyword>` to check if it already exists
-2. If a new User Story is needed: add it to the relevant `specs/<domain>.md` following the existing format
+1. Identify the domain(s) in `docs/specs/` — use `/specs search <keyword>` to check if it already exists
+2. If a new User Story is needed: add it to the relevant `docs/specs/<domain>.md` following the existing format
 3. Write exhaustive Gherkin scenarios: happy path + error cases + edge cases
 4. If new fields were added to the database: update the Data Model table in the spec
 5. If entity relationships changed: update the Mermaid `erDiagram`
@@ -127,14 +127,14 @@ This rule applies without exception. Before closing any task:
 ### When fixing a bug
 
 1. Ask: does this bug reveal a missing or incorrect Gherkin scenario?
-2. If yes: add or correct the scenario in `specs/<domain>.md`
+2. If yes: add or correct the scenario in `docs/specs/<domain>.md`
 3. A bug that had no scenario covering it = an implicit spec gap — fill it
 
 ### When modifying the database schema
 
 1. Update the Data Model table in the relevant spec file(s)
 2. Update Mermaid diagrams if relationships changed
-3. Update `specs/_index.md` entity relationship diagram if needed
+3. Update `docs/specs/_index.md` entity relationship diagram if needed
 
 ### Format to follow
 
