@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Calendrier des Loyers' },
   },
   {
+    path: '/communications',
+    name: 'communications',
+    component: () => import('@features/communications/views/CommunicationsView.vue'),
+    meta: { title: 'Communications' },
+  },
+  {
     path: '/documents',
     name: 'documents',
     component: () => import('@features/documents/views/DocumentsView.vue'),

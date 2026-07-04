@@ -60,6 +60,10 @@
           <i class="mdi mdi-cash-multiple"></i>
           <span>Loyers</span>
         </RouterLink>
+        <RouterLink to="/communications" class="nav-item" @click="closeSidebar">
+          <i class="mdi mdi-message-text"></i>
+          <span>Communications</span>
+        </RouterLink>
         <RouterLink to="/documents" class="nav-item" @click="closeSidebar">
           <i class="mdi mdi-folder-multiple"></i>
           <span>Documents</span>
