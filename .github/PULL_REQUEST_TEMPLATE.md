@@ -10,9 +10,9 @@
 
 ## Specs updated
 
-<!-- Were functional specs in specs/ updated or created? -->
+<!-- Were functional specs in docs/specs/ updated or created? -->
 
-- [ ] Relevant spec(s) updated in `specs/` (new story, new scenario, or data model change)
+- [ ] Relevant spec(s) updated in `docs/specs/` (new story, new scenario, or data model change)
 - [ ] Not applicable (refactor, chore, dependency update, config change)
 
 ## How to test
