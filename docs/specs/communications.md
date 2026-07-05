@@ -59,7 +59,9 @@ erDiagram
 - A communication is **immutable-by-convention for auto-generated entries**: entries created by the
   reminders module (or other letter generators) are logged automatically and should not be manually
   editable, only manual entries may be edited or deleted.
-- `date` may be in the past (logging something that already happened) but not in the future.
+- `date` may be in the past (logging something that already happened) but not in the future. The
+  check is done at **day granularity**: a communication dated today is always accepted, whatever
+  the current time of day (a call logged in the morning must not be rejected as "future").
 - Deleting a communication does **not** delete its attached `Document` records (they may be shared,
   e.g. the reminder letter is also referenced by the `Reminder` row).
 - When the related entity (tenant, lease, property, rent) is deleted, its communications are **not**
@@ -169,6 +171,15 @@ And I select a related tenant, choose type "phone", direction "inbound"
 And I enter a subject, a content and a past date
 And I submit
 Then a new communication is created and appears at the top of the journal
+```
+
+#### Scenario: Accept a communication dated today submitted in the morning
+
+```gherkin
+Given I am filling the "Log a communication" form at 08:00 in the morning
+When I keep today's date and submit
+Then the communication is created without a validation error
+And it appears in the journal dated today
 ```
 
 #### Scenario: Reject a future date

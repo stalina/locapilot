@@ -10,7 +10,11 @@ import {
   type DashboardEventItem,
   type DashboardStats,
 } from '../services/dashboardService';
-import { computeDashboardAlerts, type DashboardAlert } from '../services/dashboardAlertsService';
+import {
+  computeDashboardAlerts,
+  resolveCriticalArrearsDays,
+  type DashboardAlert,
+} from '../services/dashboardAlertsService';
 import { computeActionSchedule, type ScheduleItem } from '../services/dashboardScheduleService';
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -64,6 +68,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
         properties: raw.properties,
         rents: raw.allRents,
         documents: raw.diagnosticDocuments,
+        // Même source que les courriers de relance : les seuils configurés.
+        criticalArrearsDays: resolveCriticalArrearsDays(settingsStore.reminderThresholds),
         now,
       });
       scheduleItems.value = computeActionSchedule({

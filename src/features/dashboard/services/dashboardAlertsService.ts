@@ -1,4 +1,9 @@
 import type { Document, Lease, Property, Rent } from '@/db/types';
+import { LEASE_EXPIRY_WINDOW_DAYS } from '@/features/leases/services/leasesService';
+import {
+  DEFAULT_REMINDER_THRESHOLDS,
+  type ReminderThresholdConfig,
+} from '@/features/settings/stores/settingsStore';
 
 export type DashboardAlertSeverity = 'critical' | 'warning';
 
@@ -17,11 +22,23 @@ export type DashboardAlert = {
 
 const DAY_MS = 86_400_000;
 
-/** Seuil (en jours) au-delà duquel un impayé devient critique. */
-export const CRITICAL_ARREARS_DAYS = 60;
+/**
+ * Dérive le seuil (en jours) au-delà duquel un impayé devient critique à
+ * partir des seuils de relance configurés dans les paramètres — même source
+ * unique que les courriers de relance :
+ * - le palier « mise en demeure » activé, s'il existe ;
+ * - sinon le palier activé le plus élevé ;
+ * - à défaut (aucun palier activé), le palier le plus élevé des valeurs par défaut.
+ */
+export function resolveCriticalArrearsDays(thresholds: ReminderThresholdConfig[]): number {
+  const miseEnDemeure = thresholds.find(t => t.level === 'mise-en-demeure' && t.enabled);
+  if (miseEnDemeure) return miseEnDemeure.days;
 
-/** Fenêtre (en jours) d'anticipation des fins de bail. */
-export const LEASE_EXPIRY_WINDOW_DAYS = 30;
+  const enabledDays = thresholds.filter(t => t.enabled).map(t => t.days);
+  if (enabledDays.length > 0) return Math.max(...enabledDays);
+
+  return Math.max(...DEFAULT_REMINDER_THRESHOLDS.map(t => t.days));
+}
 
 function parseDate(input: Date | string | undefined | null): Date | null {
   if (!input) return null;
@@ -42,24 +59,27 @@ function propertyNameForLease(
 }
 
 /**
- * Impayés critiques : loyers `late` ou `partial` dont l'échéance est dépassée
- * de plus de `CRITICAL_ARREARS_DAYS` jours.
+ * Impayés critiques : loyers `late` ou `partial` dont le retard atteint le
+ * seuil critique dérivé des seuils de relance configurés
+ * (`criticalArrearsDays`). Même sémantique que les relances : `daysLate >= seuil`
+ * avec un nombre de jours entier (voir `remindersService.computePendingReminders`).
  */
 function computeCriticalArrearsAlerts(params: {
   rents: Rent[];
   leases: Lease[];
   properties: Property[];
+  criticalArrearsDays: number;
   now: Date;
 }): DashboardAlert[] {
-  const { rents, leases, properties, now } = params;
+  const { rents, leases, properties, criticalArrearsDays, now } = params;
 
   return rents
     .map(rent => ({ rent, dueDate: parseDate(rent.dueDate) }))
     .filter(({ rent, dueDate }) => {
       if (rent.status !== 'late' && rent.status !== 'partial') return false;
       if (!dueDate) return false;
-      const daysOverdue = (now.getTime() - dueDate.getTime()) / DAY_MS;
-      return daysOverdue > CRITICAL_ARREARS_DAYS;
+      const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / DAY_MS);
+      return daysOverdue >= criticalArrearsDays;
     })
     .map(({ rent, dueDate }) => {
       const daysOverdue = Math.floor((now.getTime() - (dueDate as Date).getTime()) / DAY_MS);
@@ -143,19 +163,24 @@ function computeLeaseExpiryAlerts(params: {
 /**
  * Calcule les alertes proactives du tableau de bord, ordonnées par sévérité :
  * impayés critiques, puis diagnostics expirés, puis fins de bail.
+ *
+ * `criticalArrearsDays` est le seuil critique d'impayé (en jours), à dériver
+ * des seuils de relance configurés via {@link resolveCriticalArrearsDays} —
+ * la fonction reste pure, l'appelant fait le lien avec le store des paramètres.
  */
 export function computeDashboardAlerts(params: {
   leases: Lease[];
   properties: Property[];
   rents: Rent[];
   documents: Document[];
+  criticalArrearsDays: number;
   now?: Date;
 }): DashboardAlert[] {
   const now = params.now ?? new Date();
-  const { leases, properties, rents, documents } = params;
+  const { leases, properties, rents, documents, criticalArrearsDays } = params;
 
   return [
-    ...computeCriticalArrearsAlerts({ rents, leases, properties, now }),
+    ...computeCriticalArrearsAlerts({ rents, leases, properties, criticalArrearsDays, now }),
     ...computeExpiredDiagnosticAlerts({ documents, now }),
     ...computeLeaseExpiryAlerts({ leases, properties, now }),
   ];

@@ -16,6 +16,20 @@ export interface ReminderThresholdConfig {
   enabled: boolean;
 }
 
+/**
+ * Seuils de relance par défaut (issue #40) — LE point de déclaration unique des
+ * paliers d'impayé. Escalade ~mensuelle cohérente : la relance amiable est
+ * proposée dès le 1er jour de retard (tout loyer en retard a daysLate >= 1),
+ * puis un palier tous les ~30 jours (recommandée à 31 j, mise en demeure à 61 j).
+ * Les courriers de relance ET les alertes du tableau de bord dérivent tous deux
+ * de la configuration `reminderThresholds` initialisée avec ces valeurs.
+ */
+export const DEFAULT_REMINDER_THRESHOLDS: readonly ReminderThresholdConfig[] = [
+  { level: 'amiable', days: 1, enabled: true },
+  { level: 'recommandee', days: 31, enabled: true },
+  { level: 'mise-en-demeure', days: 61, enabled: true },
+];
+
 interface AppSettingsData {
   theme: 'light' | 'dark';
   language: string;
@@ -50,16 +64,8 @@ Cordialement, `);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
-  // Escalade ~mensuelle cohérente : la relance amiable est proposée dès le 1er
-  // jour de retard (tout loyer en retard a daysLate >= 1), puis un palier tous
-  // les ~30 jours (recommandée à 31 j, mise en demeure à 61 j).
-  const defaultReminderThresholds: ReminderThresholdConfig[] = [
-    { level: 'amiable', days: 1, enabled: true },
-    { level: 'recommandee', days: 31, enabled: true },
-    { level: 'mise-en-demeure', days: 61, enabled: true },
-  ];
   const reminderThresholds = ref<ReminderThresholdConfig[]>(
-    defaultReminderThresholds.map(t => ({ ...t }))
+    DEFAULT_REMINDER_THRESHOLDS.map(t => ({ ...t }))
   );
 
   // Default settings
@@ -121,7 +127,10 @@ Cordialement, `);
       notifications.value = await getSetting('notifications', defaultSettings.notifications);
       autoSave.value = await getSetting('autoSave', defaultSettings.autoSave);
       compactMode.value = await getSetting('compactMode', defaultSettings.compactMode);
-      reminderThresholds.value = await getSetting('reminderThresholds', defaultReminderThresholds);
+      reminderThresholds.value = await getSetting(
+        'reminderThresholds',
+        DEFAULT_REMINDER_THRESHOLDS.map(t => ({ ...t }))
+      );
 
       // senderAddress is managed on demand via helper action
 

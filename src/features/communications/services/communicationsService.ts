@@ -46,11 +46,19 @@ export const ENTITY_TYPE_LABELS: Record<CommunicationEntityType, string> = {
   rent: 'Loyer',
 };
 
+function startOfLocalDay(date: Date): Date {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day;
+}
+
 /**
  * Validate a manual communication draft.
  * Returns a list of human-readable error messages (empty when valid).
  * - `content` must not be empty / whitespace-only.
- * - `date` must not be in the future.
+ * - `date` must not be in the future. The check is done at **day granularity**:
+ *   any time on today's calendar day is accepted (the form stores dates at noon,
+ *   which must not be rejected when the user logs today's exchange in the morning).
  */
 export function validateCommunicationDraft(
   draft: Pick<CommunicationDraft, 'content' | 'date'>,
@@ -66,7 +74,7 @@ export function validateCommunicationDraft(
     const date = new Date(draft.date);
     if (Number.isNaN(date.getTime())) {
       errors.push('La date est invalide.');
-    } else if (date.getTime() > now.getTime()) {
+    } else if (startOfLocalDay(date).getTime() > startOfLocalDay(now).getTime()) {
       errors.push('La date ne peut pas être dans le futur.');
     }
   } else {

@@ -25,11 +25,12 @@ function comm(overrides: Partial<Communication> = {}): Communication {
 
 describe('communicationsService', () => {
   describe('validateCommunicationDraft', () => {
-    const now = new Date('2026-07-04T12:00:00.000Z');
+    // Local-time (no Z suffix) to stay deterministic in any timezone.
+    const now = new Date('2026-07-04T12:00:00');
 
     it('accepts a valid past-dated non-empty draft', () => {
       const errors = validateCommunicationDraft(
-        { content: 'Un appel', date: new Date('2026-07-03') },
+        { content: 'Un appel', date: new Date('2026-07-03T12:00:00') },
         now
       );
       expect(errors).toEqual([]);
@@ -37,8 +38,37 @@ describe('communicationsService', () => {
 
     it('rejects a future date', () => {
       const errors = validateCommunicationDraft(
-        { content: 'Un appel', date: new Date('2026-07-05') },
+        { content: 'Un appel', date: new Date('2026-07-05T12:00:00') },
         now
+      );
+      expect(errors).toContain('La date ne peut pas être dans le futur.');
+    });
+
+    it("accepts today's date at noon when submitted in the morning (day granularity)", () => {
+      // Regression: the form stores dates at 12:00 local time; before noon,
+      // "today at 12:00" is later than `now` but must NOT count as future.
+      const morning = new Date('2026-07-04T08:00:00');
+      const errors = validateCommunicationDraft(
+        { content: 'Un appel', date: new Date('2026-07-04T12:00:00') },
+        morning
+      );
+      expect(errors).toEqual([]);
+    });
+
+    it("accepts any time on today's calendar day, even late evening", () => {
+      const morning = new Date('2026-07-04T08:00:00');
+      const errors = validateCommunicationDraft(
+        { content: 'Un appel', date: new Date('2026-07-04T23:30:00') },
+        morning
+      );
+      expect(errors).toEqual([]);
+    });
+
+    it('still rejects tomorrow even when compared early in the morning', () => {
+      const morning = new Date('2026-07-04T08:00:00');
+      const errors = validateCommunicationDraft(
+        { content: 'Un appel', date: new Date('2026-07-05T00:00:01') },
+        morning
       );
       expect(errors).toContain('La date ne peut pas être dans le futur.');
     });
@@ -60,7 +90,10 @@ describe('communicationsService', () => {
     });
 
     it('accumulates multiple errors', () => {
-      const errors = validateCommunicationDraft({ content: '', date: new Date('2026-07-05') }, now);
+      const errors = validateCommunicationDraft(
+        { content: '', date: new Date('2026-07-05T12:00:00') },
+        now
+      );
       expect(errors.length).toBe(2);
     });
   });

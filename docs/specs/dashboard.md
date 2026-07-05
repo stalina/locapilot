@@ -12,9 +12,14 @@ The **dashboard** is the home screen of Locapilot. It provides a high-level over
 - "Upcoming events" shows rent due dates and lease expiries within the next 30 days
 - An empty state message is shown for each section when no data exists
 - An **alerts banner** at the top of the dashboard surfaces critical situations requiring landlord action:
-  - Active leases ending within the next 30 days
-  - Unpaid rents (`late` or `partial`) whose due date is more than 60 days in the past ("critical arrears")
+  - Active leases ending within the next 30 days (same window as the "expiring leases" list)
+  - Unpaid rents (`late` or `partial`) whose arrears have reached the **critical arrears threshold** ("critical arrears")
   - Diagnostic documents (`type: diagnostic`) whose `expiresAt` date is in the past
+- The **critical arrears threshold follows the reminder thresholds configured in Settings** (issue #40) — letters and dashboard alerts always derive from the same single configuration:
+  - it is the number of days of the enabled "mise en demeure" level (61 days by default)
+  - if that level is disabled, the highest enabled threshold applies
+  - if all levels are disabled, the highest default threshold (61 days) applies
+  - the comparison uses the same `daysLate >= threshold` semantics as the reminder letters, so shortening or lengthening the thresholds in Settings changes the letters and the dashboard alerts together
 - The alerts banner is hidden entirely when no alert exists
 - Alerts are ordered by severity: critical arrears first, then expired diagnostics, then lease expiries
 - Each alert is clickable and navigates directly to the screen where the situation can be handled
@@ -34,7 +39,8 @@ graph TD
     R[Rents] -->|upcoming due dates, payment rate| D
     P & T & L & R -->|recent changes| Activity[Recent Activity]
     L -->|ending < 30 days| Alerts[Alerts Banner]
-    R -->|arrears > 60 days| Alerts
+    R -->|arrears >= configured threshold| Alerts
+    S[Settings: reminder thresholds] -->|critical arrears threshold| Alerts
     Doc[Documents] -->|expired diagnostics| Alerts
     Rev[Rent Revisions] -->|upcoming anniversaries| Schedule[Action Schedule]
     Adj[Charges Adjustments] -->|missing yearly regularization| Schedule
@@ -159,16 +165,38 @@ Then the alerts banner shows a warning alert: lease for "Studio Belleville" ends
 And clicking the alert navigates to the detail page of that lease
 ```
 
-#### Scenario: Alert for critical arrears over 60 days
+#### Scenario: Alert for critical arrears reaching the configured threshold
 
 ```gherkin
 Given today is 2026-06-01
+And the reminder thresholds are the defaults (mise en demeure at 61 days)
 And a rent for "Appart Gambetta" is late with due date 2026-03-15 (78 days ago)
 And a rent for "Studio Belleville" is late with due date 2026-05-10 (22 days ago)
 When I open the Dashboard
-Then the alerts banner shows a critical alert for the "Appart Gambetta" rent (arrears over 60 days)
+Then the alerts banner shows a critical alert for the "Appart Gambetta" rent (arrears >= 61 days)
 And no alert appears for the "Studio Belleville" rent
 And clicking the alert navigates to the Rents view
+```
+
+#### Scenario: Arrears alert follows a shortened reminder threshold
+
+```gherkin
+Given today is 2026-06-01
+And the "mise en demeure" reminder threshold was lowered to 15 days in Settings
+And a rent is late with due date 2026-05-10 (22 days ago)
+When I open the Dashboard
+Then the alerts banner shows a critical arrears alert for that rent
+And the reminder letters schedule proposes the "mise en demeure" letter for the same rent
+```
+
+#### Scenario: Arrears threshold falls back when mise en demeure is disabled
+
+```gherkin
+Given the "mise en demeure" reminder level is disabled in Settings
+And the highest enabled reminder threshold is "recommandée" at 31 days
+And a rent is late by 40 days
+When I open the Dashboard
+Then the alerts banner shows a critical arrears alert for that rent (threshold 31 days)
 ```
 
 #### Scenario: Partial payment counts as critical arrears
@@ -201,7 +229,7 @@ Then no expired-diagnostic alert appears for that document
 #### Scenario: Alerts ordered by severity
 
 ```gherkin
-Given a rent has arrears over 60 days
+Given a rent has arrears beyond the configured critical threshold
 And a diagnostic document is expired
 And an active lease ends in 15 days
 When I open the Dashboard
@@ -214,7 +242,7 @@ And the lease expiry alert third
 
 ```gherkin
 Given no lease ends within 30 days
-And no rent has arrears over 60 days
+And no rent has arrears beyond the configured critical threshold
 And no diagnostic document is expired
 When I open the Dashboard
 Then the alerts banner is not displayed at all

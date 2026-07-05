@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Document, Lease, Property, Rent } from '@/db/types';
-import { computeDashboardAlerts } from './dashboardAlertsService';
+import type { ReminderThresholdConfig } from '@/features/settings/stores/settingsStore';
+import { computeDashboardAlerts, resolveCriticalArrearsDays } from './dashboardAlertsService';
 
 const NOW = new Date('2026-06-01T12:00:00');
+
+// Seuils de relance par défaut : mise en demeure à 61 jours de retard.
+const DEFAULT_THRESHOLDS: ReminderThresholdConfig[] = [
+  { level: 'amiable', days: 1, enabled: true },
+  { level: 'recommandee', days: 31, enabled: true },
+  { level: 'mise-en-demeure', days: 61, enabled: true },
+];
 
 function makeProperty(overrides: Partial<Property> = {}): Property {
   return {
@@ -73,6 +81,7 @@ function compute(
     properties: Property[];
     rents: Rent[];
     documents: Document[];
+    criticalArrearsDays: number;
     now: Date;
   }> = {}
 ) {
@@ -81,10 +90,45 @@ function compute(
     properties: [],
     rents: [],
     documents: [],
+    criticalArrearsDays: resolveCriticalArrearsDays(DEFAULT_THRESHOLDS),
     now: NOW,
     ...overrides,
   });
 }
+
+describe('resolveCriticalArrearsDays', () => {
+  it('returns the mise-en-demeure days when that level is enabled', () => {
+    expect(resolveCriticalArrearsDays(DEFAULT_THRESHOLDS)).toBe(61);
+  });
+
+  it('follows a user-shortened mise-en-demeure threshold', () => {
+    const custom: ReminderThresholdConfig[] = [
+      { level: 'amiable', days: 1, enabled: true },
+      { level: 'recommandee', days: 15, enabled: true },
+      { level: 'mise-en-demeure', days: 45, enabled: true },
+    ];
+    expect(resolveCriticalArrearsDays(custom)).toBe(45);
+  });
+
+  it('falls back to the highest enabled threshold when mise-en-demeure is disabled', () => {
+    const custom: ReminderThresholdConfig[] = [
+      { level: 'amiable', days: 1, enabled: true },
+      { level: 'recommandee', days: 31, enabled: true },
+      { level: 'mise-en-demeure', days: 61, enabled: false },
+    ];
+    expect(resolveCriticalArrearsDays(custom)).toBe(31);
+  });
+
+  it('falls back to the highest default threshold when everything is disabled', () => {
+    const custom: ReminderThresholdConfig[] = [
+      { level: 'amiable', days: 1, enabled: false },
+      { level: 'recommandee', days: 31, enabled: false },
+      { level: 'mise-en-demeure', days: 61, enabled: false },
+    ];
+    expect(resolveCriticalArrearsDays(custom)).toBe(61);
+    expect(resolveCriticalArrearsDays([])).toBe(61);
+  });
+});
 
 describe('computeDashboardAlerts', () => {
   describe('critical arrears', () => {
@@ -114,10 +158,10 @@ describe('computeDashboardAlerts', () => {
       expect(alerts[0]!.severity).toBe('critical');
     });
 
-    it('ignores a late rent overdue by 60 days or less', () => {
+    it('ignores a late rent overdue by less than the configured threshold', () => {
       // 22 days overdue
       const recent = makeRent({ id: 101, status: 'late', dueDate: new Date('2026-05-10') });
-      // exactly 60 days overdue (boundary: not critical)
+      // exactly 60 days overdue (below the default 61-day mise-en-demeure threshold)
       const boundary = makeRent({
         id: 102,
         status: 'late',
@@ -125,6 +169,23 @@ describe('computeDashboardAlerts', () => {
       });
 
       expect(compute({ rents: [recent, boundary] })).toHaveLength(0);
+    });
+
+    it('flags a rent exactly at the configured threshold (>= semantics, like reminder letters)', () => {
+      // exactly 61 days overdue = the default mise-en-demeure threshold
+      const rent = makeRent({ status: 'late', dueDate: new Date('2026-04-01T12:00:00') });
+      const alerts = compute({ rents: [rent] });
+
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0]!.severity).toBe('critical');
+    });
+
+    it('follows a custom threshold derived from the settings', () => {
+      // 22 days overdue: not critical with the defaults, critical at 10 days
+      const rent = makeRent({ status: 'late', dueDate: new Date('2026-05-10') });
+
+      expect(compute({ rents: [rent] })).toHaveLength(0);
+      expect(compute({ rents: [rent], criticalArrearsDays: 10 })).toHaveLength(1);
     });
 
     it('ignores paid and pending rents whatever their due date', () => {
