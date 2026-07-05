@@ -8,10 +8,17 @@ test('Dashboard shows recent activities and upcoming events', async ({ page }) =
   const recentHeader = page.locator('.section-title', { hasText: 'Activité récente' });
   await expect(recentHeader).toBeVisible();
 
-  const activityCount = await page.locator('.activity-item').count();
+  // Demo seeding runs concurrently with the dashboard load, so wait until the
+  // section settles on either state (populated list OR empty message) before
+  // branching on the count — otherwise the count races with the seeding.
+  const activityItems = page.locator('.activity-item');
+  const activityEmpty = page.locator('.empty-list', { hasText: 'Aucune activité récente' });
+  await expect(activityItems.first().or(activityEmpty)).toBeVisible();
+
+  const activityCount = await activityItems.count();
   // Accept either populated list or the empty state message
   if (activityCount === 0) {
-    await expect(page.locator('.empty-list', { hasText: 'Aucune activité récente' })).toBeVisible();
+    await expect(activityEmpty).toBeVisible();
   } else {
     expect(activityCount).toBeGreaterThanOrEqual(1);
   }
@@ -19,9 +26,13 @@ test('Dashboard shows recent activities and upcoming events', async ({ page }) =
   const upcomingHeader = page.locator('.section-title', { hasText: 'À venir' });
   await expect(upcomingHeader).toBeVisible();
 
-  const eventCount = await page.locator('.event-item').count();
+  const eventItems = page.locator('.event-item');
+  const eventsEmpty = page.locator('.empty-list', { hasText: 'Aucun événement à venir' });
+  await expect(eventItems.first().or(eventsEmpty)).toBeVisible();
+
+  const eventCount = await eventItems.count();
   if (eventCount === 0) {
-    await expect(page.locator('.empty-list', { hasText: 'Aucun événement à venir' })).toBeVisible();
+    await expect(eventsEmpty).toBeVisible();
   } else {
     expect(eventCount).toBeGreaterThanOrEqual(1);
   }
