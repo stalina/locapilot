@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +8,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['node_modules', 'e2e/**'],
+    // `.claude/worktrees/*` holds throwaway git worktrees (each with its own
+    // node_modules); without excluding them vitest picks up their duplicated
+    // specs and loads a second copy of Vue, breaking component rendering.
+    exclude: [...configDefaults.exclude, 'e2e/**', '**/.claude/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

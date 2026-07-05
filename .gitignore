@@ -37,3 +37,7 @@ data
 # Playwright / generated artifacts (must not be linted or committed)
 .playwright-mcp
 dev-dist
+
+# Claude Code throwaway worktrees & local launch config
+.claude/worktrees/
+.claude/launch.json
