@@ -11,7 +11,7 @@ import {
   fetchChargesAdjustmentsByLeaseId,
   upsertChargesAdjustment as upsertChargesAdjustmentRepo,
 } from '../repositories/chargesAdjustmentsRepository';
-import { buildTerminationUpdates } from '../services/leasesService';
+import { LEASE_EXPIRY_WINDOW_DAYS, buildTerminationUpdates } from '../services/leasesService';
 
 interface LeasesState {
   leases: Lease[];
@@ -48,15 +48,15 @@ export const useLeasesStore = defineStore('leases', {
     leasesByTenant: state => (tenantId: number) =>
       state.leases.filter(l => Array.isArray(l.tenantIds) && l.tenantIds.includes(tenantId)),
 
-    // Baux expirant bientôt (dans les 30 jours)
+    // Baux expirant bientôt (dans les LEASE_EXPIRY_WINDOW_DAYS prochains jours)
     expiringLeases: state => {
       const today = new Date();
-      const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(today.getTime() + LEASE_EXPIRY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
       return state.leases.filter(l => {
         if (l.status !== 'active' || !l.endDate) return false;
         const endDate = new Date(l.endDate);
-        return endDate >= today && endDate <= next30Days;
+        return endDate >= today && endDate <= windowEnd;
       });
     },
 

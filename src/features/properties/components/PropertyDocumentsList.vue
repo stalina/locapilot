@@ -13,6 +13,7 @@ const showUploadForm = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedCategory = ref('dpe');
 const selectedFile = ref<File | null>(null);
+const expiresAtInput = ref('');
 const isUploading = ref(false);
 
 const CATEGORIES: Array<{ value: string; label: string; type: Document['type'] }> = [
@@ -29,6 +30,10 @@ const CATEGORIES: Array<{ value: string; label: string; type: Document['type'] }
   { value: 'autre', label: 'Autre', type: 'other' },
 ];
 
+const selectedCategoryIsDiagnostic = computed(
+  () => CATEGORIES.find(c => c.value === selectedCategory.value)?.type === 'diagnostic'
+);
+
 const propertyDocuments = computed(() =>
   documentsStore
     .documentsByEntity('property', props.propertyId)
@@ -42,11 +47,13 @@ function openUploadForm() {
   showUploadForm.value = true;
   selectedCategory.value = 'dpe';
   selectedFile.value = null;
+  expiresAtInput.value = '';
 }
 
 function cancelUpload() {
   showUploadForm.value = false;
   selectedFile.value = null;
+  expiresAtInput.value = '';
   if (fileInput.value) fileInput.value.value = '';
 }
 
@@ -68,11 +75,17 @@ async function handleUpload() {
       relatedEntityType: 'property',
       relatedEntityId: props.propertyId,
       description: category.label,
+      expiresAt: expiresAtInput.value ? new Date(expiresAtInput.value) : undefined,
     });
     cancelUpload();
   } finally {
     isUploading.value = false;
   }
+}
+
+async function handleExpiryUpdate(doc: Document, date: Date | null) {
+  if (!doc.id) return;
+  await documentsStore.updateDocument(doc.id, { expiresAt: date ?? undefined });
 }
 
 async function handleDelete(doc: Document) {
@@ -104,6 +117,15 @@ async function handleDownload(doc: Document) {
           <label class="field-label">Fichier</label>
           <input ref="fileInput" type="file" class="field-file" @change="handleFileChange" />
         </div>
+        <div v-if="selectedCategoryIsDiagnostic" class="field">
+          <label class="field-label">Date d'expiration (optionnelle)</label>
+          <input
+            v-model="expiresAtInput"
+            type="date"
+            class="field-date"
+            data-testid="document-expiresAt"
+          />
+        </div>
       </div>
       <div class="upload-form-actions">
         <Button variant="outline" size="sm" @click="cancelUpload">Annuler</Button>
@@ -134,6 +156,7 @@ async function handleDownload(doc: Document) {
           :document="doc"
           @download="handleDownload(doc)"
           @delete="handleDelete(doc)"
+          @update-expiry="handleExpiryUpdate(doc, $event)"
         />
       </div>
       <div class="list-footer">
@@ -199,6 +222,21 @@ async function handleDownload(doc: Document) {
 .field-file {
   font-size: 0.9rem;
   color: var(--text-primary, #0f172a);
+}
+
+.field-date {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  background: white;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.field-date:focus {
+  outline: none;
+  border-color: var(--primary-400, #818cf8);
+  box-shadow: 0 0 0 3px var(--primary-100, #e0e7ff);
 }
 
 .upload-form-actions {

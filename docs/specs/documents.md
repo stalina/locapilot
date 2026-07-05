@@ -19,6 +19,7 @@ A separate **TenantDocument** table handles files specifically attached to a ten
 | `size`              | number  | File size in bytes                                                        |
 | `data`              | Blob    | Binary file content                                                       |
 | `description`       | string? | Optional description or notes                                             |
+| `expiresAt`         | Date?   | Optional validity end date (mainly for `diagnostic` documents)            |
 | `createdAt`         | Date    | Upload timestamp                                                          |
 | `updatedAt`         | Date    | Last update timestamp                                                     |
 
@@ -45,6 +46,9 @@ A separate **TenantDocument** table handles files specifically attached to a ten
 - When a linked entity (property, lease, etc.) is deleted, associated documents should be cleaned up
 - Receipt documents (`type: receipt`) are linked to a specific `Rent` via `relatedEntityType: rent`
 - Photo documents (`type: photo`) linked to a property are referenced by `Property.photos[]` (array of IDs)
+- `expiresAt` is optional and mainly used for `diagnostic` documents (DPE, électricité, gaz…)
+- A document whose `expiresAt` is strictly in the past is considered **expired** — expired diagnostics are surfaced as alerts on the dashboard (see [Dashboard spec](./dashboard.md))
+- Documents without `expiresAt` never expire
 
 ## Relationships
 
@@ -212,4 +216,49 @@ Given property "Appart Gambetta" has 3 documents linked (DPE, insurance, plan)
 When I navigate to the property's detail page
 And I open the Documents tab
 Then the 3 documents appear in the list
+```
+
+---
+
+### Story: Track diagnostic validity
+
+**As a** landlord  
+**I want to** record an expiry date on diagnostic documents  
+**So that** I am alerted on the dashboard when a diagnostic must be renewed
+
+#### Scenario: Set an expiry date when uploading a diagnostic
+
+```gherkin
+Given I upload a document "DPE-2026.pdf" with type "diagnostic"
+When I fill in the expiry date field with 2036-06-01
+Then the document is saved with expiresAt 2036-06-01
+And the expiry date appears in the document's details
+```
+
+#### Scenario: Diagnostic detected as expired
+
+```gherkin
+Given a diagnostic document has expiresAt 2026-05-01
+And today is 2026-06-01
+When the application evaluates document validity
+Then the document is considered expired
+And an expired-diagnostic alert appears on the dashboard
+```
+
+#### Scenario: Diagnostic without expiry date never expires
+
+```gherkin
+Given a diagnostic document exists with no expiresAt value
+When the application evaluates document validity
+Then the document is never considered expired
+And no dashboard alert is generated for it
+```
+
+#### Scenario: Edit the expiry date of an existing document
+
+```gherkin
+Given a diagnostic document exists with expiresAt 2026-05-01
+When I edit the document and change the expiry date to 2027-05-01
+Then the document is saved with expiresAt 2027-05-01
+And the corresponding dashboard alert disappears if the new date is in the future
 ```

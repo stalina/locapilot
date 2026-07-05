@@ -9,6 +9,8 @@ import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import { useDashboardStore } from '../stores/dashboardStore';
+import type { DashboardAlert } from '../services/dashboardAlertsService';
+import type { ScheduleItem } from '../services/dashboardScheduleService';
 
 const router = useRouter();
 const dashboardStore = useDashboardStore();
@@ -16,6 +18,8 @@ const dashboardStore = useDashboardStore();
 const stats = computed(() => dashboardStore.stats);
 const recentActivities = computed(() => dashboardStore.recentActivities);
 const upcomingEvents = computed(() => dashboardStore.upcomingEvents);
+const alerts = computed(() => dashboardStore.alerts);
+const scheduleItems = computed(() => dashboardStore.scheduleItems);
 // stores are not used directly in this view; navigation delegates to feature views
 // const propertiesStore = usePropertiesStore();
 // const tenantsStore = useTenantsStore();
@@ -57,6 +61,22 @@ function handleActivityClick(activity: any) {
   }
 }
 
+function handleAlertClick(alert: DashboardAlert) {
+  router.push(alert.link);
+}
+
+function handleScheduleClick(item: ScheduleItem) {
+  router.push(item.link);
+}
+
+function formatScheduleDate(date: Date): string {
+  return new Date(date).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 function handleEventClick(event: any) {
   // For simplicity, navigate to leases view for visits or to rents for due dates
   if (event.title && event.title.toLowerCase().includes('visite')) {
@@ -91,6 +111,29 @@ function handleEventClick(event: any) {
         <Button variant="outline" icon="bell"> 3 notifications </Button>
       </div>
     </header>
+
+    <!-- Alerts Banner -->
+    <div v-if="alerts.length > 0" class="alerts-banner" data-testid="dashboard-alerts">
+      <button
+        v-for="alert in alerts"
+        :key="alert.id"
+        type="button"
+        class="alert-item"
+        :class="`alert-${alert.severity}`"
+        :data-testid="`dashboard-alert-${alert.severity}`"
+        @click="handleAlertClick(alert)"
+      >
+        <i
+          class="mdi alert-icon"
+          :class="alert.severity === 'critical' ? 'mdi-alert-circle' : 'mdi-alert'"
+        ></i>
+        <span class="alert-text">
+          <span class="alert-title">{{ alert.title }}</span>
+          <span class="alert-description">{{ alert.description }}</span>
+        </span>
+        <i class="mdi mdi-chevron-right alert-chevron"></i>
+      </button>
+    </div>
 
     <!-- Stats Grid -->
     <div class="stats-grid">
@@ -220,10 +263,164 @@ function handleEventClick(event: any) {
         </div>
       </section>
     </div>
+
+    <!-- Échéancier -->
+    <section class="section-card schedule-section" data-testid="dashboard-schedule">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="mdi mdi-calendar-check"></i>
+          Échéancier
+        </h2>
+      </div>
+
+      <div class="schedule-list">
+        <div v-if="scheduleItems.length === 0" class="empty-list">Aucune action à venir</div>
+        <div
+          v-else
+          v-for="item in scheduleItems"
+          :key="item.id"
+          class="schedule-item"
+          data-testid="dashboard-schedule-item"
+          @click="handleScheduleClick(item)"
+        >
+          <div class="schedule-date">{{ formatScheduleDate(item.date) }}</div>
+          <div class="schedule-content">
+            <div class="schedule-title">{{ item.title }}</div>
+            <div class="schedule-description">{{ item.description }}</div>
+          </div>
+          <i class="mdi mdi-chevron-right schedule-chevron"></i>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
 /* Styles spécifiques au dashboard */
 /* Les styles communs sont dans views.css */
+
+/* --- Alerts banner --- */
+.alerts-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg, 0.75rem);
+  border: 1px solid transparent;
+  background: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: all var(--transition-base, 0.2s ease);
+}
+
+.alert-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.alert-critical {
+  background: var(--error-50, #fef2f2);
+  border-color: var(--error-200, #fecaca);
+  color: var(--error-700, #b91c1c);
+}
+
+.alert-warning {
+  background: var(--warning-50, #fffbeb);
+  border-color: var(--warning-200, #fde68a);
+  color: var(--warning-700, #b45309);
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.alert-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.alert-title {
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.alert-description {
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+.alert-chevron {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* --- Échéancier --- */
+.schedule-section {
+  margin-top: 1.5rem;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  cursor: pointer;
+  transition: background var(--transition-base, 0.2s ease);
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+.schedule-item:hover {
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+.schedule-date {
+  flex-shrink: 0;
+  min-width: 7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary-600, #4f46e5);
+}
+
+.schedule-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.schedule-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.schedule-chevron {
+  color: var(--text-tertiary, #94a3b8);
+  font-size: 1.25rem;
+}
 </style>
