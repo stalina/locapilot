@@ -218,6 +218,25 @@ And I open the Documents tab
 Then the 3 documents appear in the list
 ```
 
+#### Scenario: View and manage all documents linked to a lease
+
+```gherkin
+Given lease #42 has documents linked (signed contract, guarantor engagement, insurance)
+When I navigate to the lease's detail page
+And I open the Documents section
+Then the documents with relatedEntityType "lease" and relatedEntityId 42 appear in the list, most recent first
+And each document can be downloaded or deleted
+```
+
+#### Scenario: Categorize a lease document on upload
+
+```gherkin
+Given I upload a document from the detail page of lease #42
+When I choose a lease-relevant category (e.g. "Bail signé", "Garant", "Autre")
+Then the document is stored with a document type reflecting the category
+And with relatedEntityType "lease" and relatedEntityId 42
+```
+
 ---
 
 ### Story: Track diagnostic validity

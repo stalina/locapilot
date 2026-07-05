@@ -368,3 +368,56 @@ Given an active lease with co-tenants "M. Dupont Jean" and "Mme Martin Marie"
 When I generate the courrier de régularisation
 Then the short tenant-name field shows "M. Dupont et Mme Martin"
 ```
+
+### Story: Attach documents to a lease
+
+**As a** landlord  
+**I want to** attach and manage arbitrary files on a lease (garant, signed contract, riders, and other supporting documents)  
+**So that** all documents related to a rental contract live on the lease's detail page — as I can already do for properties and tenants
+
+#### Scenario: Upload a document from the lease detail page
+
+```gherkin
+Given I am on the detail page of lease #42
+When I open the "Documents" section
+And I choose a category (e.g. "Bail signé", "Garant", "Autre")
+And I select the file "bail-signe.pdf" (application/pdf)
+And I click "Ajouter"
+Then a Document is created with relatedEntityType "lease" and relatedEntityId 42
+And the document appears in the lease's document list with its name, category and upload date
+```
+
+#### Scenario: List documents attached to a lease
+
+```gherkin
+Given lease #42 has 3 attached documents (signed contract, guarantor engagement, insurance)
+When I open the "Documents" section of the lease detail page
+Then the 3 documents are listed, most recent first
+And each document can be downloaded
+```
+
+#### Scenario: Empty state when a lease has no attached documents
+
+```gherkin
+Given lease #42 has no attached documents
+When I open the "Documents" section of the lease detail page
+Then an empty state is shown with a call to action to add a document
+```
+
+#### Scenario: Delete a document attached to a lease
+
+```gherkin
+Given lease #42 has an attached document "bail-signe.pdf"
+When I click "Delete" on that document and confirm
+Then the document is removed from the lease's list
+And its binary data is removed from the database
+```
+
+#### Scenario: Generated lease documents coexist with manual attachments
+
+```gherkin
+Given lease #42 has a generated "Attestation de remise des clés" and a manually uploaded "garant.pdf"
+When I open the "Documents" section of the lease detail page
+Then the manually attached documents are listed alongside the generated ones without duplication
+And both uploading and generation target relatedEntityType "lease" with relatedEntityId 42
+```
