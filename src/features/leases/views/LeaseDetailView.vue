@@ -13,6 +13,7 @@ import LeaseFormModal from '../components/LeaseFormModal.vue';
 import ChargesAdjustmentTable from '../components/ChargesAdjustmentTable.vue';
 import RentRevisionCard from '@/features/indexation/components/RentRevisionCard.vue';
 import CommunicationsTimeline from '@/features/communications/components/CommunicationsTimeline.vue';
+import LeaseDocumentsList from '../components/LeaseDocumentsList.vue';
 import type { Tenant } from '@/db/schema';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import {
@@ -437,20 +438,14 @@ const handleDownloadExistingMandat = async () => {
             />
           </Card>
 
-          <Card v-if="lease?.documentId">
+          <Card>
             <div class="card-header">
               <h2>
                 <i class="mdi mdi-file-document"></i>
-                Document
+                Documents
               </h2>
             </div>
-            <Button
-              variant="outline"
-              icon="file-document"
-              @click="() => lease && console.log('Voir document', lease.documentId)"
-            >
-              Voir le contrat de bail
-            </Button>
+            <LeaseDocumentsList v-if="lease?.id" :leaseId="lease.id" />
           </Card>
         </div>
 
