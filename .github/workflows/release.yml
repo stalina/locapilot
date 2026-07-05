@@ -44,6 +44,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production
+          BUILD_SECRET_KEY: ${{ secrets.BUILD_SECRET_KEY }}
 
       - name: Configure Git
         run: |
