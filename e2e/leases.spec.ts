@@ -87,3 +87,47 @@ test.describe('Baux - e2e', () => {
     expect(download.suggestedFilename()).toMatch(/\.docx$/i);
   });
 });
+
+test.describe('Baux - documents attachés', () => {
+  test('Attacher un document à un bail depuis sa page de détail', async ({ page }) => {
+    await resetApp(page);
+
+    const { name: propertyName } = await createProperty(page);
+    const { fullName: tenantFullName } = await createTenant(page);
+    await createLease(page, {
+      startDate: '2025-12-01',
+      endDate: '2026-12-31',
+      propertyName,
+      tenantFullName,
+    });
+
+    // Ouvrir le détail du bail
+    const leaseCard = page.locator('.lease-card', { hasText: propertyName }).first();
+    await expect(leaseCard).toBeVisible({ timeout: 10_000 });
+    await leaseCard.click();
+    await expect(page).toHaveURL(/\/leases\/\d+/, { timeout: 10_000 });
+
+    // La section Documents est présente avec un état vide
+    const section = page.locator('[data-testid="lease-documents"]');
+    await expect(section).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="lease-documents-empty"]')).toBeVisible();
+
+    // Ouvrir le formulaire d'ajout et téléverser un document "Garant"
+    await page.locator('[data-testid="lease-documents-empty"]').getByRole('button').click();
+    await expect(page.locator('[data-testid="lease-documents-upload-form"]')).toBeVisible();
+
+    await page.locator('[data-testid="lease-document-category"]').selectOption('garant');
+    await page.locator('[data-testid="lease-document-file"]').setInputFiles({
+      name: 'garant.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 test garant'),
+    });
+    await page.locator('[data-testid="lease-document-submit"]').click();
+
+    // Le document apparaît dans la liste avec son nom et sa catégorie
+    const list = page.locator('[data-testid="lease-documents-list"]');
+    await expect(list).toBeVisible({ timeout: 10_000 });
+    await expect(list.locator('.document-card', { hasText: 'garant.pdf' })).toHaveCount(1);
+    await expect(list).toContainText('Garant');
+  });
+});
