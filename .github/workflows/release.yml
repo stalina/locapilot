@@ -130,8 +130,6 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
           BRANCH_NAME="release/v${NEW_VERSION}"
-          NODE_ENV="production"
-          BUILD_SECRET_KEY="${{ secrets.BUILD_SECRET_KEY }}"
           
           git checkout -b "$BRANCH_NAME"
           git add package.json package-lock.json RELEASE_NOTES.md
@@ -141,7 +139,10 @@ jobs:
           git commit -m "chore(release): bump version to v${NEW_VERSION}"
           git push origin "$BRANCH_NAME"
           
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT  
+        env:
+          NODE_ENV: production
+          BUILD_SECRET_KEY: ${{ secrets.BUILD_SECRET_KEY }}
 
       - name: Create Pull Request
         id: create_pr
