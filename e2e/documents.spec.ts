@@ -38,3 +38,35 @@ test.describe('Documents - e2e', () => {
     await expect(page.locator('.document-card', { hasText: 'tenants_modal.html' })).toHaveCount(0);
   });
 });
+
+test.describe('Documents - aperçu inline', () => {
+  // 1x1 transparent PNG
+  const PNG_BASE64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMCAQDNxjuiAAAAAElFTkSuQmCC';
+
+  test("Aperçu inline d'une image", async ({ page }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Documents/i, /\/documents/);
+
+    const fileInput = page.locator('.upload-zone input[type=file]').first();
+    await fileInput.setInputFiles({
+      name: 'apercu.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(PNG_BASE64, 'base64'),
+    });
+
+    const card = page.locator('.document-card', { hasText: 'apercu.png' }).first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    // Ouvrir l'aperçu inline
+    await card.locator('[data-testid=document-preview-button]').click();
+
+    const modalImage = page.locator('[data-testid=document-preview-image]');
+    await expect(modalImage).toBeVisible();
+    await expect(modalImage).toHaveAttribute('src', /^blob:/);
+
+    // Fermer l'aperçu
+    await page.locator('[data-testid=document-preview-close]').click();
+    await expect(page.locator('[data-testid=document-preview]')).toHaveCount(0);
+  });
+});

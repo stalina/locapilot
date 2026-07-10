@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDocumentsStore } from '../stores/documentsStore';
+import {
+  loadEntityOptions,
+  type EntityOption,
+  type FilterableEntityType,
+} from '../services/entityOptionsService';
 import DocumentCard from '@/shared/components/DocumentCard.vue';
+import DocumentPreviewModal from '@/shared/components/DocumentPreviewModal.vue';
 import UploadZone from '@/shared/components/UploadZone.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import SearchBox from '@/shared/components/SearchBox.vue';
@@ -14,6 +20,21 @@ const documentsStore = useDocumentsStore();
 const route = useRoute();
 const searchQuery = ref('');
 const filterType = ref<Document['type'] | 'all'>('all');
+const filterEntityType = ref<FilterableEntityType | 'all'>('all');
+const filterEntityId = ref<number | 'all'>('all');
+const entityOptions = ref<EntityOption[]>([]);
+
+const ENTITY_TYPE_LABELS: Array<{ value: FilterableEntityType; label: string }> = [
+  { value: 'property', label: 'Bien' },
+  { value: 'tenant', label: 'Locataire' },
+  { value: 'lease', label: 'Bail' },
+  { value: 'rent', label: 'Loyer' },
+  { value: 'inventory', label: 'État des lieux' },
+];
+
+// Preview modal
+const previewDocument = ref<Document | null>(null);
+const isPreviewOpen = ref(false);
 
 // Filtered documents
 const filteredDocuments = computed(() => {
@@ -43,6 +64,14 @@ const filteredDocuments = computed(() => {
     result = result.filter(
       d => d.relatedEntityType === 'tenant' && d.relatedEntityId === tenantIdQuery
     );
+  }
+
+  // Related-entity filter (UI selects)
+  if (filterEntityType.value !== 'all') {
+    result = result.filter(d => d.relatedEntityType === filterEntityType.value);
+    if (filterEntityId.value !== 'all') {
+      result = result.filter(d => d.relatedEntityId === filterEntityId.value);
+    }
   }
 
   // Search
@@ -98,6 +127,35 @@ async function handleExpiryUpdate(document: Document, date: Date | null) {
 function handleSearch(query: string) {
   searchQuery.value = query;
 }
+
+function handlePreview(document: Document) {
+  previewDocument.value = document;
+  isPreviewOpen.value = true;
+}
+
+async function handlePreviewDownload() {
+  if (previewDocument.value?.id) {
+    await documentsStore.downloadDocument(previewDocument.value.id);
+  }
+}
+
+// Reload the specific-entity options whenever the entity type changes
+watch(filterEntityType, async entityType => {
+  filterEntityId.value = 'all';
+  entityOptions.value = [];
+  if (entityType === 'all') return;
+
+  const ids = documentsStore.documents
+    .filter(d => d.relatedEntityType === entityType && typeof d.relatedEntityId === 'number')
+    .map(d => d.relatedEntityId as number);
+
+  try {
+    entityOptions.value = await loadEntityOptions(entityType, ids);
+  } catch (error) {
+    console.error('Failed to load entity options:', error);
+    entityOptions.value = [];
+  }
+});
 
 // Lifecycle
 onMounted(async () => {
@@ -213,6 +271,35 @@ onMounted(async () => {
           </button>
         </div>
       </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Entité liée</label>
+        <div class="entity-filters">
+          <select
+            v-model="filterEntityType"
+            class="entity-select"
+            data-testid="entity-type-filter"
+            aria-label="Type d'entité liée"
+          >
+            <option value="all">Toutes les entités</option>
+            <option v-for="entity in ENTITY_TYPE_LABELS" :key="entity.value" :value="entity.value">
+              {{ entity.label }}
+            </option>
+          </select>
+          <select
+            v-if="filterEntityType !== 'all'"
+            v-model="filterEntityId"
+            class="entity-select"
+            data-testid="entity-filter"
+            aria-label="Entité liée"
+          >
+            <option value="all">Tous</option>
+            <option v-for="option in entityOptions" :key="option.id" :value="option.id">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -231,7 +318,9 @@ onMounted(async () => {
     <div v-else-if="filteredDocuments.length === 0" class="empty-state">
       <i class="mdi mdi-file-outline"></i>
       <h3>Aucun document trouvé</h3>
-      <p v-if="searchQuery || filterType !== 'all'">Essayez de modifier vos filtres de recherche</p>
+      <p v-if="searchQuery || filterType !== 'all' || filterEntityType !== 'all'">
+        Essayez de modifier vos filtres de recherche
+      </p>
       <p v-else>Commencez par téléverser vos premiers documents</p>
     </div>
 
@@ -241,11 +330,19 @@ onMounted(async () => {
         v-for="document in filteredDocuments"
         :key="document.id"
         :document="document"
+        @preview="handlePreview(document)"
         @download="handleDownload(document)"
         @delete="handleDelete(document)"
         @update-expiry="handleExpiryUpdate(document, $event)"
       />
     </div>
+
+    <!-- Preview Modal -->
+    <DocumentPreviewModal
+      v-model="isPreviewOpen"
+      :document="previewDocument"
+      @download="handlePreviewDownload"
+    />
   </div>
 </template>
 
@@ -255,5 +352,27 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 1rem);
+}
+
+.entity-filters {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.entity-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  background: white;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #0f172a);
+  cursor: pointer;
+}
+
+.entity-select:focus {
+  outline: none;
+  border-color: var(--primary-400, #818cf8);
+  box-shadow: 0 0 0 3px var(--primary-100, #e0e7ff);
 }
 </style>

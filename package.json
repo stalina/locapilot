@@ -24,6 +24,7 @@
     "docxtemplater": "3.67.5",
     "dompurify": "3.4.11",
     "file-saver": "2.0.5",
+    "pdfjs-dist": "^6.1.200",
     "peerjs": "1.5.5",
     "pinia": "3.0.4",
     "pizzip": "3.2.0",
@@ -37,8 +38,8 @@
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "@types/dompurify": "3.0.5",
-    "@types/node": "24.10.1",
     "@types/file-saver": "2.0.3",
+    "@types/node": "24.10.1",
     "@typescript-eslint/eslint-plugin": "8.48.0",
     "@typescript-eslint/parser": "8.48.0",
     "@vitejs/plugin-vue": "^6.0.7",
