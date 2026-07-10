@@ -140,6 +140,93 @@ When I filter by type "invoice" AND search for "EDF"
 Then only invoice documents whose name contains "EDF" are shown
 ```
 
+#### Scenario: Filter by related entity type
+
+```gherkin
+Given documents linked to properties, tenants, and leases exist
+When I select "Property" in the entity filter
+Then only documents with relatedEntityType "property" are displayed
+```
+
+#### Scenario: Filter by a specific related entity
+
+```gherkin
+Given documents linked to property "Appart Gambetta" and property "Studio Belleville" exist
+When I select "Property" in the entity filter
+And I select "Appart Gambetta" in the entity selector
+Then only documents with relatedEntityType "property" and relatedEntityId matching "Appart Gambetta" are displayed
+```
+
+#### Scenario: Reset the entity filter
+
+```gherkin
+Given the entity filter is set to "Property" / "Appart Gambetta"
+When I reset the entity filter to "All entities"
+Then all documents are displayed again (subject to search and type filters)
+```
+
+#### Scenario: Combine entity filter with search and type filter
+
+```gherkin
+Given I have documents linked to several entities
+When I filter by entity "Lease #42" AND type "lease" AND search for "avenant"
+Then only lease documents linked to lease #42 whose name contains "avenant" are shown
+```
+
+---
+
+### Story: Preview a document inline
+
+**As a** landlord  
+**I want to** preview PDFs and images directly in the application  
+**So that** I can review a document without downloading it first
+
+#### Scenario: Preview a PDF document inline
+
+```gherkin
+Given a document of type "lease" with mimeType "application/pdf" exists
+When I click the "Preview" action on the document card
+Then a preview modal opens
+And the PDF is rendered inline inside the modal (via an object URL, without network access)
+And the modal shows the document name and a "Download" action
+```
+
+#### Scenario: Preview an image document inline
+
+```gherkin
+Given a document with mimeType "image/jpeg" exists
+When I click the "Preview" action on the document card
+Then a preview modal opens
+And the image is displayed at full size inside the modal
+```
+
+#### Scenario: Preview unavailable for unsupported file types
+
+```gherkin
+Given a document with mimeType "application/vnd.openxmlformats-officedocument.wordprocessingml.document" exists
+When I look at the document card
+Then no "Preview" action is offered for that document
+And the "Download" action remains available
+```
+
+#### Scenario: Preview fails when binary data is missing or corrupted
+
+```gherkin
+Given a document whose data Blob is missing or unreadable
+When I click the "Preview" action
+Then an error message appears in the preview modal: "Impossible d'afficher l'aperçu de ce document"
+And the "Download" action is still offered as a fallback
+```
+
+#### Scenario: Close the preview
+
+```gherkin
+Given the preview modal is open
+When I click the close button or press Escape
+Then the modal closes
+And the object URL created for the preview is revoked
+```
+
 ---
 
 ### Story: View a document
@@ -152,8 +239,8 @@ Then only invoice documents whose name contains "EDF" are shown
 
 ```gherkin
 Given a document of type "lease" with mimeType "application/pdf" exists
-When I click "View" or "Open" on the document card
-Then the browser opens or previews the PDF
+When I click "Preview" on the document card
+Then the PDF is previewed inline (see "Preview a document inline")
 ```
 
 #### Scenario: Download a document
@@ -162,6 +249,40 @@ Then the browser opens or previews the PDF
 Given any document exists
 When I click "Download"
 Then the file is downloaded to my local filesystem with its original name
+```
+
+---
+
+### Story: Display thumbnails in the documents list
+
+**As a** landlord  
+**I want to** see a visual miniature of each document in the list  
+**So that** I can identify files at a glance
+
+#### Scenario: Image documents show a thumbnail
+
+```gherkin
+Given a document with mimeType "image/png" exists
+When I view the documents list
+Then the document card displays a thumbnail of the image instead of a generic icon
+```
+
+#### Scenario: PDF documents show a first-page thumbnail
+
+```gherkin
+Given a document with mimeType "application/pdf" exists
+When I view the documents list
+Then the document card displays a miniature of the first page of the PDF
+And the miniature is rendered locally, without network access
+```
+
+#### Scenario: Fallback to type icon when a thumbnail cannot be generated
+
+```gherkin
+Given a document whose thumbnail generation fails (corrupted data or unsupported mimeType)
+When I view the documents list
+Then the document card displays the type icon with the file extension badge
+And no error is surfaced to the user
 ```
 
 ---
