@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import type { Document } from '@/db/types';
+import { canPreviewDocument } from '@/shared/utils/documentPreview';
+import { renderPdfFirstPageThumbnail } from '@/shared/utils/pdfThumbnail';
 
 interface Props {
   document: Document;
@@ -9,12 +11,18 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
+  preview: [];
   download: [];
   delete: [];
   'update-expiry': [date: Date | null];
 }>();
 
 const photoPreviewUrl = ref<string | null>(null);
+const pdfThumbnailUrl = ref<string | null>(null);
+
+const canPreview = computed(() => canPreviewDocument(props.document.mimeType));
+
+const isPdf = computed(() => props.document.mimeType === 'application/pdf');
 
 const isPhoto = computed(() => {
   return (
@@ -119,6 +127,10 @@ const expiryInputValue = computed(() => {
   return `${expiresAt.getFullYear()}-${month}-${day}`;
 });
 
+function handlePreview() {
+  emit('preview');
+}
+
 function handleDownload() {
   emit('download');
 }
@@ -178,8 +190,19 @@ function loadPhotoPreview() {
   }
 }
 
+async function loadPdfThumbnail() {
+  if (!isPdf.value) return;
+  try {
+    pdfThumbnailUrl.value = await renderPdfFirstPageThumbnail(props.document);
+  } catch {
+    // Silent fallback to the type icon
+    pdfThumbnailUrl.value = null;
+  }
+}
+
 onMounted(() => {
   loadPhotoPreview();
+  void loadPdfThumbnail();
 });
 
 onUnmounted(() => {
@@ -192,12 +215,22 @@ onUnmounted(() => {
 <template>
   <div class="document-card">
     <!-- Icon/Photo Section -->
-    <div class="document-icon" :style="isPhoto ? {} : { background: typeConfig.gradient }">
+    <div
+      class="document-icon"
+      :style="isPhoto || pdfThumbnailUrl ? {} : { background: typeConfig.gradient }"
+    >
       <img
         v-if="isPhoto && photoPreviewUrl"
         :src="photoPreviewUrl"
         :alt="document.name"
         class="photo-preview"
+      />
+      <img
+        v-else-if="pdfThumbnailUrl"
+        :src="pdfThumbnailUrl"
+        :alt="document.name"
+        class="pdf-thumbnail"
+        data-testid="document-pdf-thumbnail"
       />
       <template v-else>
         <i class="mdi" :class="`mdi-${typeConfig.icon}`"></i>
@@ -251,6 +284,15 @@ onUnmounted(() => {
 
     <!-- Actions Section -->
     <div class="document-actions">
+      <button
+        v-if="canPreview"
+        class="action-button preview"
+        data-testid="document-preview-button"
+        @click="handlePreview"
+        title="Aperçu"
+      >
+        <i class="mdi mdi-eye"></i>
+      </button>
       <button class="action-button download" @click="handleDownload" title="Télécharger">
         <i class="mdi mdi-download"></i>
       </button>
@@ -298,6 +340,14 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.pdf-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  background: white;
 }
 
 .document-icon i {
@@ -454,6 +504,15 @@ onUnmounted(() => {
 
 .action-button:hover {
   transform: scale(1.1);
+}
+
+.action-button.preview {
+  color: var(--accent-600, #0d9488);
+}
+
+.action-button.preview:hover {
+  background: var(--accent-50, #f0fdfa);
+  border-color: var(--accent-300, #5eead4);
 }
 
 .action-button.download {

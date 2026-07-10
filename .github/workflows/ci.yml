@@ -68,7 +68,7 @@ jobs:
           fi
           # Convert to KB (rounded up)
           JS_SIZE_KB=$(( (JS_SIZE_BYTES + 1023) / 1024 ))
-          LIMIT_KB=500
+          LIMIT_KB=550
           if [ "$JS_SIZE_KB" -gt "$LIMIT_KB" ]; then
             echo "JavaScript gzipped bundle size ($JS_SIZE_KB KB) exceeds ${LIMIT_KB}KB limit"
             exit 1

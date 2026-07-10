@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useDocumentsStore } from '@/features/documents/stores/documentsStore';
 import DocumentCard from '@/shared/components/DocumentCard.vue';
+import DocumentPreviewModal from '@/shared/components/DocumentPreviewModal.vue';
 import Button from '@/shared/components/Button.vue';
 import type { Document } from '@/db/types';
 
@@ -78,6 +79,19 @@ async function handleDownload(doc: Document) {
   if (!doc.id) return;
   await documentsStore.downloadDocument(doc.id);
 }
+
+const previewDocument = ref<Document | null>(null);
+const isPreviewOpen = ref(false);
+
+function handlePreview(doc: Document) {
+  previewDocument.value = doc;
+  isPreviewOpen.value = true;
+}
+
+async function handlePreviewDownload() {
+  if (!previewDocument.value?.id) return;
+  await documentsStore.downloadDocument(previewDocument.value.id);
+}
 </script>
 
 <template>
@@ -136,6 +150,7 @@ async function handleDownload(doc: Document) {
           v-for="doc in leaseDocuments"
           :key="doc.id"
           :document="doc"
+          @preview="handlePreview(doc)"
           @download="handleDownload(doc)"
           @delete="handleDelete(doc)"
         />
@@ -146,6 +161,13 @@ async function handleDownload(doc: Document) {
         </Button>
       </div>
     </template>
+
+    <!-- Preview Modal -->
+    <DocumentPreviewModal
+      v-model="isPreviewOpen"
+      :document="previewDocument"
+      @download="handlePreviewDownload"
+    />
   </div>
 </template>
 
