@@ -296,6 +296,28 @@ Then the announcement is saved with the property
 And I can retrieve and copy it from the property detail page
 ```
 
+#### Scenario: Copy the announcement as plain text
+
+```gherkin
+Given a property has a saved announcement with HTML formatting and placeholders (LOYER, CHARGES, GARANTIE)
+When I click "Copier l'annonce" on the property detail page
+Then the placeholders are replaced with the property's financial values
+And the HTML is converted to plain text preserving line breaks
+And the plain text is copied to the clipboard
+And a success notification appears: "Annonce copiée dans le presse-papier"
+```
+
+#### Scenario: Copying an announcement containing malicious HTML executes no script
+
+```gherkin
+Given a property announcement contains a malicious payload such as "<img src=x onerror=alert(1)>" or a "<script>" tag
+  (e.g. injected via a forged JSON backup or a malicious P2P peer)
+When I click "Copier l'annonce"
+Then the HTML is parsed with an inert parser (DOMParser), never via innerHTML on a live element
+And no event handler or script embedded in the announcement is executed
+And only the harmless text content is copied to the clipboard
+```
+
 ---
 
 ### Story: View property statistics on the list
