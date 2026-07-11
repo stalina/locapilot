@@ -59,10 +59,42 @@ describe('documentPreview', () => {
   });
 
   describe('extractDocumentBlob', () => {
-    it('returns the Blob as-is when data is a Blob', () => {
+    it('returns the Blob unchanged when its type already matches the mimeType', () => {
       const blob = new Blob(['hi'], { type: 'image/png' });
       const doc = makeDocument({ data: blob, mimeType: 'image/png' });
       expect(extractDocumentBlob(doc)).toBe(blob);
+    });
+
+    it('re-types a stored Blob with an empty type to the document mimeType', () => {
+      const blob = new Blob(['%PDF-1.7'], { type: '' });
+      const doc = makeDocument({ data: blob, mimeType: 'application/pdf' });
+      const result = extractDocumentBlob(doc);
+      expect(result).toBeInstanceOf(Blob);
+      expect(result).not.toBe(blob);
+      expect(result?.type).toBe('application/pdf');
+    });
+
+    it('corrects a stored Blob whose type differs from the document mimeType', () => {
+      const blob = new Blob(['%PDF-1.7'], { type: 'application/octet-stream' });
+      const doc = makeDocument({ data: blob, mimeType: 'application/pdf' });
+      const result = extractDocumentBlob(doc);
+      expect(result).not.toBe(blob);
+      expect(result?.type).toBe('application/pdf');
+    });
+
+    it('falls back to the blob own type when the document mimeType is empty', () => {
+      const blob = new Blob(['x'], { type: 'image/jpeg' });
+      const doc = makeDocument({ data: blob, mimeType: '' });
+      const result = extractDocumentBlob(doc);
+      expect(result).toBe(blob);
+      expect(result?.type).toBe('image/jpeg');
+    });
+
+    it('falls back to application/octet-stream when both types are empty', () => {
+      const blob = new Blob(['x'], { type: '' });
+      const doc = makeDocument({ data: blob, mimeType: '' });
+      const result = extractDocumentBlob(doc);
+      expect(result?.type).toBe('application/octet-stream');
     });
 
     it('wraps an ArrayBuffer-bearing object into a Blob with the document mimeType', () => {
@@ -88,15 +120,32 @@ describe('documentPreview', () => {
   });
 
   describe('createDocumentPreviewSource', () => {
+    let lastBlob: Blob | null;
+
     beforeEach(() => {
+      lastBlob = null;
       vi.stubGlobal('URL', {
-        createObjectURL: vi.fn(() => 'blob:mock-url'),
+        createObjectURL: vi.fn((blob: Blob) => {
+          lastBlob = blob;
+          return 'blob:mock-url';
+        }),
         revokeObjectURL: vi.fn(),
       });
     });
 
     afterEach(() => {
       vi.unstubAllGlobals();
+    });
+
+    it('builds the object URL from an application/pdf Blob even when the stored Blob had no type', () => {
+      const doc = makeDocument({
+        data: new Blob(['%PDF-1.7'], { type: '' }),
+        mimeType: 'application/pdf',
+      });
+      const source = createDocumentPreviewSource(doc);
+      expect(source?.url).toBe('blob:mock-url');
+      expect(lastBlob).toBeInstanceOf(Blob);
+      expect(lastBlob?.type).toBe('application/pdf');
     });
 
     it('creates an object URL from a Blob and revokes it only once', () => {

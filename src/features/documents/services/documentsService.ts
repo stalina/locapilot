@@ -15,7 +15,10 @@ export function buildDocumentFromFile(
     name: file.name,
     mimeType: file.type,
     size: file.size,
-    data: file.slice(),
+    // Preserve the MIME type on the stored Blob: File.slice() with no
+    // contentType argument yields a Blob whose `.type` is empty, which breaks
+    // inline preview (the <iframe> renders a PDF as raw text). See #45.
+    data: file.slice(0, file.size, file.type),
     createdAt: now,
     updatedAt: now,
   };
