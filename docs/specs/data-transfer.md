@@ -12,6 +12,9 @@ The **data transfer** module allows the landlord to export all application data 
 - Document `Blob` data is included in the export to preserve attached files
 - The raw `exportData()` function (from schema.ts) does NOT include Blob data — only the `dataTransferService` export does full binary preservation
 - Import is transactional: if it fails, the database is not left in a partial state
+- **Strict validation before destruction**: every record of every table in an imported payload MUST be validated against a strict per-entity schema (Zod, `.strict()`, derived from `db/schema.ts` types) BEFORE any `clear()` or write is performed on the database
+- A single non-conforming record (wrong type, missing required field, unknown extra field) rejects the **entire** import — no partial import
+- The same strict validation applies to every import channel: JSON file import AND data received from a P2P peer — there is exactly one validated import path (`importFromObject`)
 
 ## Export Format
 
@@ -123,6 +126,48 @@ And the database is NOT modified (transaction rollback)
 And a notification suggests using a valid backup file
 ```
 
+#### Scenario: Import rejected when a record does not match its entity schema
+
+```gherkin
+Given my database contains 5 properties and 10 tenants
+And I select a backup file where one tenant record has "email" set to a number instead of a string
+When I confirm the import
+Then the strict schema validation fails BEFORE any table is cleared
+And an error appears indicating the import was rejected
+And my existing 5 properties and 10 tenants are still intact
+```
+
+#### Scenario: Import rejected when a record contains unknown fields
+
+```gherkin
+Given I select a backup file where one property record contains an extra field "__proto__" (or any field not defined in the entity schema)
+When I confirm the import
+Then the strict schema validation rejects the unknown field
+And the entire import is aborted
+And the database is NOT modified
+```
+
+#### Scenario: Import rejected when a table is not an array of objects
+
+```gherkin
+Given I select a backup file where "rents" is a string instead of an array
+When I confirm the import
+Then the validation fails before any destructive operation
+And an error appears: the file is reported as an invalid backup
+And the database is NOT modified
+```
+
+#### Scenario: Valid backup passes strict validation and is imported
+
+```gherkin
+Given I select a backup file produced by the Locapilot export feature
+And every record of every table conforms to its entity schema
+When I confirm the import
+Then validation succeeds for all 14 tables
+And only then is the database cleared and repopulated in a single transaction
+And a success notification appears
+```
+
 #### Scenario: Import on a device with existing data
 
 ```gherkin
@@ -217,6 +262,17 @@ When device B is prompted "Recevoir des données... va remplacer vos données lo
 And device B clicks "Annuler"
 Then no import is performed
 And device B's local database remains unchanged
+```
+
+#### Scenario: Malformed P2P payload is rejected by strict validation
+
+```gherkin
+Given device B has authenticated and confirmed the import prompt
+When the decrypted payload from the peer contains a record that violates its entity schema (e.g. a lease with an unknown field or a wrong type)
+Then the same strict schema validation used for file import rejects the payload
+And the rejection happens BEFORE any table is cleared
+And device B's local database remains unchanged
+And an error status is shown to the user
 ```
 
 #### Scenario: Version mismatch between devices

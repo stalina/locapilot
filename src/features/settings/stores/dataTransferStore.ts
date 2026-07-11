@@ -10,9 +10,9 @@ import {
   deserializeTenantDocuments,
   serializeDocuments,
   serializeTenantDocuments,
-  validateExportDataShape,
   type ExportDataPayload,
 } from '../services/dataTransferService';
+import { validateImportPayload } from '../services/importValidationService';
 
 export const useDataTransferStore = defineStore('dataTransfer', () => {
   const isExporting = ref(false);
@@ -68,34 +68,34 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     isImporting.value = true;
     error.value = null;
     try {
-      validateExportDataShape(data);
+      // Strict per-record validation of every table (issue #80, C2). This MUST
+      // happen — and throw — BEFORE any clear()/bulkAdd() reaches the database.
+      // Both import channels (JSON file and P2P sync) go through this method,
+      // so they share this single validated path.
+      const validated = validateImportPayload(data);
 
-      const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
-
-      const docs = asArray((data as any).documents);
-      const docsToAdd = deserializeDocuments(docs);
-      const tenantDocs = asArray((data as any).tenantDocuments);
-      const tenantDocsToAdd = deserializeTenantDocuments(tenantDocs);
+      const docsToAdd = deserializeDocuments(validated.documents);
+      const tenantDocsToAdd = deserializeTenantDocuments(validated.tenantDocuments);
 
       await importBusinessData({
-        properties: (data as any).properties,
-        tenants: (data as any).tenants,
-        leases: (data as any).leases,
-        rents: (data as any).rents,
+        properties: validated.properties,
+        tenants: validated.tenants,
+        leases: validated.leases,
+        rents: validated.rents,
         documents: docsToAdd,
         tenantDocuments: tenantDocsToAdd,
-        tenantAudits: asArray((data as any).tenantAudits),
-        inventories: (data as any).inventories,
-        communications: asArray((data as any).communications),
-        chargesAdjustments: asArray((data as any).chargesAdjustments),
-        irlIndices: asArray((data as any).irlIndices),
-        rentRevisions: asArray((data as any).rentRevisions),
-        reminders: asArray((data as any).reminders),
-        settings: asArray((data as any).settings),
+        tenantAudits: validated.tenantAudits,
+        inventories: validated.inventories,
+        communications: validated.communications,
+        chargesAdjustments: validated.chargesAdjustments,
+        irlIndices: validated.irlIndices,
+        rentRevisions: validated.rentRevisions,
+        reminders: validated.reminders,
+        settings: validated.settings,
       });
     } catch (e) {
       console.error('Import error:', e);
-      error.value = "Erreur lors de l'import";
+      error.value = e instanceof Error ? e.message : "Erreur lors de l'import";
       throw e;
     } finally {
       isImporting.value = false;

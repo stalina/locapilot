@@ -118,13 +118,3 @@ export function deserializeTenantDocuments(
 ): Array<Record<string, unknown>> {
   return tenantDocuments.map(d => deserializeBlobRecord(d as Record<string, unknown>));
 }
-
-export function validateExportDataShape(data: any): asserts data is ExportDataPayload {
-  if (!data || typeof data !== 'object') throw new Error('Format de fichier invalide');
-  if (!Array.isArray(data.properties) || !Array.isArray(data.tenants)) {
-    throw new Error('Format de fichier invalide');
-  }
-  if (!('version' in data)) {
-    throw new Error('Format de fichier invalide');
-  }
-}
