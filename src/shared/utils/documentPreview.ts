@@ -36,7 +36,16 @@ export function extractDocumentBlob(document: Document): Blob | null {
     if (!data) return null;
 
     if (data instanceof Blob) {
-      return data;
+      // Stored Blobs (seeded/imported/uploaded via File.slice()) may carry an
+      // empty or incorrect `.type`. An object URL built from such a Blob is
+      // served with the wrong/empty Content-Type, so an <iframe> renders a PDF
+      // as raw text. Re-type the Blob against the document's declared mimeType
+      // so the preview source always advertises the correct content type.
+      const desiredType = document.mimeType || data.type || 'application/octet-stream';
+      if (data.type === desiredType) {
+        return data;
+      }
+      return data.slice(0, data.size, desiredType);
     }
 
     if (typeof data === 'object' && data !== null) {

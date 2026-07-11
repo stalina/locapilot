@@ -218,6 +218,16 @@ Then an error message appears in the preview modal: "Impossible d'afficher l'ape
 And the "Download" action is still offered as a fallback
 ```
 
+#### Scenario: Preview a PDF stored without an explicit Blob MIME type
+
+```gherkin
+Given a document of type "lease" with mimeType "application/pdf"
+And whose stored data Blob has an empty or incorrect ".type" (e.g. seeded, imported, or uploaded via File.slice())
+When I click the "Preview" action
+Then the preview source is built from a Blob re-typed to "application/pdf"
+And the PDF renders inside the iframe instead of showing its raw bytes as text
+```
+
 #### Scenario: Close the preview
 
 ```gherkin

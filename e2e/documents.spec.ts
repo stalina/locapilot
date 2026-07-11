@@ -70,3 +70,68 @@ test.describe('Documents - aperçu inline', () => {
     await expect(page.locator('[data-testid=document-preview]')).toHaveCount(0);
   });
 });
+
+test.describe('Documents - aperçu PDF sans type MIME sur le Blob', () => {
+  test('un PDF stocké sans type MIME sur son Blob se prévisualise en application/pdf', async ({
+    page,
+  }) => {
+    await resetApp(page);
+
+    // Injecte directement en base un document PDF dont le Blob stocké a un
+    // ".type" vide (cas des données seedées/importées). Reproduit le bug #45.
+    await page.evaluate(async () => {
+      const pdf =
+        '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+        '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n' +
+        '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\n' +
+        'trailer<</Size 4/Root 1 0 R>>\n%%EOF';
+      const blob = new Blob([pdf], { type: '' });
+      const now = new Date();
+      const rec = {
+        name: 'sans-type.pdf',
+        type: 'other',
+        mimeType: 'application/pdf',
+        size: blob.size,
+        data: blob,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const req = indexedDB.open('locapilot');
+      const db: IDBDatabase = await new Promise((res, rej) => {
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+      });
+      await new Promise<void>((res, rej) => {
+        const tx = db.transaction('documents', 'readwrite');
+        tx.objectStore('documents').add(rec);
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      });
+      db.close();
+    });
+
+    await navigateFromSidebar(page, /Documents/i, /\/documents/);
+
+    const card = page.locator('.document-card', { hasText: 'sans-type.pdf' }).first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    await card.locator('[data-testid=document-preview-button]').click();
+
+    const frame = page.locator('[data-testid=document-preview-pdf]');
+    await expect(frame).toBeVisible();
+    await expect(frame).toHaveAttribute('src', /^blob:/);
+    await expect(page.locator('[data-testid=document-preview-error]')).toHaveCount(0);
+
+    // L'URL objet doit être servie avec le bon Content-Type, sinon l'iframe
+    // afficherait les octets bruts (%PDF...) au lieu de rendre le PDF.
+    const contentType = await frame.evaluate(async el => {
+      const src = (el as HTMLIFrameElement).src;
+      const resp = await fetch(src);
+      return resp.headers.get('content-type');
+    });
+    expect(contentType).toBe('application/pdf');
+
+    await page.locator('[data-testid=document-preview-close]').click();
+    await expect(page.locator('[data-testid=document-preview]')).toHaveCount(0);
+  });
+});
