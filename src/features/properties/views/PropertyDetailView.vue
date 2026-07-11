@@ -11,6 +11,7 @@ import PhotoGallery from '@/shared/components/PhotoGallery.vue';
 import RichTextDisplay from '@/shared/components/RichTextDisplay.vue';
 import RichTextEditor from '@/shared/components/RichTextEditor.vue';
 import { formatAnnoncePlaceholders, defaultAnnonceTemplate } from '@/shared/utils/annonceTemplate';
+import { htmlToPlainText } from '@/shared/utils/htmlToPlainText';
 import { useNotification } from '@/shared/composables/useNotification';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
@@ -158,23 +159,9 @@ async function copyAnnonce() {
       GARANTIE: propertiesStore.currentProperty?.deposit,
     });
 
-    // Convert HTML to plain text while preserving line breaks
-    function htmlToPlainText(html: string) {
-      if (!html) return '';
-      // Use DOM parsing to safely convert HTML to text
-      const container = document.createElement('div');
-      container.innerHTML = html;
-      let decoded = container.innerText || container.textContent || '';
-      // Normalize line endings and collapse multiple blank lines
-      decoded = decoded
-        .replace(/\r/g, '')
-        .split('\n')
-        .map(l => l.trimEnd())
-        .join('\n');
-      decoded = decoded.replace(/\n{3,}/g, '\n\n').trim();
-      return decoded;
-    }
-
+    // Convert HTML to plain text via an inert DOMParser document (issue #80,
+    // I1): a malicious annonce (e.g. injected via a forged backup) must never
+    // execute scripts or event handlers.
     const plain = htmlToPlainText(withPlaceholders);
     await navigator.clipboard.writeText(plain);
     notifySuccess('Annonce copiée dans le presse-papier');

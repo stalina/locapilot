@@ -85,3 +85,100 @@ test.describe('Settings - e2e', () => {
     await expect(ownerCardAfter.locator('input[type="text"]')).toHaveValue(newName);
   });
 });
+
+test.describe('Settings - Import strict validation (#80 C2)', () => {
+  const iso = '2026-01-01T00:00:00.000Z';
+
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+  });
+
+  test('Cas principal : un backup valide est importé, un backup corrompu est rejeté sans perte de données', async ({
+    page,
+  }) => {
+    const villaName = `E2E Import Villa ${Date.now()}`;
+
+    const validBackup = {
+      properties: [
+        {
+          id: 1,
+          name: villaName,
+          address: '1 rue de l Import',
+          type: 'house',
+          surface: 120,
+          rooms: 5,
+          rent: 1500,
+          charges: 100,
+          status: 'vacant',
+          createdAt: iso,
+          updatedAt: iso,
+        },
+      ],
+      tenants: [],
+      version: '1.0.0',
+    };
+
+    // Un seul enregistrement corrompu (email en nombre) doit rejeter TOUT l'import.
+    const corruptedBackup = {
+      properties: [],
+      tenants: [
+        {
+          id: 1,
+          firstName: 'Jean',
+          lastName: 'Dupont',
+          email: 12345,
+          phone: '0601020304',
+          status: 'active',
+          createdAt: iso,
+          updatedAt: iso,
+        },
+      ],
+      version: '1.0.0',
+    };
+
+    // Confirmations (« remplacer les données ») et alerts sont acceptées.
+    page.on('dialog', dialog => dialog.accept().catch(() => {}));
+
+    const importButton = page
+      .locator('.setting-card', { hasText: 'Importer les données' })
+      .getByRole('button', { name: /Importer/i });
+    await expect(importButton).toBeVisible({ timeout: 10_000 });
+
+    // 1) Import d'un backup VALIDE → succès, données présentes.
+    const [chooser1] = await Promise.all([page.waitForEvent('filechooser'), importButton.click()]);
+    await chooser1.setFiles({
+      name: 'backup-valide.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(validBackup)),
+    });
+
+    // L'app redirige vers l'accueil après un import réussi.
+    await page.waitForURL(/\/$|\/dashboard/, { timeout: 10_000 }).catch(() => {});
+
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+    await expect(page.locator('.property-card', { hasText: villaName }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // 2) Import d'un backup CORROMPU → rejeté, données existantes intactes.
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+    const importButton2 = page
+      .locator('.setting-card', { hasText: 'Importer les données' })
+      .getByRole('button', { name: /Importer/i });
+    await expect(importButton2).toBeVisible({ timeout: 10_000 });
+
+    const [chooser2] = await Promise.all([page.waitForEvent('filechooser'), importButton2.click()]);
+    await chooser2.setFiles({
+      name: 'backup-corrompu.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(corruptedBackup)),
+    });
+
+    // La villa importée au préalable doit toujours être là (aucune destruction).
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+    await expect(page.locator('.property-card', { hasText: villaName }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+});
