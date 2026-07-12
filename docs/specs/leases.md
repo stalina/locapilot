@@ -8,21 +8,24 @@ Leases also support a **charges adjustment** system that allows yearly reconcili
 
 ## Data Model
 
-| Field        | Type     | Description                                     |
-| ------------ | -------- | ----------------------------------------------- |
-| `id`         | number   | Auto-generated primary key                      |
-| `propertyId` | number   | Reference to the rented property                |
-| `tenantIds`  | number[] | One or more tenant IDs (co-tenants supported)   |
-| `startDate`  | Date     | Lease start date                                |
-| `endDate`    | Date?    | Lease end date (optional for open-ended leases) |
-| `rent`       | number   | Monthly rent amount (€)                         |
-| `charges`    | number   | Monthly charges provision (€)                   |
-| `deposit`    | number   | Security deposit amount (€)                     |
-| `paymentDay` | number   | Day of month for rent payment (1–31)            |
-| `status`     | enum     | `pending` \| `active` \| `ended`                |
-| `documentId` | number?  | Reference to the signed lease PDF (Document)    |
-| `createdAt`  | Date     | Creation timestamp                              |
-| `updatedAt`  | Date     | Last update timestamp                           |
+| Field                   | Type     | Description                                                                                                   |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `id`                    | number   | Auto-generated primary key                                                                                    |
+| `propertyId`            | number   | Reference to the rented property                                                                              |
+| `tenantIds`             | number[] | One or more tenant IDs (co-tenants supported)                                                                 |
+| `startDate`             | Date     | Lease start date                                                                                              |
+| `endDate`               | Date?    | Lease end date (optional for open-ended leases)                                                               |
+| `rent`                  | number   | Monthly rent amount (€)                                                                                       |
+| `charges`               | number   | Monthly charges provision (€)                                                                                 |
+| `deposit`               | number   | Security deposit amount (€)                                                                                   |
+| `depositReceivedDate`   | Date?    | Date the security deposit was received from the tenant. Empty means "not yet received".                       |
+| `depositReturnedDate`   | Date?    | Date the security deposit was returned to the tenant at the end of the lease. Empty means "not yet returned". |
+| `depositReturnedAmount` | number?  | Amount actually returned to the tenant (may be less than `deposit` when deductions apply).                    |
+| `paymentDay`            | number   | Day of month for rent payment (1–31)                                                                          |
+| `status`                | enum     | `pending` \| `active` \| `ended`                                                                              |
+| `documentId`            | number?  | Reference to the signed lease PDF (Document)                                                                  |
+| `createdAt`             | Date     | Creation timestamp                                                                                            |
+| `updatedAt`             | Date     | Last update timestamp                                                                                         |
 
 ### ChargesAdjustmentRow (yearly charges reconciliation)
 
@@ -82,6 +85,9 @@ When a lease is terminated:
 - `rent` must be strictly greater than 0
 - `charges` must be ≥ 0
 - `deposit` must be ≥ 0
+- `depositReturnedAmount`, if provided, must be ≥ 0 and ≤ `deposit`
+- `depositReturnedDate`, if provided, must be on or after `depositReceivedDate`
+- A deposit can only be marked as returned once it has been marked as received
 - `paymentDay` must be between 1 and 31
 - A property can only have one `active` lease at a time
 - A lease must reference at least one tenant
@@ -420,4 +426,187 @@ Given lease #42 has a generated "Attestation de remise des clés" and a manually
 When I open the "Documents" section of the lease detail page
 Then the manually attached documents are listed alongside the generated ones without duplication
 And both uploading and generation target relatedEntityType "lease" with relatedEntityId 42
+```
+
+---
+
+### Story: Record security deposit reception
+
+**As a** landlord  
+**I want to** mark the security deposit as received on a lease, with the date it was received  
+**So that** I can track that the tenant has paid the deposit (usually equal to one month's rent)
+
+#### Scenario: Mark the deposit as received
+
+```gherkin
+Given an active lease "Studio Belleville" with a deposit of "750 €" and no reception recorded
+When I open the "Dépôt de garantie" section of the lease detail page
+And I click "Marquer comme reçu"
+And I fill in the reception date "2026-01-03"
+And I confirm
+Then the lease's depositReceivedDate is set to "2026-01-03"
+And the section shows the deposit as received on "03/01/2026"
+And the updatedAt timestamp is refreshed
+```
+
+#### Scenario: Reception date defaults to today
+
+```gherkin
+Given today is "2026-01-05"
+And an active lease with a deposit of "750 €" and no reception recorded
+When I open the deposit reception dialog
+Then the reception date field is pre-filled with "2026-01-05"
+```
+
+#### Scenario: Deposit reception status is visible at a glance
+
+```gherkin
+Given a lease whose deposit has not been received
+When I view the lease detail page
+Then the deposit is flagged as "Non reçu"
+And a call to action "Marquer comme reçu" is offered
+```
+
+#### Scenario: Correct a wrongly recorded reception
+
+```gherkin
+Given a lease with depositReceivedDate "2026-01-03"
+When I edit the reception date to "2026-01-04"
+And I confirm
+Then the lease's depositReceivedDate is updated to "2026-01-04"
+```
+
+---
+
+### Story: Record security deposit restitution
+
+**As a** landlord  
+**I want to** mark the security deposit as returned at the end of a lease, with the date and the amount actually returned  
+**So that** I can track the restitution and any deductions retained for repairs or unpaid rent
+
+#### Scenario: Return the full deposit
+
+```gherkin
+Given an ended lease with a deposit of "750 €" received on "2026-01-03"
+When I open the "Dépôt de garantie" section
+And I click "Enregistrer la restitution"
+And I fill in the restitution date "2027-01-15"
+And I fill in the returned amount "750"
+And I confirm
+Then the lease's depositReturnedDate is set to "2027-01-15"
+And the lease's depositReturnedAmount is set to "750"
+And the section shows the deposit as returned in full on "15/01/2027"
+```
+
+#### Scenario: Return a partial deposit with deductions
+
+```gherkin
+Given an ended lease with a deposit of "750 €" received on "2026-01-03"
+When I record a restitution date "2027-01-15" and a returned amount of "600"
+Then the lease's depositReturnedAmount is set to "600"
+And the section shows that "150 €" were retained
+```
+
+#### Scenario: Attempt to return more than the deposit
+
+```gherkin
+Given a lease with a deposit of "750 €"
+When I set the returned amount to "800"
+Then a validation error appears: "Le montant restitué ne peut pas dépasser le dépôt"
+And the restitution is not saved
+```
+
+#### Scenario: Attempt to record restitution before reception
+
+```gherkin
+Given a lease whose deposit has not been marked as received
+When I open the deposit restitution dialog
+Then the restitution action is disabled
+And a hint explains that the deposit must first be marked as received
+```
+
+#### Scenario: Attempt a restitution date before the reception date
+
+```gherkin
+Given a lease with depositReceivedDate "2026-01-03"
+When I set the restitution date to "2025-12-01"
+Then a validation error appears: "La date de restitution doit être postérieure à la réception"
+And the restitution is not saved
+```
+
+---
+
+### Story: Generate a deposit reception receipt document
+
+**As a** landlord  
+**I want to** generate a document acknowledging receipt of the security deposit and the first month's rent  
+**So that** the tenant has a written proof of the sums paid at the start of the lease
+
+#### Scenario: Generate the reception receipt
+
+```gherkin
+Given an active lease "Studio Belleville" for tenant "M. Dupont Jean"
+And a rent of "750 €", charges of "80 €" and a deposit of "750 €"
+And the deposit has been marked as received on "2026-01-03"
+When I click "Reçu dépôt de garantie et 1er loyer" in the lease documents actions
+Then a DOCX is generated from the "templateReceptionDepot.docx" template
+And it lists the landlord, the property, all tenants of the lease
+And it shows the deposit amount "750 €", the first month rent "750 €" and charges "80 €"
+And it shows the total sum received and the reception date "03/01/2026"
+And the generated document is attached to the lease with relatedEntityType "lease"
+```
+
+#### Scenario: Reception receipt lists all co-tenants
+
+```gherkin
+Given an active lease with co-tenants "M. Dupont Jean" and "Mme Martin Marie"
+When I generate the deposit reception receipt
+Then the tenant field shows "M. Dupont Jean et Mme Martin Marie"
+```
+
+#### Scenario: Reception receipt requires a recorded reception
+
+```gherkin
+Given a lease whose deposit has not been marked as received
+When I look at the lease documents actions
+Then the "Reçu dépôt de garantie et 1er loyer" action is disabled
+And a hint explains the deposit must be marked as received first
+```
+
+---
+
+### Story: Generate a deposit restitution document
+
+**As a** landlord  
+**I want to** generate a document confirming the restitution of the security deposit at the end of the lease  
+**So that** the tenant has written proof of the returned amount and of any deductions
+
+#### Scenario: Generate the restitution document
+
+```gherkin
+Given an ended lease "Studio Belleville" for tenant "M. Dupont Jean"
+And a deposit of "750 €" returned in full on "2027-01-15"
+When I click "Restitution dépôt de garantie" in the lease documents actions
+Then a DOCX is generated from the "templateRestitutionDepot.docx" template
+And it lists the landlord, the property and all tenants of the lease
+And it shows the original deposit "750 €", the returned amount "750 €" and any deductions
+And it shows the restitution date "15/01/2027"
+And the generated document is attached to the lease with relatedEntityType "lease"
+```
+
+#### Scenario: Restitution document reflects deductions
+
+```gherkin
+Given an ended lease with a deposit of "750 €" and a returned amount of "600 €"
+When I generate the deposit restitution document
+Then it shows a returned amount of "600 €" and deductions of "150 €"
+```
+
+#### Scenario: Restitution document requires a recorded restitution
+
+```gherkin
+Given a lease whose deposit restitution has not been recorded
+When I look at the lease documents actions
+Then the "Restitution dépôt de garantie" action is disabled
+And a hint explains the restitution must be recorded first
 ```

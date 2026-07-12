@@ -53,6 +53,9 @@ export interface Lease {
   rent: number;
   charges: number;
   deposit: number;
+  depositReceivedDate?: Date; // Date the security deposit was received (empty = not yet received)
+  depositReturnedDate?: Date; // Date the security deposit was returned (empty = not yet returned)
+  depositReturnedAmount?: number; // Amount actually returned (may be < deposit when deductions apply)
   paymentDay: number; // Day of month (1-31)
   status: 'active' | 'ended' | 'pending';
   documentId?: number; // PDF of lease contract
@@ -412,6 +415,26 @@ export class LocapilotDB extends Dexie {
 
     // Version 9: Add reminders table for rent-arrears follow-up letters — issue #40
     this.version(9).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
+      irlIndices: '++id, year, quarter, [year+quarter]',
+      rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
+      reminders: '++id, rentId, level, [rentId+level]',
+    });
+
+    // Version 10: Leases gain security deposit reception/restitution tracking
+    // (depositReceivedDate, depositReturnedDate, depositReturnedAmount) — issue #104.
+    // Non-indexed optional object fields: no index changes and no data migration required.
+    this.version(10).stores({
       properties: '++id, name, address, type, surface, status, createdAt',
       tenants: '++id, firstName, lastName, email, phone, status, createdAt',
       leases: '++id, propertyId, startDate, endDate, status, createdAt',

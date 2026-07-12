@@ -23,6 +23,12 @@ import {
   prepareMandatLocationData,
   generateMandatLocation,
   saveMandatLocationToDb,
+  prepareDepositReceptionData,
+  generateDepositReceptionReceipt,
+  saveDepositReceptionToDb,
+  prepareDepositRestitutionData,
+  generateDepositRestitutionDocument,
+  saveDepositRestitutionToDb,
   downloadBlob,
 } from '@/shared/services/documentGenerator';
 
@@ -272,6 +278,178 @@ const handleDownloadExistingMandat = async () => {
     console.error('Failed to download existing mandat:', error);
   }
 };
+
+// ========== Dépôt de garantie : réception & restitution — issue #104 ==========
+
+const toIsoDate = (d: Date | string): string => {
+  const date = new Date(d);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+const formatDate = (d: Date | string): string => new Date(d).toLocaleDateString('fr-FR');
+
+const depositReceived = computed(() => !!lease.value?.depositReceivedDate);
+const depositReturned = computed(() => !!lease.value?.depositReturnedDate);
+
+const formattedDepositReceivedDate = computed(() =>
+  lease.value?.depositReceivedDate ? formatDate(lease.value.depositReceivedDate) : ''
+);
+const formattedDepositReturnedDate = computed(() =>
+  lease.value?.depositReturnedDate ? formatDate(lease.value.depositReturnedDate) : ''
+);
+const depositDeductions = computed(() => {
+  if (!lease.value || typeof lease.value.depositReturnedAmount !== 'number') return 0;
+  return Math.max(0, lease.value.deposit - lease.value.depositReturnedAmount);
+});
+
+const showReceptionForm = ref(false);
+const receptionDateInput = ref(toIsoDate(new Date()));
+const showRestitutionForm = ref(false);
+const restitutionDateInput = ref(toIsoDate(new Date()));
+const restitutionAmountInput = ref<number | null>(null);
+const depositError = ref('');
+
+const openReceptionForm = () => {
+  depositError.value = '';
+  receptionDateInput.value = lease.value?.depositReceivedDate
+    ? toIsoDate(lease.value.depositReceivedDate)
+    : toIsoDate(new Date());
+  showReceptionForm.value = true;
+};
+
+const submitReception = async () => {
+  if (!lease.value?.id) return;
+  depositError.value = '';
+  try {
+    await leasesStore.recordDepositReception(lease.value.id, new Date(receptionDateInput.value));
+    showReceptionForm.value = false;
+  } catch (error) {
+    depositError.value =
+      error instanceof Error ? error.message : 'Échec de l’enregistrement de la réception';
+  }
+};
+
+const openRestitutionForm = () => {
+  if (!depositReceived.value) return;
+  depositError.value = '';
+  restitutionDateInput.value = lease.value?.depositReturnedDate
+    ? toIsoDate(lease.value.depositReturnedDate)
+    : toIsoDate(new Date());
+  restitutionAmountInput.value =
+    typeof lease.value?.depositReturnedAmount === 'number'
+      ? lease.value.depositReturnedAmount
+      : (lease.value?.deposit ?? null);
+  showRestitutionForm.value = true;
+};
+
+const submitRestitution = async () => {
+  if (!lease.value?.id) return;
+  depositError.value = '';
+  const amount = Number(restitutionAmountInput.value);
+  try {
+    await leasesStore.recordDepositRestitution(
+      lease.value.id,
+      new Date(restitutionDateInput.value),
+      amount
+    );
+    showRestitutionForm.value = false;
+  } catch (error) {
+    depositError.value =
+      error instanceof Error ? error.message : 'Échec de l’enregistrement de la restitution';
+  }
+};
+
+// --- Documents de dépôt de garantie ---
+const existingDepositReceptionDocument = computed(() => {
+  if (!lease.value?.id) return null;
+  return documentsStore.documents.find(
+    doc =>
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === lease.value!.id &&
+      doc.description === 'Reçu dépôt de garantie et 1er loyer'
+  );
+});
+
+const existingDepositRestitutionDocument = computed(() => {
+  if (!lease.value?.id) return null;
+  return documentsStore.documents.find(
+    doc =>
+      doc.relatedEntityType === 'lease' &&
+      doc.relatedEntityId === lease.value!.id &&
+      doc.description === 'Restitution dépôt de garantie'
+  );
+});
+
+const handleGenerateDepositReception = async () => {
+  if (!lease.value?.id || !depositReceived.value) return;
+  try {
+    const data = await prepareDepositReceptionData(lease.value.id);
+    const { blob, filename } = await generateDepositReceptionReceipt(data);
+
+    const shouldSave = await confirm({
+      title: 'Sauvegarder le reçu de dépôt de garantie',
+      message:
+        'Voulez-vous sauvegarder ce reçu dans la base documentaire ? Vous pourrez le retrouver facilement dans la section Documents.',
+      confirmText: 'Sauvegarder et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      await saveDepositReceptionToDb(lease.value.id, blob, filename);
+      await documentsStore.fetchDocuments();
+    }
+
+    downloadBlob(blob, filename);
+  } catch (error) {
+    console.error('Failed to generate deposit reception receipt:', error);
+  }
+};
+
+const handleDownloadExistingDepositReception = async () => {
+  if (!existingDepositReceptionDocument.value?.id) return;
+  try {
+    await documentsStore.downloadDocument(existingDepositReceptionDocument.value.id);
+  } catch (error) {
+    console.error('Failed to download existing deposit reception receipt:', error);
+  }
+};
+
+const handleGenerateDepositRestitution = async () => {
+  if (!lease.value?.id || !depositReturned.value) return;
+  try {
+    const data = await prepareDepositRestitutionData(lease.value.id);
+    const { blob, filename } = await generateDepositRestitutionDocument(data);
+
+    const shouldSave = await confirm({
+      title: 'Sauvegarder le document de restitution',
+      message:
+        'Voulez-vous sauvegarder ce document dans la base documentaire ? Vous pourrez le retrouver facilement dans la section Documents.',
+      confirmText: 'Sauvegarder et télécharger',
+      cancelText: 'Télécharger uniquement',
+      type: 'info',
+    });
+
+    if (shouldSave) {
+      await saveDepositRestitutionToDb(lease.value.id, blob, filename);
+      await documentsStore.fetchDocuments();
+    }
+
+    downloadBlob(blob, filename);
+  } catch (error) {
+    console.error('Failed to generate deposit restitution document:', error);
+  }
+};
+
+const handleDownloadExistingDepositRestitution = async () => {
+  if (!existingDepositRestitutionDocument.value?.id) return;
+  try {
+    await documentsStore.downloadDocument(existingDepositRestitutionDocument.value.id);
+  } catch (error) {
+    console.error('Failed to download existing deposit restitution document:', error);
+  }
+};
 </script>
 
 <template>
@@ -408,6 +586,146 @@ const handleDownloadExistingMandat = async () => {
               <div class="info-item">
                 <span class="info-label">Dépôt de garantie</span>
                 <span class="info-value"> {{ lease.deposit.toLocaleString('fr-FR') }} € </span>
+              </div>
+            </div>
+          </Card>
+
+          <!-- Dépôt de garantie : réception & restitution -->
+          <Card>
+            <div class="card-header">
+              <h2>
+                <i class="mdi mdi-shield-lock-outline"></i>
+                Dépôt de garantie
+              </h2>
+            </div>
+            <div class="deposit-section" data-testid="deposit-section">
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Montant du dépôt</span>
+                  <span class="info-value">{{ lease.deposit.toLocaleString('fr-FR') }} €</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Réception</span>
+                  <span class="info-value" data-testid="deposit-reception-status">
+                    <template v-if="depositReceived">
+                      Reçu le {{ formattedDepositReceivedDate }}
+                    </template>
+                    <template v-else>Non reçu</template>
+                  </span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Restitution</span>
+                  <span class="info-value" data-testid="deposit-restitution-status">
+                    <template v-if="depositReturned">
+                      Restitué le {{ formattedDepositReturnedDate }} —
+                      {{ (lease.depositReturnedAmount ?? 0).toLocaleString('fr-FR') }} €
+                      <template v-if="depositDeductions > 0">
+                        ({{ depositDeductions.toLocaleString('fr-FR') }} € retenus)
+                      </template>
+                    </template>
+                    <template v-else>Non restitué</template>
+                  </span>
+                </div>
+              </div>
+
+              <p v-if="depositError" class="deposit-error" data-testid="deposit-error">
+                {{ depositError }}
+              </p>
+
+              <div class="deposit-actions">
+                <Button
+                  variant="outline"
+                  icon="check"
+                  data-testid="deposit-mark-received"
+                  @click="openReceptionForm"
+                >
+                  {{ depositReceived ? 'Modifier la réception' : 'Marquer comme reçu' }}
+                </Button>
+                <Button
+                  variant="outline"
+                  icon="cash-refund"
+                  :disabled="!depositReceived"
+                  :title="
+                    !depositReceived
+                      ? 'Le dépôt doit d’abord être marqué comme reçu'
+                      : undefined
+                  "
+                  data-testid="deposit-record-restitution"
+                  @click="openRestitutionForm"
+                >
+                  Enregistrer la restitution
+                </Button>
+              </div>
+              <p v-if="!depositReceived" class="deposit-hint">
+                La restitution est possible une fois le dépôt marqué comme reçu.
+              </p>
+
+              <!-- Formulaire de réception -->
+              <div
+                v-if="showReceptionForm"
+                class="deposit-form"
+                data-testid="deposit-reception-form"
+              >
+                <label class="deposit-field">
+                  <span>Date de réception</span>
+                  <input
+                    v-model="receptionDateInput"
+                    type="date"
+                    data-testid="deposit-reception-date"
+                  />
+                </label>
+                <div class="deposit-form-actions">
+                  <Button variant="outline" @click="showReceptionForm = false">Annuler</Button>
+                  <Button
+                    variant="primary"
+                    data-testid="deposit-reception-submit"
+                    @click="submitReception"
+                  >
+                    Confirmer
+                  </Button>
+                </div>
+              </div>
+
+              <!-- Formulaire de restitution -->
+              <div
+                v-if="showRestitutionForm"
+                class="deposit-form"
+                data-testid="deposit-restitution-form"
+              >
+                <label class="deposit-field">
+                  <span>Date de restitution</span>
+                  <input
+                    v-model="restitutionDateInput"
+                    type="date"
+                    data-testid="deposit-restitution-date"
+                  />
+                </label>
+                <label class="deposit-field">
+                  <span>Montant restitué (€)</span>
+                  <input
+                    v-model.number="restitutionAmountInput"
+                    type="number"
+                    min="0"
+                    :max="lease.deposit"
+                    step="0.01"
+                    data-testid="deposit-restitution-amount"
+                  />
+                </label>
+                <p class="deposit-hint">
+                  Retenues estimées :
+                  {{ Math.max(0, lease.deposit - (Number(restitutionAmountInput) || 0)).toLocaleString('fr-FR') }}
+                  €
+                </p>
+                <div class="deposit-form-actions">
+                  <Button variant="outline" @click="showRestitutionForm = false">Annuler</Button>
+                  <Button
+                    variant="primary"
+                    data-testid="deposit-restitution-submit"
+                    @click="submitRestitution"
+                  >
+                    Confirmer
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -573,6 +891,48 @@ const handleDownloadExistingMandat = async () => {
               >
                 Télécharger le mandat
               </Button>
+              <Button
+                v-if="!existingDepositReceptionDocument"
+                variant="outline"
+                icon="cash-check"
+                :disabled="!depositReceived"
+                :title="
+                  !depositReceived ? 'Le dépôt doit d’abord être marqué comme reçu' : undefined
+                "
+                data-testid="deposit-reception-doc"
+                @click="handleGenerateDepositReception"
+              >
+                Reçu dépôt de garantie et 1er loyer
+              </Button>
+              <Button
+                v-else
+                variant="outline"
+                icon="download"
+                @click="handleDownloadExistingDepositReception"
+              >
+                Télécharger le reçu de dépôt
+              </Button>
+              <Button
+                v-if="!existingDepositRestitutionDocument"
+                variant="outline"
+                icon="cash-refund"
+                :disabled="!depositReturned"
+                :title="
+                  !depositReturned ? 'La restitution doit d’abord être enregistrée' : undefined
+                "
+                data-testid="deposit-restitution-doc"
+                @click="handleGenerateDepositRestitution"
+              >
+                Restitution dépôt de garantie
+              </Button>
+              <Button
+                v-else
+                variant="outline"
+                icon="download"
+                @click="handleDownloadExistingDepositRestitution"
+              >
+                Télécharger la restitution
+              </Button>
             </div>
           </Card>
 
@@ -614,5 +974,62 @@ const handleDownloadExistingMandat = async () => {
   align-items: center;
   gap: var(--space-1, 0.25rem);
   color: var(--text-secondary, #64748b);
+}
+
+.deposit-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.deposit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+}
+
+.deposit-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.deposit-error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-error, #dc2626);
+}
+
+.deposit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--surface-secondary, #f8fafc);
+}
+
+.deposit-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.deposit-field input {
+  padding: var(--space-2, 0.5rem);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-sm, 0.375rem);
+  font-size: 0.95rem;
+  color: var(--text-primary, #0f172a);
+  background: var(--surface-primary, #ffffff);
+}
+
+.deposit-form-actions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  justify-content: flex-end;
 }
 </style>

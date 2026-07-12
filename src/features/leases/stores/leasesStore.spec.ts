@@ -9,6 +9,8 @@ vi.mock('../repositories/leasesRepository', () => ({
   createLease: vi.fn(),
   updateLease: vi.fn(),
   deleteLease: vi.fn(),
+  recordDepositReception: vi.fn(),
+  recordDepositRestitution: vi.fn(),
 }));
 
 import {
@@ -17,6 +19,8 @@ import {
   createLease,
   updateLease,
   deleteLease,
+  recordDepositReception,
+  recordDepositRestitution,
 } from '../repositories/leasesRepository';
 
 describe('leasesStore', () => {
@@ -274,6 +278,149 @@ describe('leasesStore', () => {
       store.clearError();
 
       expect(store.error).toBeNull();
+    });
+  });
+
+  describe('Security deposit reception', () => {
+    const baseLease = (): Lease => ({
+      id: 1,
+      propertyId: 1,
+      tenantIds: [1],
+      startDate: new Date('2026-01-01'),
+      rent: 750,
+      charges: 80,
+      deposit: 750,
+      paymentDay: 5,
+      status: 'active',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
+    });
+
+    it('records the deposit reception and refreshes state', async () => {
+      const store = useLeasesStore();
+      const lease = baseLease();
+      store.leases = [lease];
+      store.currentLease = lease;
+
+      const receivedDate = new Date('2026-01-03');
+      const updated = { ...lease, depositReceivedDate: receivedDate, updatedAt: new Date() };
+      vi.mocked(recordDepositReception).mockResolvedValue(updated as Lease);
+
+      await store.recordDepositReception(1, receivedDate);
+
+      expect(recordDepositReception).toHaveBeenCalledWith(1, receivedDate);
+      expect(store.leases[0]!.depositReceivedDate).toEqual(receivedDate);
+      expect(store.currentLease!.depositReceivedDate).toEqual(receivedDate);
+      expect(store.error).toBeNull();
+    });
+
+    it('rejects an invalid reception date without writing', async () => {
+      const store = useLeasesStore();
+      store.leases = [baseLease()];
+
+      await expect(
+        store.recordDepositReception(1, new Date('not-a-date'))
+      ).rejects.toThrow(/date de réception/i);
+      expect(recordDepositReception).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Security deposit restitution', () => {
+    const receivedLease = (): Lease => ({
+      id: 1,
+      propertyId: 1,
+      tenantIds: [1],
+      startDate: new Date('2026-01-01'),
+      rent: 750,
+      charges: 80,
+      deposit: 750,
+      depositReceivedDate: new Date('2026-01-03'),
+      paymentDay: 5,
+      status: 'ended',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
+    });
+
+    it('records a full restitution', async () => {
+      const store = useLeasesStore();
+      const lease = receivedLease();
+      store.leases = [lease];
+      store.currentLease = lease;
+
+      const returnedDate = new Date('2027-01-15');
+      const updated = {
+        ...lease,
+        depositReturnedDate: returnedDate,
+        depositReturnedAmount: 750,
+      };
+      vi.mocked(recordDepositRestitution).mockResolvedValue(updated as Lease);
+
+      await store.recordDepositRestitution(1, returnedDate, 750);
+
+      expect(recordDepositRestitution).toHaveBeenCalledWith(1, returnedDate, 750);
+      expect(store.leases[0]!.depositReturnedAmount).toBe(750);
+      expect(store.currentLease!.depositReturnedDate).toEqual(returnedDate);
+    });
+
+    it('records a partial restitution with deductions', async () => {
+      const store = useLeasesStore();
+      const lease = receivedLease();
+      store.leases = [lease];
+
+      const returnedDate = new Date('2027-01-15');
+      vi.mocked(recordDepositRestitution).mockResolvedValue({
+        ...lease,
+        depositReturnedDate: returnedDate,
+        depositReturnedAmount: 600,
+      } as Lease);
+
+      await store.recordDepositRestitution(1, returnedDate, 600);
+
+      expect(store.leases[0]!.depositReturnedAmount).toBe(600);
+    });
+
+    it('rejects a returned amount greater than the deposit', async () => {
+      const store = useLeasesStore();
+      store.leases = [receivedLease()];
+
+      await expect(
+        store.recordDepositRestitution(1, new Date('2027-01-15'), 800)
+      ).rejects.toThrow('Le montant restitué ne peut pas dépasser le dépôt');
+      expect(recordDepositRestitution).not.toHaveBeenCalled();
+      // Validation failures must not clobber the store-wide fatal error state.
+      expect(store.error).toBeNull();
+    });
+
+    it('rejects a restitution date before the reception date', async () => {
+      const store = useLeasesStore();
+      store.leases = [receivedLease()];
+
+      await expect(
+        store.recordDepositRestitution(1, new Date('2025-12-01'), 750)
+      ).rejects.toThrow('La date de restitution doit être postérieure à la réception');
+      expect(recordDepositRestitution).not.toHaveBeenCalled();
+    });
+
+    it('rejects restitution before reception is recorded', async () => {
+      const store = useLeasesStore();
+      const lease = receivedLease();
+      delete lease.depositReceivedDate;
+      store.leases = [lease];
+
+      await expect(
+        store.recordDepositRestitution(1, new Date('2027-01-15'), 750)
+      ).rejects.toThrow(/marqué comme reçu/i);
+      expect(recordDepositRestitution).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the lease is not in the store', async () => {
+      const store = useLeasesStore();
+      store.leases = [];
+      store.currentLease = null;
+
+      await expect(
+        store.recordDepositRestitution(1, new Date('2027-01-15'), 750)
+      ).rejects.toThrow('Bail introuvable');
     });
   });
 });
