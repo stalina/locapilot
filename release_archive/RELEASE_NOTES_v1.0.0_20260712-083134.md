@@ -1,5 +1,3 @@
-Release v1.1.0 — minor release
-
 Release v1.0.0 — major release
 
 Release v0.2.0 — minor release
@@ -19,7 +17,3 @@ Generated on 2026-06-28 17:39:51
 ---
 
 Generated on 2026-07-05 20:12:54
-
----
-
-Generated on 2026-07-12 08:31:34
