@@ -1209,6 +1209,317 @@ export async function prepareMandatLocationData(leaseId: number): Promise<Mandat
   };
 }
 
+// ========== Dépôt de garantie : réception & restitution — issue #104 ==========
+
+/** Charge les coordonnées du propriétaire (expéditeur) depuis les settings. */
+async function loadOwnerInfo(): Promise<{
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+}> {
+  let ownerFullName = '';
+  let ownerAddress = '';
+  let ownerEmail = '';
+  let ownerPhoneNumber = '';
+  try {
+    const nameSetting = await db.settings.where('key').equals('senderName').first();
+    if (nameSetting?.value) ownerFullName = String(nameSetting.value);
+    const addressSetting = await db.settings.where('key').equals('senderAddress').first();
+    if (addressSetting?.value) ownerAddress = String(addressSetting.value);
+    const emailSetting = await db.settings.where('key').equals('senderEmail').first();
+    if (emailSetting?.value) ownerEmail = String(emailSetting.value);
+    const phoneSetting = await db.settings.where('key').equals('senderPhone').first();
+    if (phoneSetting?.value) ownerPhoneNumber = String(phoneSetting.value);
+  } catch {
+    // Ignorer si les clés n'existent pas
+  }
+  return { ownerFullName, ownerAddress, ownerEmail, ownerPhoneNumber };
+}
+
+const EUR = (n: number) =>
+  n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+/** Données du reçu de dépôt de garantie + 1er loyer. */
+export interface DepositReceptionData {
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+  tenantFullName: string;
+  propertyName: string;
+  propertyAddress: string;
+  propertyPostalCode: string;
+  propertyTown: string;
+  depositAmount: string;
+  firstMonthRent: string;
+  charges: string;
+  totalReceived: string;
+  totalReceivedInLetterUppercase: string;
+  receptionDate: string;
+  today: string;
+}
+
+/** Données du document de restitution de dépôt de garantie. */
+export interface DepositRestitutionData {
+  ownerFullName: string;
+  ownerAddress: string;
+  ownerEmail: string;
+  ownerPhoneNumber: string;
+  tenantFullName: string;
+  propertyName: string;
+  propertyAddress: string;
+  propertyPostalCode: string;
+  propertyTown: string;
+  originalDeposit: string;
+  returnedAmount: string;
+  returnedAmountInLetterUppercase: string;
+  deductions: string;
+  restitutionDate: string;
+  today: string;
+}
+
+/**
+ * Prépare les données du reçu de dépôt de garantie + 1er loyer à partir d'un bail.
+ * Le montant total reçu = dépôt + loyer + charges (1er mois).
+ */
+export async function prepareDepositReceptionData(leaseId: number): Promise<DepositReceptionData> {
+  const owner = await loadOwnerInfo();
+
+  let tenantFullName = '';
+  let propertyName = '';
+  let propertyAddress = '';
+  let propertyPostalCode = '';
+  let propertyTown = '';
+  let depositAmount = 0;
+  let firstMonthRent = 0;
+  let charges = 0;
+  let receptionDate = '';
+
+  const lease = await db.leases.get(leaseId);
+  if (!lease) throw new Error('Lease not found');
+
+  depositAmount = lease.deposit || 0;
+  firstMonthRent = lease.rent || 0;
+  charges = lease.charges || 0;
+  if (lease.depositReceivedDate) {
+    receptionDate = new Date(lease.depositReceivedDate).toLocaleDateString('fr-FR');
+  }
+
+  const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
+  tenantFullName = tenantsInfo.fullNames;
+
+  if (lease.propertyId) {
+    const property = await db.properties.get(lease.propertyId);
+    if (property) {
+      propertyName = property.name || '';
+      propertyAddress = property.address || '';
+      propertyPostalCode = property.postalCode || '';
+      propertyTown = property.town || '';
+    }
+  }
+
+  const total = depositAmount + firstMonthRent + charges;
+
+  return {
+    ownerFullName: owner.ownerFullName,
+    ownerAddress: owner.ownerAddress,
+    ownerEmail: owner.ownerEmail,
+    ownerPhoneNumber: owner.ownerPhoneNumber,
+    tenantFullName,
+    propertyName,
+    propertyAddress,
+    propertyPostalCode,
+    propertyTown,
+    depositAmount: EUR(depositAmount),
+    firstMonthRent: EUR(firstMonthRent),
+    charges: EUR(charges),
+    totalReceived: EUR(total),
+    totalReceivedInLetterUppercase: numberToLetters(total).toUpperCase(),
+    receptionDate,
+    today: new Date().toLocaleDateString('fr-FR'),
+  };
+}
+
+/**
+ * Prépare les données du document de restitution du dépôt de garantie à partir
+ * d'un bail. Les déductions = dépôt d'origine − montant restitué (jamais négatif).
+ */
+export async function prepareDepositRestitutionData(
+  leaseId: number
+): Promise<DepositRestitutionData> {
+  const owner = await loadOwnerInfo();
+
+  let tenantFullName = '';
+  let propertyName = '';
+  let propertyAddress = '';
+  let propertyPostalCode = '';
+  let propertyTown = '';
+  let originalDeposit = 0;
+  let returnedAmount = 0;
+  let restitutionDate = '';
+
+  const lease = await db.leases.get(leaseId);
+  if (!lease) throw new Error('Lease not found');
+
+  originalDeposit = lease.deposit || 0;
+  returnedAmount = typeof lease.depositReturnedAmount === 'number' ? lease.depositReturnedAmount : 0;
+  if (lease.depositReturnedDate) {
+    restitutionDate = new Date(lease.depositReturnedDate).toLocaleDateString('fr-FR');
+  }
+
+  const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
+  tenantFullName = tenantsInfo.fullNames;
+
+  if (lease.propertyId) {
+    const property = await db.properties.get(lease.propertyId);
+    if (property) {
+      propertyName = property.name || '';
+      propertyAddress = property.address || '';
+      propertyPostalCode = property.postalCode || '';
+      propertyTown = property.town || '';
+    }
+  }
+
+  const deductions = Math.max(0, originalDeposit - returnedAmount);
+
+  return {
+    ownerFullName: owner.ownerFullName,
+    ownerAddress: owner.ownerAddress,
+    ownerEmail: owner.ownerEmail,
+    ownerPhoneNumber: owner.ownerPhoneNumber,
+    tenantFullName,
+    propertyName,
+    propertyAddress,
+    propertyPostalCode,
+    propertyTown,
+    originalDeposit: EUR(originalDeposit),
+    returnedAmount: EUR(returnedAmount),
+    returnedAmountInLetterUppercase: numberToLetters(returnedAmount).toUpperCase(),
+    deductions: EUR(deductions),
+    restitutionDate,
+    today: new Date().toLocaleDateString('fr-FR'),
+  };
+}
+
+/**
+ * Génère le reçu de dépôt de garantie + 1er loyer au format DOCX à partir du
+ * template `templateReceptionDepot.docx`.
+ */
+export async function generateDepositReceptionReceipt(
+  data: DepositReceptionData,
+  templatePath: string = `${import.meta.env.BASE_URL}templateReceptionDepot.docx`
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_recuDepotGarantie.docx`;
+
+    return { blob: out, filename };
+  } catch (error) {
+    console.error('Erreur génération reçu dépôt de garantie :', error);
+    throw error;
+  }
+}
+
+/** Sauvegarde le reçu de dépôt de garantie dans la base documentaire, associé au bail. */
+export async function saveDepositReceptionToDb(
+  leaseId: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'lease',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: 'Reçu dépôt de garantie et 1er loyer',
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
+}
+
+/**
+ * Génère le document de restitution du dépôt de garantie au format DOCX à partir
+ * du template `templateRestitutionDepot.docx`.
+ */
+export async function generateDepositRestitutionDocument(
+  data: DepositRestitutionData,
+  templatePath: string = `${import.meta.env.BASE_URL}templateRestitutionDepot.docx`
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const content = await loadBinary(templatePath);
+    const zip = new PizZip(content as any);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.render(data);
+
+    const out = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `${filenameDate}_restitutionDepotGarantie.docx`;
+
+    return { blob: out, filename };
+  } catch (error) {
+    console.error('Erreur génération restitution dépôt de garantie :', error);
+    throw error;
+  }
+}
+
+/** Sauvegarde le document de restitution du dépôt dans la base, associé au bail. */
+export async function saveDepositRestitutionToDb(
+  leaseId: number,
+  blob: Blob,
+  filename: string
+): Promise<number> {
+  const now = new Date();
+  const documentId = await db.documents.add({
+    name: filename,
+    type: 'lease',
+    relatedEntityType: 'lease',
+    relatedEntityId: leaseId,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    size: blob.size,
+    data: blob,
+    description: 'Restitution dépôt de garantie',
+    createdAt: now,
+    updatedAt: now,
+  } as any);
+
+  if (!documentId) {
+    throw new Error('Failed to save document to database');
+  }
+
+  return documentId;
+}
+
 // ========== État des lieux (entrée / sortie) — issue #46 ==========
 
 /**

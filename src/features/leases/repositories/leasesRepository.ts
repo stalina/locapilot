@@ -35,3 +35,32 @@ export async function updateLease(
 export async function deleteLease(id: number): Promise<void> {
   await db.leases.delete(id);
 }
+
+/**
+ * Enregistre la date de réception du dépôt de garantie sur un bail.
+ */
+export async function recordDepositReception(
+  id: number,
+  receivedDate: Date,
+  now = new Date()
+): Promise<Lease | undefined> {
+  await db.leases.update(id, { depositReceivedDate: receivedDate, updatedAt: now });
+  return db.leases.get(id);
+}
+
+/**
+ * Enregistre la restitution du dépôt de garantie (date + montant restitué) sur un bail.
+ */
+export async function recordDepositRestitution(
+  id: number,
+  returnedDate: Date,
+  returnedAmount: number,
+  now = new Date()
+): Promise<Lease | undefined> {
+  await db.leases.update(id, {
+    depositReturnedDate: returnedDate,
+    depositReturnedAmount: returnedAmount,
+    updatedAt: now,
+  });
+  return db.leases.get(id);
+}

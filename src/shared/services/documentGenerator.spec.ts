@@ -8,6 +8,8 @@ import {
   prepareRentReceiptData,
   prepareRegulationLetterData,
   prepareEtatDesLieuxData,
+  prepareDepositReceptionData,
+  prepareDepositRestitutionData,
 } from './documentGenerator';
 import type { Inventory } from '@/db/types';
 
@@ -353,5 +355,110 @@ describe('prepare*Data with multiple tenants', () => {
     );
     expect(data.tenantFullName).toBe('M. Dupont Jean et Mme Martin Marie');
     expect(data.tenantName).toBe('M. Dupont et Mme Martin');
+  });
+
+  it('prepareDepositReceptionData computes the total received and lists co-tenants', async () => {
+    const propertyId = await seedProperty();
+    const tenantIds = await seedTwoTenants();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds,
+      startDate: new Date('2026-01-01'),
+      rent: 750,
+      charges: 80,
+      deposit: 750,
+      depositReceivedDate: new Date('2026-01-03'),
+      paymentDay: 5,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareDepositReceptionData(leaseId);
+    expect(data.tenantFullName).toBe('M. Dupont Jean et Mme Martin Marie');
+    expect(data.propertyName).toBe('Studio Belleville');
+    expect(data.depositAmount).toBe('750');
+    expect(data.firstMonthRent).toBe('750');
+    expect(data.charges).toBe('80');
+    // total = deposit + rent + charges = 1580 (fr-FR uses a narrow no-break space)
+    expect(data.totalReceived.replace(/\s/g, ' ')).toBe('1 580');
+    expect(data.totalReceivedInLetterUppercase).toContain('EURO');
+    expect(data.receptionDate).toBe('03/01/2026');
+  });
+
+  it('prepareDepositReceptionData works for a single tenant', async () => {
+    const propertyId = await seedProperty();
+    const tenantId = (await db.tenants.add(
+      makeTenant({ civility: 'mr', firstName: 'Jean', lastName: 'Dupont' })
+    )) as number;
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds: [tenantId],
+      startDate: new Date('2026-01-01'),
+      rent: 750,
+      charges: 0,
+      deposit: 750,
+      depositReceivedDate: new Date('2026-01-03'),
+      paymentDay: 5,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareDepositReceptionData(leaseId);
+    expect(data.tenantFullName).toBe('M. Dupont Jean');
+    expect(data.totalReceived.replace(/\s/g, ' ')).toBe('1 500');
+  });
+
+  it('prepareDepositRestitutionData computes deductions for a partial restitution', async () => {
+    const propertyId = await seedProperty();
+    const tenantIds = await seedTwoTenants();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds,
+      startDate: new Date('2026-01-01'),
+      endDate: new Date('2027-01-01'),
+      rent: 750,
+      charges: 80,
+      deposit: 750,
+      depositReceivedDate: new Date('2026-01-03'),
+      depositReturnedDate: new Date('2027-01-15'),
+      depositReturnedAmount: 600,
+      paymentDay: 5,
+      status: 'ended',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareDepositRestitutionData(leaseId);
+    expect(data.tenantFullName).toBe('M. Dupont Jean et Mme Martin Marie');
+    expect(data.originalDeposit).toBe('750');
+    expect(data.returnedAmount).toBe('600');
+    expect(data.deductions).toBe('150');
+    expect(data.restitutionDate).toBe('15/01/2027');
+  });
+
+  it('prepareDepositRestitutionData reports no deductions for a full restitution', async () => {
+    const propertyId = await seedProperty();
+    const tenantIds = await seedTwoTenants();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds,
+      startDate: new Date('2026-01-01'),
+      rent: 750,
+      charges: 80,
+      deposit: 750,
+      depositReceivedDate: new Date('2026-01-03'),
+      depositReturnedDate: new Date('2027-01-15'),
+      depositReturnedAmount: 750,
+      paymentDay: 5,
+      status: 'ended',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareDepositRestitutionData(leaseId);
+    expect(data.returnedAmount).toBe('750');
+    expect(data.deductions).toBe('0');
   });
 });

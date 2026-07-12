@@ -6,12 +6,19 @@ import {
   fetchAllLeases,
   fetchLeaseById as fetchLeaseByIdRepo,
   updateLease as updateLeaseRepo,
+  recordDepositReception as recordDepositReceptionRepo,
+  recordDepositRestitution as recordDepositRestitutionRepo,
 } from '../repositories/leasesRepository';
 import {
   fetchChargesAdjustmentsByLeaseId,
   upsertChargesAdjustment as upsertChargesAdjustmentRepo,
 } from '../repositories/chargesAdjustmentsRepository';
-import { LEASE_EXPIRY_WINDOW_DAYS, buildTerminationUpdates } from '../services/leasesService';
+import {
+  LEASE_EXPIRY_WINDOW_DAYS,
+  buildTerminationUpdates,
+  buildDepositReceptionUpdates,
+  buildDepositRestitutionUpdates,
+} from '../services/leasesService';
 
 interface LeasesState {
   leases: Lease[];
@@ -194,6 +201,64 @@ export const useLeasesStore = defineStore('leases', {
 
     async terminateLease(id: number) {
       await this.updateLease(id, buildTerminationUpdates());
+    },
+
+    /** Applique un bail mis à jour à l'état local (liste + bail courant). */
+    applyUpdatedLease(updated: Lease) {
+      const index = this.leases.findIndex(l => l.id === updated.id);
+      if (index !== -1) {
+        this.leases[index] = updated;
+      }
+      if (this.currentLease?.id === updated.id) {
+        this.currentLease = updated;
+      }
+    },
+
+    /**
+     * Marque le dépôt de garantie d'un bail comme reçu à la date fournie.
+     * Valide la date puis persiste via le repository et rafraîchit l'état.
+     */
+    async recordDepositReception(id: number, receivedDate: Date) {
+      try {
+        // Valide la date (lève si invalide) avant toute écriture.
+        buildDepositReceptionUpdates(receivedDate);
+        const updated = await recordDepositReceptionRepo(id, receivedDate);
+        if (updated) {
+          this.applyUpdatedLease(updated);
+        }
+        return updated;
+      } catch (error) {
+        // On propage l'erreur (message affichable) à l'appelant sans écraser
+        // `this.error`, réservé aux échecs fatals de chargement du bail.
+        console.error('Failed to record deposit reception:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * Enregistre la restitution du dépôt de garantie (date + montant) pour un bail.
+     * Applique les règles métier (réception préalable, date/montant valides) et
+     * lève une erreur affichable si une règle est violée.
+     */
+    async recordDepositRestitution(id: number, returnedDate: Date, returnedAmount: number) {
+      try {
+        const lease = this.leases.find(l => l.id === id) ?? this.currentLease;
+        if (!lease || lease.id !== id) {
+          throw new Error('Bail introuvable');
+        }
+        // Valide les règles métier (lève si violées) avant toute écriture.
+        buildDepositRestitutionUpdates(lease, returnedDate, returnedAmount);
+        const updated = await recordDepositRestitutionRepo(id, returnedDate, returnedAmount);
+        if (updated) {
+          this.applyUpdatedLease(updated);
+        }
+        return updated;
+      } catch (error) {
+        // On propage l'erreur (message affichable) à l'appelant sans écraser
+        // `this.error`, réservé aux échecs fatals de chargement du bail.
+        console.error('Failed to record deposit restitution:', error);
+        throw error;
+      }
     },
 
     clearError() {

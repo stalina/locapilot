@@ -88,6 +88,73 @@ test.describe('Baux - e2e', () => {
   });
 });
 
+test.describe('Baux - dépôt de garantie', () => {
+  test('Réception, restitution et documents du dépôt de garantie', async ({ page }) => {
+    await resetApp(page);
+
+    const { name: propertyName } = await createProperty(page);
+    const { fullName: tenantFullName } = await createTenant(page);
+    // createLease sets deposit = 900
+    await createLease(page, {
+      startDate: '2025-12-01',
+      endDate: '2026-12-31',
+      propertyName,
+      tenantFullName,
+    });
+
+    // Ouvrir le détail du bail
+    const leaseCard = page.locator('.lease-card', { hasText: propertyName }).first();
+    await expect(leaseCard).toBeVisible({ timeout: 10_000 });
+    await leaseCard.click();
+    await expect(page).toHaveURL(/\/leases\/\d+/, { timeout: 10_000 });
+
+    // La section dépôt de garantie affiche l'état "Non reçu"
+    const depositSection = page.locator('[data-testid="deposit-section"]');
+    await expect(depositSection).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="deposit-reception-status"]')).toHaveText(/Non reçu/);
+
+    // Marquer le dépôt comme reçu
+    await page.locator('[data-testid="deposit-mark-received"]').click();
+    await page.locator('[data-testid="deposit-reception-date"]').fill('2026-01-03');
+    await page.locator('[data-testid="deposit-reception-submit"]').click();
+    await expect(page.locator('[data-testid="deposit-reception-status"]')).toHaveText(
+      /Reçu le 03\/01\/2026/,
+      { timeout: 10_000 }
+    );
+
+    // Générer le reçu de dépôt de garantie + 1er loyer (téléchargement)
+    const receiptDownload = page.waitForEvent('download', { timeout: 15_000 });
+    await page.locator('[data-testid="deposit-reception-doc"]').click();
+    const receiptDialog = page.locator('.confirm-dialog', { hasText: /reçu de dépôt de garantie/i });
+    await expect(receiptDialog).toBeVisible({ timeout: 10_000 });
+    await receiptDialog.getByRole('button', { name: /Télécharger uniquement/i }).click();
+    expect((await receiptDownload).suggestedFilename()).toMatch(/\.docx$/i);
+
+    // Enregistrer une restitution partielle (600 € sur 900 € → 300 € retenus)
+    await page.locator('[data-testid="deposit-record-restitution"]').click();
+    await page.locator('[data-testid="deposit-restitution-date"]').fill('2027-01-15');
+    await page.locator('[data-testid="deposit-restitution-amount"]').fill('600');
+    await page.locator('[data-testid="deposit-restitution-submit"]').click();
+    await expect(page.locator('[data-testid="deposit-restitution-status"]')).toHaveText(
+      /Restitué le 15\/01\/2027/,
+      { timeout: 10_000 }
+    );
+    await expect(page.locator('[data-testid="deposit-restitution-status"]')).toContainText(
+      'retenus'
+    );
+
+    // Générer le document de restitution (téléchargement)
+    const restitutionDownload = page.waitForEvent('download', { timeout: 15_000 });
+    await page.locator('[data-testid="deposit-restitution-doc"]').click();
+    const restitutionDialog = page.locator('.confirm-dialog', {
+      hasText: /document de restitution/i,
+    });
+    await expect(restitutionDialog).toBeVisible({ timeout: 10_000 });
+    await restitutionDialog.getByRole('button', { name: /Télécharger uniquement/i }).click();
+    expect((await restitutionDownload).suggestedFilename()).toMatch(/\.docx$/i);
+  });
+});
+
 test.describe('Baux - documents attachés', () => {
   test('Attacher un document à un bail depuis sa page de détail', async ({ page }) => {
     await resetApp(page);
