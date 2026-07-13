@@ -163,6 +163,26 @@ Then paidDate is set to 2026-05-28
 And status is "paid"
 ```
 
+#### Scenario: The Word document generator loads its heavy dependency on demand
+
+```gherkin
+Given I open the application without triggering any document generation
+Then the Word document generation libraries (docxtemplater, pizzip) are NOT included in the initial JavaScript bundle
+When I click "Receipt" on a paid rent (or trigger any .docx generation such as a notice or inventory)
+Then the document generation libraries are loaded on demand as a separate code-split chunk
+And the receipt is generated once the chunk has loaded
+```
+
+#### Scenario: Document generation still works offline
+
+```gherkin
+Given the application has been installed as a PWA and loaded at least once while online
+And the code-split chunk containing the document generation libraries has been precached by the service worker
+When I go offline and click "Receipt" on a paid rent
+Then the on-demand generation chunk is served from the service worker cache
+And the receipt .docx is generated without any network access
+```
+
 ---
 
 ### Story: Record a partial payment

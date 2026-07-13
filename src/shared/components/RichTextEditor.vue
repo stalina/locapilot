@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import Editor from 'primevue/editor';
+import { ref, watch, onMounted, defineAsyncComponent } from 'vue';
+
+// Lazy-load the PrimeVue Editor (which statically pulls in Quill). Using a
+// dynamic import keeps Quill + the Editor out of the initial bundle: they are
+// code-split into their own chunk that is only fetched when a RichTextEditor is
+// actually mounted (property form / detail "Annonce" field). The chunk stays
+// precached by the Workbox service worker (globPatterns covers `**/*.js`), so
+// the editor still works fully offline. The fallback toolbar below is shown
+// until Quill's own toolbar appears (see the `quillDetected` polling).
+const Editor = defineAsyncComponent(() => import('primevue/editor'));
 
 interface Props {
   modelValue: string;
@@ -53,11 +61,15 @@ onMounted(() => {
   // Ensure `document` is available (tests may run in environments without a DOM)
   if (typeof document === 'undefined') return;
 
+  // The editor is now code-split, so its chunk (and Quill's toolbar DOM) can
+  // take noticeably longer than a single tick to appear — poll for up to ~10s
+  // so the fallback toolbar is replaced as soon as the async chunk resolves.
   let attempts = 0;
+  const maxAttempts = 200;
   const timer = setInterval(() => {
     if (typeof document === 'undefined') {
       attempts += 1;
-      if (attempts > 10) {
+      if (attempts > maxAttempts) {
         clearInterval(timer);
       }
       return;
@@ -72,7 +84,7 @@ onMounted(() => {
       clearInterval(timer);
     }
     attempts += 1;
-    if (attempts > 10) {
+    if (attempts > maxAttempts) {
       clearInterval(timer);
     }
   }, 50);

@@ -318,6 +318,26 @@ And no event handler or script embedded in the announcement is executed
 And only the harmless text content is copied to the clipboard
 ```
 
+#### Scenario: The rich-text editor loads its heavy dependency on demand
+
+```gherkin
+Given I open the application on a page that does not contain a rich-text field
+Then the rich-text editor library (Quill, via the PrimeVue Editor component) is NOT included in the initial JavaScript bundle
+When I open a property form or detail page that renders the "Annonce" rich-text field
+Then the editor library is loaded on demand as a separate code-split chunk
+And the editor becomes fully functional once the chunk has loaded
+```
+
+#### Scenario: The rich-text editor still works offline
+
+```gherkin
+Given the application has been installed as a PWA and loaded at least once while online
+And the code-split chunk containing the rich-text editor has been precached by the service worker
+When I go offline and open a property form containing the "Annonce" rich-text field
+Then the on-demand editor chunk is served from the service worker cache
+And the rich-text editor loads and works without any network access
+```
+
 ---
 
 ### Story: View property statistics on the list

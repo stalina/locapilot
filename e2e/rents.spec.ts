@@ -35,3 +35,41 @@ test.describe('Loyers - e2e', () => {
     await expect(row.getByRole('button', { name: /Quittance/i })).toBeVisible({ timeout: 10_000 });
   });
 });
+
+test.describe('Loyers - génération de quittance chargée à la demande (issue #65)', () => {
+  test('Générer une quittance télécharge un .docx via le chunk docxtemplater lazy', async ({
+    page,
+  }) => {
+    await resetApp(page);
+
+    const { name: propertyName } = await createProperty(page);
+    const { fullName: tenantFullName } = await createTenant(page);
+    await createLease(page, {
+      startDate: '2025-12-01',
+      endDate: '2026-12-31',
+      propertyName,
+      tenantFullName,
+    });
+
+    await navigateFromSidebar(page, /Loyers|Rents/i, /\/rents/);
+
+    const row = page.locator('tr.rent-row', { hasText: propertyName }).first();
+    await expect(row).toBeVisible({ timeout: 10_000 });
+
+    // Payer le loyer pour faire apparaître l'action "Quittance".
+    await row.getByRole('button', { name: /Payer/ }).click();
+    await expect(page.getByRole('heading', { name: /Enregistrer un paiement/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await page.locator('#payment-method').selectOption('transfer');
+    await page.getByRole('button', { name: /Valider le paiement/i }).click();
+    await expect(row.locator('.status-cell')).toContainText('Payé', { timeout: 10_000 });
+
+    // Cliquer "Quittance" : docxtemplater/pizzip sont importés dynamiquement au
+    // premier appel, puis le .docx est généré et téléchargé.
+    const downloadPromise = page.waitForEvent('download', { timeout: 15_000 });
+    await row.getByRole('button', { name: /Quittance/i }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/_quittanceLoyer\.docx$/);
+  });
+});
