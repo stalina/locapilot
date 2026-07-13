@@ -39,7 +39,10 @@ export default [
       },
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      // Flag new explicit `any`. Kept at 'warn' (not 'error') because the
+      // codebase still carries a large amount of legacy `any` (issue #63);
+      // this guards against new occurrences without blocking CI on the backlog.
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
       'no-console': 'off',
@@ -50,6 +53,9 @@ export default [
   // Configuration pour les fichiers Vue
   {
     files: ['**/*.vue'],
+    plugins: {
+      '@typescript-eslint': typescript,
+    },
     languageOptions: {
       parser: vueParser,
       parserOptions: {
@@ -63,7 +69,9 @@ export default [
     },
     rules: {
       'vue/multi-word-component-names': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
+      // See the TS block above: 'warn' guards new `any` without failing CI on
+      // the existing legacy backlog (issue #63).
+      '@typescript-eslint/no-explicit-any': 'warn',
       'no-unused-vars': 'off',
     },
   },
