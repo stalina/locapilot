@@ -314,3 +314,41 @@ Then the build completes successfully
 And the secret is injected into the bundle as part of the AES key derivation seed
 And the plaintext secret value is NOT present in the output bundle
 ```
+
+### Story: Type the P2P synchronisation boundary
+
+**As a** maintainer  
+**I want to** the PeerJS boundary and its messages to be strongly typed rather than `any`  
+**So that** the sync protocol is verified by the compiler and malformed messages are handled predictably
+
+> The project runs TypeScript in `strict` mode. Untyped `any` at external boundaries (PeerJS handles, injected build constants) hides protocol errors and must be replaced by explicit types.
+
+#### Scenario: P2P messages follow a typed protocol union
+
+```gherkin
+Given the peer synchronisation service exchanges messages over a data connection
+When a message is sent or received
+Then it conforms to a typed discriminated union of message kinds
+And the recognised kinds are exactly "auth", "auth_ok", "auth_failed", and "export"
+And an "auth" message carries a "pin" string
+And an "export" message carries "iv" and "payload" base64 strings
+```
+
+#### Scenario: An unrecognised P2P message type is ignored safely
+
+```gherkin
+Given device B is connected and authenticated to device A
+When device B receives a message whose "type" is not part of the known protocol union
+Then the message is treated as a pass-through and no export/import is triggered
+And the local database remains unchanged
+And no unhandled exception is thrown
+```
+
+#### Scenario: New untyped `any` usages are blocked by linting
+
+```gherkin
+Given the project enforces TypeScript strict mode
+When a contributor introduces a new explicit `any` in a source file
+Then the ESLint rule "@typescript-eslint/no-explicit-any" reports it as an error
+And any deliberate, justified exception is annotated with an inline disable comment explaining why
+```
