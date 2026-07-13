@@ -1,11 +1,32 @@
-import Peer from 'peerjs';
+import Peer, { type DataConnection } from 'peerjs';
 
-// Runtime-injected values (via Vite define)
-// @ts-ignore
-const APP_VERSION = (import.meta as any).__APP_VERSION__ || '';
-// @ts-ignore
-const BUILD_SECRET_KEY = (import.meta as any).__BUILD_SECRET_KEY__ || '';
+// Runtime-injected values (via Vite define). Typed through the `ImportMeta`
+// augmentation in `src/vite-env.d.ts`, so no `@ts-ignore`/`as any` is needed.
+const APP_VERSION = import.meta.__APP_VERSION__ || '';
+const BUILD_SECRET_KEY = import.meta.__BUILD_SECRET_KEY__ || '';
 const APP_NAME = 'locapilot';
+
+/**
+ * Typed protocol exchanged over the PeerJS data connection.
+ *
+ * A discriminated union on `type`: narrowing on `msg.type` makes the extra
+ * fields (`pin`, `iv`, `payload`) type-safe only inside the matching branch.
+ * Messages whose `type` is not part of this union are treated as pass-through
+ * (see `connect()`), never as a protocol error.
+ */
+export type SyncMessage =
+  | { type: 'auth'; pin: string }
+  | { type: 'auth_ok' }
+  | { type: 'auth_failed' }
+  | { type: 'export'; iv: string; payload: string };
+
+/** Shape handed to `onData` once an encrypted `export` message is decrypted. */
+export type DecryptedExportMessage = { type: 'export'; payload: string };
+
+/** Narrows an incoming, untyped connection message to an indexable record. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
 // Crypto helpers
 const textToUint8 = (s: string) => new TextEncoder().encode(s);
@@ -14,9 +35,9 @@ const uint8ToBase64 = (b: Uint8Array) => {
   let binary = '';
   const chunkSize = 0x8000; // 32KB chunks
   for (let i = 0; i < b.length; i += chunkSize) {
-    // slice to regular array for apply
-    const chunk = Array.prototype.slice.call(b.subarray(i, i + chunkSize));
-    binary += String.fromCharCode.apply(null, chunk as any);
+    // spread a typed number[] slice to avoid the call-stack limit on large arrays
+    const chunk: number[] = Array.from(b.subarray(i, i + chunkSize));
+    binary += String.fromCharCode(...chunk);
   }
   return btoa(binary);
 };
@@ -75,12 +96,12 @@ export type PeerStatus =
   | 'error'
   | 'stopped';
 
-export type OnDataCb = (data: any) => Promise<void> | void;
-export type OnStatusCb = (status: PeerStatus, info?: any) => void;
+export type OnDataCb = (data: SyncMessage | DecryptedExportMessage) => Promise<void> | void;
+export type OnStatusCb = (status: PeerStatus, info?: unknown) => void;
 
 export class PeerSyncService {
-  private peer: any = null;
-  private conn: any = null;
+  private peer: Peer | null = null;
+  private conn: DataConnection | null = null;
   private onData?: OnDataCb;
   private onStatus?: OnStatusCb;
   private pairingPin: string = '';
@@ -90,7 +111,7 @@ export class PeerSyncService {
     this.onStatus = onStatus;
   }
 
-  private notify(status: PeerStatus, info?: any) {
+  private notify(status: PeerStatus, info?: unknown) {
     try {
       this.onStatus?.(status, info);
     } catch (e) {
@@ -99,7 +120,7 @@ export class PeerSyncService {
   }
 
   private get debugLevel(): number {
-    return (import.meta as any).env?.DEV ? 2 : 0;
+    return import.meta.env.DEV ? 2 : 0;
   }
 
   async startHosting(id: string, pin: string) {
@@ -112,7 +133,7 @@ export class PeerSyncService {
       this.notify('hosting', peerId);
     });
 
-    this.peer.on('connection', (c: any) => {
+    this.peer.on('connection', (c: DataConnection) => {
       // Reject concurrent connections
       if (this.conn) {
         c.close();
@@ -121,21 +142,21 @@ export class PeerSyncService {
       this.conn = c;
       this.notify('client-connected');
 
-      this.conn.on('open', () => {
+      c.on('open', () => {
         this.notify('connection-open');
         this.notify('auth-pending');
       });
 
-      this.conn.on('data', (msg: any) => {
-        if (msg?.type === 'auth') {
+      c.on('data', (msg: unknown) => {
+        if (isRecord(msg) && msg.type === 'auth') {
           if (msg.pin === this.pairingPin) {
-            this.conn.send({ type: 'auth_ok' });
+            c.send({ type: 'auth_ok' } satisfies SyncMessage);
             this.notify('auth-ok');
           } else {
-            this.conn.send({ type: 'auth_failed' });
+            c.send({ type: 'auth_failed' } satisfies SyncMessage);
             this.notify('auth-failed');
             try {
-              this.conn.close();
+              c.close();
             } catch {
               // ignore
             }
@@ -144,17 +165,17 @@ export class PeerSyncService {
         }
       });
 
-      this.conn.on('close', () => {
+      c.on('close', () => {
         this.notify('stopped');
         this.conn = null;
       });
 
-      this.conn.on('error', (err: any) => {
+      c.on('error', (err: Error) => {
         this.notify('error', err);
       });
     });
 
-    this.peer.on('error', (err: any) => {
+    this.peer.on('error', (err: Error) => {
       this.notify('error', err);
     });
   }
@@ -197,23 +218,29 @@ export class PeerSyncService {
 
     this.peer.on('open', (id: string) => {
       this.notify('connected', id);
-      this.conn = this.peer.connect(hostId);
+      const conn = this.peer!.connect(hostId);
+      this.conn = conn;
 
-      this.conn.on('open', () => {
+      conn.on('open', () => {
         this.notify('connection-open');
         // Send pairing authentication immediately after channel opens
-        this.conn.send({ type: 'auth', pin: this.pairingPin });
+        conn.send({ type: 'auth', pin: this.pairingPin } satisfies SyncMessage);
         this.notify('auth-pending');
       });
 
-      this.conn.on('data', async (data: any) => {
+      conn.on('data', async (data: unknown) => {
         try {
-          if (data?.type === 'auth_ok') {
+          if (isRecord(data) && data.type === 'auth_ok') {
             this.notify('auth-ok');
-          } else if (data?.type === 'auth_failed') {
+          } else if (isRecord(data) && data.type === 'auth_failed') {
             this.notify('auth-failed');
             this.disconnect();
-          } else if (data?.type === 'export' && data.iv && data.payload) {
+          } else if (
+            isRecord(data) &&
+            data.type === 'export' &&
+            typeof data.iv === 'string' &&
+            typeof data.payload === 'string'
+          ) {
             try {
               const decrypted = await decryptPayload(data.iv, data.payload);
               await this.onData?.({ type: 'export', payload: decrypted });
@@ -222,20 +249,21 @@ export class PeerSyncService {
               this.notify('error', e);
             }
           } else {
-            // pass-through for other messages
-            await this.onData?.(data);
+            // Unknown message type: pass through unchanged. The remote payload is
+            // untyped at this boundary, so it is forwarded as-is to `onData`.
+            await this.onData?.(data as SyncMessage | DecryptedExportMessage);
           }
         } catch (e) {
           console.error('onData handler failed', e);
         }
       });
 
-      this.conn.on('error', (err: any) => {
+      conn.on('error', (err: Error) => {
         this.notify('error', err);
       });
     });
 
-    this.peer.on('error', (err: any) => {
+    this.peer.on('error', (err: Error) => {
       this.notify('error', err);
     });
   }
@@ -262,7 +290,8 @@ export class PeerSyncService {
   }
 
   sendExport(json: string) {
-    if (!this.conn || this.conn.open === false) {
+    const conn = this.conn;
+    if (!conn || conn.open === false) {
       throw new Error('No open connection to send data');
     }
     try {
@@ -270,7 +299,7 @@ export class PeerSyncService {
       (async () => {
         try {
           const { iv, payload } = await encryptPayload(json);
-          this.conn.send({ type: 'export', iv, payload });
+          conn.send({ type: 'export', iv, payload } satisfies SyncMessage);
         } catch (e) {
           console.error('Encryption failed', e);
           this.notify('error', e);

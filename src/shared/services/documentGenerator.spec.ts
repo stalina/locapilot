@@ -462,3 +462,74 @@ describe('prepare*Data with multiple tenants', () => {
     expect(data.deductions).toBe('0');
   });
 });
+
+describe('typed entity access with missing optional fields', () => {
+  // Documents spec (documents.md): "Missing optional entity fields fall back to
+  // empty values" — a property without postalCode/town must render empty strings,
+  // not throw, now that fields are read through the typed Property entity.
+  async function seedPropertyWithoutLocation(): Promise<number> {
+    return (await db.properties.add({
+      name: 'Local sans localité',
+      address: '9 impasse des Tests',
+      // postalCode and town intentionally omitted (both optional on Property)
+      type: 'other',
+      surface: 40,
+      rooms: 2,
+      rent: 600,
+      status: 'vacant',
+      createdAt: now,
+      updatedAt: now,
+    } as Property)) as number;
+  }
+
+  async function seedOneTenant(): Promise<number> {
+    return (await db.tenants.add(
+      makeTenant({ firstName: 'Paul', lastName: 'Durand', email: 'paul@x.fr', phone: '0303' })
+    )) as number;
+  }
+
+  it('prepareMandatLocationData renders empty strings for a property with no postalCode/town', async () => {
+    const propertyId = await seedPropertyWithoutLocation();
+    const tenantId = await seedOneTenant();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds: [tenantId],
+      startDate: new Date('2026-01-01'),
+      rent: 600,
+      charges: 0,
+      deposit: 600,
+      paymentDay: 1,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareMandatLocationData(leaseId);
+    expect(data.propertyName).toBe('Local sans localité');
+    expect(data.propertyPostalCode).toBe('');
+    expect(data.propertyTown).toBe('');
+    // The document data still resolves without throwing.
+    expect(data.tenantFullName).toBe('M. Durand Paul');
+  });
+
+  it('prepareKeyHandoverAttestationData renders empty strings for missing optional fields', async () => {
+    const propertyId = await seedPropertyWithoutLocation();
+    const tenantId = await seedOneTenant();
+    const leaseId = (await db.leases.add({
+      propertyId,
+      tenantIds: [tenantId],
+      startDate: new Date('2026-01-01'),
+      rent: 600,
+      charges: 0,
+      deposit: 600,
+      paymentDay: 1,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    } as Lease)) as number;
+
+    const data = await prepareKeyHandoverAttestationData(leaseId);
+    expect(data.propertyPostalCode).toBe('');
+    expect(data.propertyTown).toBe('');
+  });
+});

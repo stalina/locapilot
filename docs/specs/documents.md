@@ -412,3 +412,30 @@ When I edit the document and change the expiry date to 2027-05-01
 Then the document is saved with expiresAt 2027-05-01
 And the corresponding dashboard alert disappears if the new date is in the future
 ```
+
+### Story: Generate documents from strongly typed entity data
+
+**As a** maintainer  
+**I want to** the document generator to read lease, property and tenant fields through their declared types rather than `as any` casts  
+**So that** template data errors are caught at compile time and missing optional fields degrade gracefully
+
+> The document generator (`src/shared/services/documentGenerator.ts`) currently reaches into entities with `(lease as any).propertyId`, `(property as any).town`, etc. These casts must be replaced by the real entity types from `db/schema.ts`.
+
+#### Scenario: Template data is resolved from typed entities
+
+```gherkin
+Given a lease linked to a property and one or more tenants
+When a document is generated from that lease
+Then the lease, property and tenant fields injected into the template are read through their declared TypeScript types
+And no `as any` cast is used to access those fields
+And the generated document contains the correct property, tenant and rent values
+```
+
+#### Scenario: Missing optional entity fields fall back to empty values
+
+```gherkin
+Given a property whose optional postal code and town are not set
+When a document referencing that property is generated
+Then the corresponding template placeholders are rendered as empty strings
+And no runtime error is thrown during generation
+```

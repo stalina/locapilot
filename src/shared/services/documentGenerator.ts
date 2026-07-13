@@ -426,7 +426,7 @@ export async function generateRentRevisionLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -469,7 +469,7 @@ export async function saveRentRevisionLetterToDb(
     description: `Courrier révision loyer ${year}`,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -490,7 +490,7 @@ export async function generateRegulationLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -538,7 +538,7 @@ export async function saveRegulationLetterToDb(
     description: `Courrier régularisation charges ${year}`,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -597,19 +597,19 @@ export async function prepareRegulationLetterData(
   try {
     const lease = await db.leases.get(adjustmentRow.leaseId);
     if (lease) {
-      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
       tenantFullName = tenantsInfo.fullNames;
       tenantName = tenantsInfo.names;
     }
 
     // Résoudre les détails de la propriété
-    if (lease && (lease as any).propertyId) {
-      const property = await db.properties.get((lease as any).propertyId);
+    if (lease && lease.propertyId) {
+      const property = await db.properties.get(lease.propertyId);
       if (property) {
         propertyName = property.name || '';
         propertyAddress = property.address || '';
-        propertyPostalCode = (property as any).postalCode || '';
-        propertyTown = (property as any).town || '';
+        propertyPostalCode = property.postalCode || '';
+        propertyTown = property.town || '';
       }
     }
   } catch (err) {
@@ -647,7 +647,7 @@ export async function generateKeyHandoverAttestation(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -693,7 +693,7 @@ export async function saveKeyHandoverAttestationToDb(
     description: 'Attestation de remise des clés',
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -747,18 +747,18 @@ export async function prepareKeyHandoverAttestationData(
   try {
     const lease = await db.leases.get(leaseId);
     if (lease) {
-      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
       tenantFullName = tenantsInfo.fullNames;
     }
 
     // Résoudre les détails de la propriété
-    if (lease && (lease as any).propertyId) {
-      const property = await db.properties.get((lease as any).propertyId);
+    if (lease && lease.propertyId) {
+      const property = await db.properties.get(lease.propertyId);
       if (property) {
         propertyName = property.name || '';
         propertyAddress = property.address || '';
-        propertyPostalCode = (property as any).postalCode || '';
-        propertyTown = (property as any).town || '';
+        propertyPostalCode = property.postalCode || '';
+        propertyTown = property.town || '';
       }
     }
   } catch (err) {
@@ -791,7 +791,7 @@ export async function generateRentReceipt(
 ): Promise<void> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -897,20 +897,20 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
     const lease = await db.leases.get(rent.leaseId);
     if (lease) {
       // Prefer the contractual amounts from the lease (mandat)
-      rentAmount = (lease as any).rent || rentAmount;
-      chargeAmount = (lease as any).charges || chargeAmount;
+      rentAmount = lease.rent || rentAmount;
+      chargeAmount = lease.charges || chargeAmount;
       // Récupérer les locataires
-      const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+      const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
       tenantFullName = tenantsInfo.fullNames;
 
       // Récupérer la propriété
-      if ((lease as any).propertyId) {
-        const property = await db.properties.get((lease as any).propertyId);
+      if (lease.propertyId) {
+        const property = await db.properties.get(lease.propertyId);
         if (property) {
           propertyName = property.name || '';
           propertyAddress = property.address || '';
-          propertyPostalCode = (property as any).postalCode || '';
-          propertyTown = (property as any).town || '';
+          propertyPostalCode = property.postalCode || '';
+          propertyTown = property.town || '';
         }
       }
     }
@@ -968,12 +968,12 @@ export async function prepareRentReceiptData(rentId: number): Promise<RentReceip
  */
 export async function generateDocument(
   templatePath: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   filename: string
 ): Promise<void> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1002,7 +1002,7 @@ export async function generateMandatLocation(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1048,7 +1048,7 @@ export async function saveMandatLocationToDb(
     description: 'Mandat de location',
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -1154,19 +1154,19 @@ export async function prepareMandatLocationData(leaseId: number): Promise<Mandat
     month = monthNames[now.getMonth()] || 'janvier';
 
     // Récupérer les locataires
-    const tenantsInfo = await resolveTenantsInfo((lease as any).tenantIds);
+    const tenantsInfo = await resolveTenantsInfo(lease.tenantIds);
     tenantFullName = tenantsInfo.fullNames;
     tenantEmail = tenantsInfo.emails;
     tenantPhoneNumber = tenantsInfo.phoneNumbers;
 
     // Récupérer la propriété
-    if ((lease as any).propertyId) {
-      const property = await db.properties.get((lease as any).propertyId);
+    if (lease.propertyId) {
+      const property = await db.properties.get(lease.propertyId);
       if (property) {
         propertyName = property.name || '';
         propertyAddress = property.address || '';
-        propertyPostalCode = (property as any).postalCode || '';
-        propertyTown = (property as any).town || '';
+        propertyPostalCode = property.postalCode || '';
+        propertyTown = property.town || '';
         propertySurface = property.surface || 0;
         propertyNumberOfRooms = property.rooms || 0;
       }
@@ -1363,7 +1363,8 @@ export async function prepareDepositRestitutionData(
   if (!lease) throw new Error('Lease not found');
 
   originalDeposit = lease.deposit || 0;
-  returnedAmount = typeof lease.depositReturnedAmount === 'number' ? lease.depositReturnedAmount : 0;
+  returnedAmount =
+    typeof lease.depositReturnedAmount === 'number' ? lease.depositReturnedAmount : 0;
   if (lease.depositReturnedDate) {
     restitutionDate = new Date(lease.depositReturnedDate).toLocaleDateString('fr-FR');
   }
@@ -1412,7 +1413,7 @@ export async function generateDepositReceptionReceipt(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1452,7 +1453,7 @@ export async function saveDepositReceptionToDb(
     description: 'Reçu dépôt de garantie et 1er loyer',
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -1471,7 +1472,7 @@ export async function generateDepositRestitutionDocument(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1511,7 +1512,7 @@ export async function saveDepositRestitutionToDb(
     description: 'Restitution dépôt de garantie',
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -1669,7 +1670,7 @@ export async function generateEtatDesLieux(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1709,7 +1710,7 @@ export async function saveEtatDesLieuxToDb(
     description,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
@@ -1860,7 +1861,7 @@ export async function generateReminderLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content as any);
+    const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
     doc.render(data);
@@ -1903,7 +1904,7 @@ export async function saveReminderLetterToDb(
     description: REMINDER_LEVEL_INFO[level].label,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (!documentId) {
     throw new Error('Failed to save document to database');
