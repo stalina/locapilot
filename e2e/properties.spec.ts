@@ -61,3 +61,36 @@ test.describe('Propriétés - e2e', () => {
     await expect(page.locator('.property-card', { hasText: updatedName })).toHaveCount(0);
   });
 });
+
+test.describe('Propriétés - éditeur riche chargé à la demande (issue #65)', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+  });
+
+  test("L'éditeur riche (Quill) se charge en chunk lazy et devient fonctionnel", async ({
+    page,
+  }) => {
+    // La liste initiale ne doit pas avoir chargé le chunk de l'éditeur (Quill).
+    const editorRequests: string[] = [];
+    page.on('request', req => {
+      if (/editor|quill/i.test(req.url())) editorRequests.push(req.url());
+    });
+
+    // Ouvrir le formulaire de création qui monte le RichTextEditor.
+    await page.locator('[data-testid="new-property-button"]').first().click();
+    const createModal = withinModal(page, /Propri[ée]t[ée]|Bien|property/i);
+    await createModal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Le chunk lazy se charge et l'éditeur Quill devient pleinement fonctionnel :
+    // sa toolbar est rendue à l'écran (preuve que le chunk a été résolu et monté).
+    const quillToolbar = createModal.locator('.rich-text-editor .ql-toolbar');
+    await expect(quillToolbar).toBeVisible({ timeout: 15_000 });
+    await expect(createModal.locator('.rich-text-editor .ql-editor')).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Le chunk de l'éditeur n'a été demandé qu'après l'ouverture du formulaire.
+    expect(editorRequests.length).toBeGreaterThan(0);
+  });
+});

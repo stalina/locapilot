@@ -1,5 +1,3 @@
-import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
 import { db } from '@/db/database';
 import type {
@@ -16,6 +14,32 @@ import type {
 async function loadBinary(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url);
   return response.arrayBuffer();
+}
+
+/**
+ * Rend un template DOCX avec les données fournies et renvoie le Blob résultant.
+ *
+ * `pizzip` et `docxtemplater` sont chargés dynamiquement (dynamic `import()`)
+ * uniquement lors du premier appel : ils sont ainsi code-splittés dans un chunk
+ * séparé, hors du bundle initial, et ne sont téléchargés qu'au moment de générer
+ * un document. Le chunk reste précaché par le service worker Workbox
+ * (globPatterns inclut les fichiers JS), donc la génération fonctionne hors ligne.
+ */
+async function renderDocxTemplate(content: ArrayBuffer, data: unknown): Promise<Blob> {
+  const [{ default: PizZip }, { default: Docxtemplater }] = await Promise.all([
+    import('pizzip'),
+    import('docxtemplater'),
+  ]);
+
+  const zip = new PizZip(content);
+  const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+  doc.render(data);
+
+  return doc.getZip().generate({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
 }
 
 /**
@@ -426,15 +450,7 @@ export async function generateRentRevisionLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -490,15 +506,7 @@ export async function generateRegulationLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -647,15 +655,7 @@ export async function generateKeyHandoverAttestation(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -791,15 +791,7 @@ export async function generateRentReceipt(
 ): Promise<void> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -973,15 +965,7 @@ export async function generateDocument(
 ): Promise<void> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     saveAs(out, filename);
   } catch (error) {
@@ -1002,15 +986,7 @@ export async function generateMandatLocation(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -1413,15 +1389,7 @@ export async function generateDepositReceptionReceipt(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -1472,15 +1440,7 @@ export async function generateDepositRestitutionDocument(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -1670,15 +1630,7 @@ export async function generateEtatDesLieux(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const kind = data.type === 'checkin' ? 'entree' : 'sortie';
     const filename = `${data.number}_etatDesLieux_${kind}.docx`;
@@ -1861,15 +1813,7 @@ export async function generateReminderLetter(
 ): Promise<{ blob: Blob; filename: string }> {
   try {
     const content = await loadBinary(templatePath);
-    const zip = new PizZip(content);
-    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    doc.render(data);
-
-    const out = doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
+    const out = await renderDocxTemplate(content, data);
 
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');

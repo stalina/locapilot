@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import { configDefaults } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
+import type { PluginOption } from 'vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +24,20 @@ if (process.env.NODE_ENV === 'production' && !process.env.BUILD_SECRET_KEY) {
 // Determine base path: use /locapilot/ in production build or when explicitly testing PWA
 const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV === 'production';
 const basePath = isPWABuild ? '/locapilot/' : '/';
+
+// Bundle visualizer, opt-in via `ANALYZE=1` (see the `analyze` npm script).
+// It only emits `dist/stats.html` on demand and never affects normal builds.
+const analyzePlugins: PluginOption[] =
+  process.env.ANALYZE === '1' || process.env.ANALYZE === 'true'
+    ? [
+        visualizer({
+          filename: 'dist/stats.html',
+          template: 'treemap',
+          gzipSize: true,
+          brotliSize: true,
+        }),
+      ]
+    : [];
 
 export default defineConfig({
   // Inject package version at build time so runtime can access it via `import.meta.env.__APP_VERSION__`
@@ -73,6 +89,7 @@ export default defineConfig({
         enabled: process.env.ENABLE_PWA_IN_DEV === '1' || process.env.ENABLE_PWA_IN_DEV === 'true',
       },
     }),
+    ...analyzePlugins,
   ],
   resolve: {
     alias: {

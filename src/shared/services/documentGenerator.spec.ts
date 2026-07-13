@@ -1,6 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db } from '@/db/database';
 import type { Tenant, Lease, Property, Rent, ChargesAdjustmentRow } from '@/db/types';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import { saveAs } from 'file-saver';
 import {
   resolveTenantsInfo,
   prepareMandatLocationData,
@@ -10,8 +13,39 @@ import {
   prepareEtatDesLieuxData,
   prepareDepositReceptionData,
   prepareDepositRestitutionData,
+  generateRegulationLetter,
+  generateRentReceipt,
+  type RegulationLetterData,
+  type RentReceiptData,
 } from './documentGenerator';
 import type { Inventory } from '@/db/types';
+
+// `pizzip` and `docxtemplater` are loaded lazily (dynamic `import()`) inside the
+// generation functions so they are code-split out of the initial bundle. Mock
+// both so we can assert the dynamic-import render path is exercised without
+// touching a real .docx template.
+vi.mock('pizzip', () => ({
+  __esModule: true,
+  // Regular function so it can be called with `new` inside renderDocxTemplate.
+  default: vi.fn(function () {
+    return {};
+  }),
+}));
+vi.mock('docxtemplater', () => ({
+  __esModule: true,
+  default: vi.fn(function () {
+    return {
+      render: vi.fn(),
+      getZip: () => ({
+        generate: () =>
+          new Blob(['docx'], {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          }),
+      }),
+    };
+  }),
+}));
+vi.mock('file-saver', () => ({ saveAs: vi.fn() }));
 
 const now = new Date('2026-06-29T10:00:00.000Z');
 
@@ -531,5 +565,90 @@ describe('typed entity access with missing optional fields', () => {
     const data = await prepareKeyHandoverAttestationData(leaseId);
     expect(data.propertyPostalCode).toBe('');
     expect(data.propertyTown).toBe('');
+  });
+});
+
+describe('DOCX generation via lazily-loaded pizzip/docxtemplater', () => {
+  const PizZipMock = vi.mocked(PizZip);
+  const DocxtemplaterMock = vi.mocked(Docxtemplater);
+  const saveAsMock = vi.mocked(saveAs);
+
+  const regulationData: RegulationLetterData = {
+    year: 2025,
+    provisionPaid: 600,
+    totalCharges: 690,
+    regulation: 90,
+    ownerAddress: '1 rue du Bailleur',
+    ownerFullName: 'M. Bailleur',
+    ownerEmail: 'owner@x.fr',
+    ownerPhoneNumber: '0600000000',
+    date: '13/07/2026',
+    tenantFullName: 'M. Dupont Jean',
+    tenantName: 'M. Dupont',
+    propertyName: 'Studio Belleville',
+    propertyAddress: '1 rue de Paris',
+    propertyPostalCode: '75020',
+    propertyTown: 'Paris',
+  };
+
+  const receiptData: RentReceiptData = {
+    ownerFullName: 'M. Bailleur',
+    ownerAddress: '1 rue du Bailleur',
+    ownerAddressInLine: '1 rue du Bailleur',
+    tenantFullName: 'M. Dupont Jean',
+    propertyName: 'Studio Belleville',
+    propertyAddress: '1 rue de Paris',
+    propertyPostalCode: '75020',
+    propertyTown: 'Paris',
+    month: 'juin',
+    year: 2026,
+    totalPayedAmount: 850,
+    totalPayedAmountInLetterUppercase: 'HUIT CENT CINQUANTE EUROS',
+    rentAmount: 800,
+    chargeAmount: 50,
+    paymentDate: '03/06/2026',
+    today: '13/07/2026',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // loadBinary() calls fetch(templatePath).arrayBuffer(); stub it so no real
+    // template file is required.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) }))
+    );
+  });
+
+  it('generateRegulationLetter loads the libs on demand and returns a blob + filename', async () => {
+    const { blob, filename } = await generateRegulationLetter(regulationData);
+
+    // The dynamic import path constructed both libs exactly once.
+    expect(PizZipMock).toHaveBeenCalledTimes(1);
+    expect(DocxtemplaterMock).toHaveBeenCalledTimes(1);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(filename).toMatch(/_courrierInfoRegulCharge\.docx$/);
+  });
+
+  it('generateRentReceipt loads the libs on demand and triggers a download', async () => {
+    await generateRentReceipt(receiptData);
+
+    expect(PizZipMock).toHaveBeenCalledTimes(1);
+    expect(DocxtemplaterMock).toHaveBeenCalledTimes(1);
+    // The generated blob is handed to file-saver for download.
+    expect(saveAsMock).toHaveBeenCalledTimes(1);
+    expect(saveAsMock.mock.calls[0]![0]).toBeInstanceOf(Blob);
+    expect(saveAsMock.mock.calls[0]![1]).toMatch(/_quittanceLoyer\.docx$/);
+  });
+
+  it('propagates errors when template loading fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('network down');
+      })
+    );
+
+    await expect(generateRegulationLetter(regulationData)).rejects.toThrow('network down');
   });
 });
