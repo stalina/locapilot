@@ -344,11 +344,14 @@ And the local database remains unchanged
 And no unhandled exception is thrown
 ```
 
-#### Scenario: New untyped `any` usages are blocked by linting
+#### Scenario: New untyped `any` usages are flagged by linting
 
 ```gherkin
 Given the project enforces TypeScript strict mode
+And the ESLint rule "@typescript-eslint/no-explicit-any" is configured as "warn"
 When a contributor introduces a new explicit `any` in a source file
-Then the ESLint rule "@typescript-eslint/no-explicit-any" reports it as an error
-And any deliberate, justified exception is annotated with an inline disable comment explaining why
+Then `npm run lint` reports it as a warning
+And the warning does not fail the build, so the large pre-existing `any` backlog (issue #63) is not blocking
 ```
+
+> Note: the rule is intentionally set to `warn` rather than `error` for now, because the codebase still carries a substantial legacy `any` backlog. Tightening it to `error` — optionally with inline `eslint-disable-next-line @typescript-eslint/no-explicit-any` comments justifying each deliberate exception — is a future, aspirational step once the backlog is cleared.
