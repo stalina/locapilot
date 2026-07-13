@@ -130,7 +130,9 @@ npm run type-check       # TypeScript check
 
 ### TypeScript
 
-- Strict mode enabled - NO `any` types
+- Strict mode enabled — **NEVER use the `any` type** and **NEVER use `@ts-ignore` / `@ts-expect-error`** to silence the type-checker. No exceptions.
+  - Type things properly instead: use `unknown` + narrowing, generics, discriminated unions, or precise interfaces.
+  - If a third-party type is wrong or missing, add/augment a `.d.ts` declaration rather than escaping the type system.
 - Interfaces for data structures (PascalCase)
 - Type imports: `import type { Property } from '@/db/types'`
 

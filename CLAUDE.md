@@ -27,6 +27,19 @@ npm run type-check && npm test
 
 ---
 
+## Mandatory TypeScript Strictness Rule
+
+> **NEVER use the `any` type, and NEVER use `@ts-ignore` or `@ts-expect-error` to silence the type-checker.**
+
+This rule applies without exception. TypeScript runs in strict mode — escaping it defeats the purpose.
+
+- **No `any`.** Type things properly instead: use `unknown` with narrowing, generics, discriminated unions, or precise interfaces/`type` aliases.
+- **No `@ts-ignore` / `@ts-expect-error`.** If the compiler complains, fix the underlying type — don't suppress the error.
+- **Third-party gaps:** when an external library ships wrong or missing types, add or augment a `.d.ts` declaration rather than casting through `any`.
+- If you genuinely believe a suppression is unavoidable, stop and ask the user before adding it — do not add it silently.
+
+---
+
 ## Mandatory Test Coverage Rule
 
 > **Every functional change MUST be covered by tests.**
