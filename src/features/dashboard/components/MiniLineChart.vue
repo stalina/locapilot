@@ -46,10 +46,12 @@ const linePath = computed(() =>
 );
 
 const areaPath = computed(() => {
-  if (coords.value.length === 0) return '';
+  const cs = coords.value;
+  if (cs.length === 0) return '';
   const baseline = HEIGHT - PAD_BOTTOM;
-  const first = coords.value[0];
-  const last = coords.value[coords.value.length - 1];
+  const first = cs[0];
+  const last = cs[cs.length - 1];
+  if (!first || !last) return '';
   return `${linePath.value} L ${last.x.toFixed(1)} ${baseline} L ${first.x.toFixed(1)} ${baseline} Z`;
 });
 
