@@ -11,6 +11,8 @@ import Badge from '@/shared/components/Badge.vue';
 import { useDashboardStore } from '../stores/dashboardStore';
 import type { DashboardAlert } from '../services/dashboardAlertsService';
 import type { ScheduleItem } from '../services/dashboardScheduleService';
+import MiniLineChart from '../components/MiniLineChart.vue';
+import MiniBarChart from '../components/MiniBarChart.vue';
 
 const router = useRouter();
 const dashboardStore = useDashboardStore();
@@ -20,6 +22,9 @@ const recentActivities = computed(() => dashboardStore.recentActivities);
 const upcomingEvents = computed(() => dashboardStore.upcomingEvents);
 const alerts = computed(() => dashboardStore.alerts);
 const scheduleItems = computed(() => dashboardStore.scheduleItems);
+const revenueSeries = computed(() => dashboardStore.revenueSeries);
+const occupancySeries = computed(() => dashboardStore.occupancySeries);
+const revenuePerProperty = computed(() => dashboardStore.revenuePerProperty);
 // stores are not used directly in this view; navigation delegates to feature views
 // const propertiesStore = usePropertiesStore();
 // const tenantsStore = useTenantsStore();
@@ -292,6 +297,57 @@ function handleEventClick(event: any) {
         </div>
       </div>
     </section>
+
+    <!-- Analyse -->
+    <section class="section-card analyse-section" data-testid="dashboard-analyse">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="mdi mdi-chart-line"></i>
+          Analyse
+        </h2>
+      </div>
+
+      <div class="charts-grid">
+        <!-- Revenue / cash-flow curve -->
+        <div class="chart-card" data-testid="dashboard-chart-revenue">
+          <h3 class="chart-title">Trésorerie (12 derniers mois)</h3>
+          <div
+            v-if="revenueSeries.length === 0"
+            class="empty-list"
+            data-testid="dashboard-chart-revenue-empty"
+          >
+            Pas encore de données à analyser
+          </div>
+          <MiniLineChart v-else :points="revenueSeries" suffix=" €" color="#22c55e" />
+        </div>
+
+        <!-- Occupancy-rate evolution -->
+        <div class="chart-card" data-testid="dashboard-chart-occupancy">
+          <h3 class="chart-title">Évolution du taux d'occupation</h3>
+          <div
+            v-if="occupancySeries.length === 0"
+            class="empty-list"
+            data-testid="dashboard-chart-occupancy-empty"
+          >
+            Pas encore de données à analyser
+          </div>
+          <MiniLineChart v-else :points="occupancySeries" suffix=" %" color="#4f46e5" />
+        </div>
+
+        <!-- Revenue per property -->
+        <div class="chart-card" data-testid="dashboard-chart-per-property">
+          <h3 class="chart-title">Répartition des revenus par bien</h3>
+          <div
+            v-if="revenuePerProperty.length === 0"
+            class="empty-list"
+            data-testid="dashboard-chart-per-property-empty"
+          >
+            Pas encore de données à analyser
+          </div>
+          <MiniBarChart v-else :items="revenuePerProperty" suffix=" €" color="#0ea5e9" />
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -422,5 +478,33 @@ function handleEventClick(event: any) {
 .schedule-chevron {
   color: var(--text-tertiary, #94a3b8);
   font-size: 1.25rem;
+}
+
+/* --- Analyse --- */
+.analyse-section {
+  margin-top: 1.5rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 0.75rem);
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.chart-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
 }
 </style>
