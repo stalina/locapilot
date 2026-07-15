@@ -37,7 +37,7 @@ type RawActivity = {
   meta?: unknown;
 };
 
-function parseDate(input: unknown): Date | null {
+export function parseDate(input: unknown): Date | null {
   if (!input) return null;
   if (input instanceof Date) return input;
   const parsed = new Date(input as any);

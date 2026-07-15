@@ -28,6 +28,12 @@ The **dashboard** is the home screen of Locapilot. It provides a high-level over
   - Pending charges regularizations: active leases without a charges adjustment row for the previous calendar year
   - Scheduled inventories (check-in / check-out) with a date in the future
 - Each schedule item is clickable and navigates directly to the corresponding action screen
+- An **analysis charts** section renders read-only visualisations aggregated over the last 12 months:
+  - a revenue / cash-flow line curve (monthly sum of paid amounts)
+  - an occupancy-rate evolution line curve (monthly percentage of properties with an active lease)
+  - a revenue-per-property breakdown (paid amounts grouped by property via `rent.leaseId → lease.propertyId`)
+- Charts use a bundled charting library (no network calls) so the dashboard remains fully offline
+- Each chart shows an empty-state message when it has no data to display
 
 ## Data Sources
 
@@ -45,7 +51,12 @@ graph TD
     Rev[Rent Revisions] -->|upcoming anniversaries| Schedule[Action Schedule]
     Adj[Charges Adjustments] -->|missing yearly regularization| Schedule
     Inv[Inventories] -->|scheduled check-in / check-out| Schedule
+    R -->|monthly paid amounts| Charts[Analysis Charts]
+    P & L -->|monthly occupancy| Charts
+    L -->|rent-to-property join| Charts
 ```
+
+The **analysis charts** section aggregates historical data (default: last 12 months) into three read-only visualisations: a revenue/cash-flow curve, an occupancy-rate trend, and a revenue-per-property breakdown. All series are computed client-side; rents are joined to their property via `rent.leaseId → lease.propertyId`.
 
 ---
 
@@ -328,4 +339,75 @@ Then the inventory item appears before the revision item
 Given no revision is due, no regularization is pending, and no inventory is scheduled
 When I view the "Échéancier" section
 Then an empty state message appears: "Aucune action à venir"
+```
+
+---
+
+### Story: View analysis charts
+
+**As a** landlord  
+**I want to** see visual charts analysing my portfolio (revenue over time, occupancy trend, revenue split per property)  
+**So that** I can understand the performance and evolution of my portfolio at a glance
+
+#### Scenario: Revenue / cash-flow curve over the last 12 months
+
+```gherkin
+Given today is 2026-07-14
+And rents with status "paid" or "partial" exist across the last 12 months
+When I open the Dashboard
+Then a "Trésorerie" line chart shows one point per month for the last 12 months
+And each month's value is the sum of the paid amounts (paidAmount, falling back to amount) of rents paid that month
+And the months are ordered chronologically from oldest to newest
+And each month is labelled with its short month name and year (e.g. "juil. 2026")
+```
+
+#### Scenario: Occupancy rate evolution over the last 12 months
+
+```gherkin
+Given today is 2026-07-14
+And properties and leases exist with varying active periods over the last 12 months
+When I open the Dashboard
+Then an "Évolution du taux d'occupation" line chart shows one point per month for the last 12 months
+And each month's value is the percentage of properties that had at least one active lease during that month
+And a lease is considered active for a month when its startDate is on or before the end of that month and its endDate is empty or on or after the start of that month
+And the value is rounded to one decimal place
+```
+
+#### Scenario: Revenue distribution per property
+
+```gherkin
+Given active and past leases link rents to their properties via leaseId then lease.propertyId
+And rents have been paid across several properties over the last 12 months
+When I open the Dashboard
+Then a "Répartition des revenus par bien" chart shows one slice/bar per property
+And each property's value is the sum of paid amounts of its rents over the last 12 months
+And the properties are ordered by descending revenue
+And each slice/bar is labelled with the property name
+```
+
+#### Scenario: Rent without a resolvable property is ignored in the distribution
+
+```gherkin
+Given a rent references a leaseId whose lease no longer exists
+When the "Répartition des revenus par bien" chart is computed
+Then that rent is excluded from every property's total
+And no error is thrown
+```
+
+#### Scenario: Empty analysis charts
+
+```gherkin
+Given no paid rents and no properties exist
+When I open the Dashboard
+Then each analysis chart shows an empty state message: "Pas encore de données à analyser"
+And no chart is rendered with zero data points
+```
+
+#### Scenario: Charts stay within the offline PWA constraints
+
+```gherkin
+Given the application runs fully offline
+When the Dashboard charts are rendered
+Then the charts are drawn using a bundled charting solution with no network request
+And all chart data is computed client-side from IndexedDB
 ```
