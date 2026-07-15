@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, useTemplateRef } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDocumentsStore } from '../stores/documentsStore';
 import {
@@ -12,6 +12,7 @@ import DocumentPreviewModal from '@/shared/components/DocumentPreviewModal.vue';
 import UploadZone from '@/shared/components/UploadZone.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import SearchBox from '@/shared/components/SearchBox.vue';
+import { useVirtualScroll } from '@/shared/composables/useVirtualScroll';
 import type { Document } from '@/db/types';
 
 const documentsStore = useDocumentsStore();
@@ -89,6 +90,27 @@ const filteredDocuments = computed(() => {
   result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return result;
+});
+
+// Viewport virtualization: only mount visible cards once the grid grows large.
+// Below the threshold every card is rendered exactly as before.
+const DOCUMENT_CARD_HEIGHT = 292; // approx. rendered card height (276) + grid gap (16) in px
+const DOCUMENT_VIEWPORT_HEIGHT = 720; // fixed scroll container height when virtualized
+const documentsScrollContainer = useTemplateRef<HTMLElement>('documentsScrollContainer');
+const {
+  isVirtual: isDocumentsVirtual,
+  visibleItems: visibleDocuments,
+  topSpacerHeight: documentsTopSpacer,
+  bottomSpacerHeight: documentsBottomSpacer,
+  onScroll: onDocumentsScroll,
+} = useVirtualScroll<Document>({
+  items: filteredDocuments,
+  itemHeight: DOCUMENT_CARD_HEIGHT,
+  viewportHeight: DOCUMENT_VIEWPORT_HEIGHT,
+  containerRef: documentsScrollContainer,
+  // Reset scroll to top whenever a search / filter narrows the grid.
+  resetKey: () =>
+    `${searchQuery.value}|${filterType.value}|${filterEntityType.value}|${filterEntityId.value}`,
 });
 
 // Handlers
@@ -325,16 +347,36 @@ onMounted(async () => {
     </div>
 
     <!-- Documents Grid -->
-    <div v-else class="documents-grid">
+    <div
+      v-else
+      ref="documentsScrollContainer"
+      class="documents-grid"
+      :class="{ 'is-virtual': isDocumentsVirtual }"
+      data-testid="documents-scroll-container"
+      @scroll="onDocumentsScroll"
+    >
+      <div
+        v-if="documentsTopSpacer > 0"
+        class="virtual-spacer"
+        aria-hidden="true"
+        :style="{ height: `${documentsTopSpacer}px` }"
+      ></div>
       <DocumentCard
-        v-for="document in filteredDocuments"
+        v-for="{ item: document } in visibleDocuments"
         :key="document.id"
         :document="document"
+        data-testid="document-card"
         @preview="handlePreview(document)"
         @download="handleDownload(document)"
         @delete="handleDelete(document)"
         @update-expiry="handleExpiryUpdate(document, $event)"
       />
+      <div
+        v-if="documentsBottomSpacer > 0"
+        class="virtual-spacer"
+        aria-hidden="true"
+        :style="{ height: `${documentsBottomSpacer}px` }"
+      ></div>
     </div>
 
     <!-- Preview Modal -->
@@ -352,6 +394,23 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 1rem);
+}
+
+/* When the grid is large, it becomes the scroll viewport so that only the
+   visible cards are mounted (viewport virtualization). */
+.documents-grid.is-virtual {
+  max-height: 720px;
+  overflow-y: auto;
+}
+
+/* In the flex column, spacers and cards must keep their intrinsic height so
+   the virtual scroll range stays proportional to the full list. */
+.documents-grid.is-virtual > * {
+  flex-shrink: 0;
+}
+
+.virtual-spacer {
+  flex-shrink: 0;
 }
 
 .entity-filters {

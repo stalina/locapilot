@@ -413,6 +413,42 @@ Then the document is saved with expiresAt 2027-05-01
 And the corresponding dashboard alert disappears if the new date is in the future
 ```
 
+---
+
+### Story: Browse a large documents list smoothly
+
+**As a** landlord  
+**I want to** the documents grid to stay responsive even with hundreds of files  
+**So that** I can browse my archive without the interface freezing
+
+#### Scenario: Render a large documents grid without freezing (virtual scrolling)
+
+```gherkin
+Given I have 400 documents matching the current filters
+When I open the Documents page
+Then the documents grid only mounts the cards currently visible in the viewport
+And additional cards are rendered on demand as I scroll
+And scrolling stays smooth without freezing the interface
+```
+
+#### Scenario: Virtual scrolling preserves search and filters
+
+```gherkin
+Given a large documents grid is displayed with virtual scrolling enabled
+When I change the search query, type filter, or entity filter
+Then the virtualized grid resets to the top
+And only cards matching the new criteria are rendered as I scroll
+```
+
+#### Scenario: Small documents lists render without virtualization overhead
+
+```gherkin
+Given I have fewer documents than the virtualization threshold
+When I open the Documents page
+Then every document card is rendered
+And no visual or behavioural difference is perceptible compared to the previous grid
+```
+
 ### Story: Generate documents from strongly typed entity data
 
 **As a** maintainer  

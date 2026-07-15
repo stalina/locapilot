@@ -122,6 +122,34 @@ Then I see:
   - Payment rate: (e.g.) 67%
 ```
 
+#### Scenario: Render a large rent list without freezing (virtual scrolling)
+
+```gherkin
+Given I have 500 rent records matching the current filters
+When I open the Rents page
+Then the rents table only mounts the rows currently visible in the viewport
+And additional rows are rendered on demand as I scroll
+And scrolling stays smooth without freezing the interface
+```
+
+#### Scenario: Virtual scrolling preserves sorting and filtering
+
+```gherkin
+Given a large rent list is displayed with virtual scrolling enabled
+When I change the status or month filter
+Then the virtualized list resets to the top
+And only rows matching the new filter are rendered as I scroll
+```
+
+#### Scenario: Small rent lists render without virtualization overhead
+
+```gherkin
+Given I have fewer rents than the virtualization threshold
+When I open the Rents page
+Then every rent row is rendered
+And no visual or behavioural difference is perceptible compared to the previous list
+```
+
 ---
 
 ### Story: Pay a rent
