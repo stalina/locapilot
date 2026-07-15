@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useVirtualScroll } from '@/shared/composables/useVirtualScroll';
 import { useRentsStore } from '../stores/rentsStore';
 import { useLeasesStore } from '@/features/leases/stores/leasesStore';
 import { usePropertiesStore } from '@/features/properties/stores/propertiesStore';
@@ -195,6 +196,26 @@ const displayedRents = computed(() => {
   return rents.sort(
     (a: any, b: any) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
   );
+});
+
+// Viewport virtualization: only mount visible rows once the list grows large.
+// Below the threshold the plain table is rendered exactly as before.
+const RENT_ROW_HEIGHT = 78; // approx. rendered height of a table row (px)
+const RENT_VIEWPORT_HEIGHT = 640; // fixed scroll container height when virtualized
+const {
+  containerRef: rentsScrollContainer,
+  isVirtual: isRentsVirtual,
+  visibleItems: visibleRents,
+  topSpacerHeight: rentsTopSpacer,
+  bottomSpacerHeight: rentsBottomSpacer,
+  onScroll: onRentsScroll,
+} = useVirtualScroll<Rent & { isVirtual: boolean }>({
+  items: displayedRents,
+  itemHeight: RENT_ROW_HEIGHT,
+  viewportHeight: RENT_VIEWPORT_HEIGHT,
+  // Reset scroll to top whenever a filter that changes the list is applied.
+  resetKey: () =>
+    `${statusFilter.value}|${route.query.propertyId ?? ''}|${route.query.tenantId ?? ''}`,
 });
 
 const stats = computed(() => ({
@@ -405,7 +426,13 @@ const handleSendReminder = async (rent: Rent) => {
 
     <!-- Suggested Rents (from active leases) -->
     <!-- Rents Table -->
-    <div class="rents-table-container">
+    <div
+      ref="rentsScrollContainer"
+      class="rents-table-container"
+      :class="{ 'is-virtual': isRentsVirtual }"
+      data-testid="rents-scroll-container"
+      @scroll="onRentsScroll"
+    >
       <table class="rents-table">
         <thead>
           <tr>
@@ -420,7 +447,15 @@ const handleSendReminder = async (rent: Rent) => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="rent in displayedRents" :key="rent.id" class="rent-row">
+          <tr v-if="rentsTopSpacer > 0" class="virtual-spacer" aria-hidden="true">
+            <td :colspan="8" :style="{ height: `${rentsTopSpacer}px`, padding: 0 }"></td>
+          </tr>
+          <tr
+            v-for="{ item: rent } in visibleRents"
+            :key="rent.id"
+            class="rent-row"
+            data-testid="rent-row"
+          >
             <td class="date-cell">{{ formatDate(rent.dueDate) }}</td>
             <td class="property-cell">
               {{
@@ -484,6 +519,9 @@ const handleSendReminder = async (rent: Rent) => {
               </div>
             </td>
           </tr>
+          <tr v-if="rentsBottomSpacer > 0" class="virtual-spacer" aria-hidden="true">
+            <td :colspan="8" :style="{ height: `${rentsBottomSpacer}px`, padding: 0 }"></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -520,6 +558,20 @@ const handleSendReminder = async (rent: Rent) => {
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
   overflow: hidden;
+}
+
+/* When the list is large, the container becomes the scroll viewport so that
+   only the visible rows are mounted (viewport virtualization). */
+.rents-table-container.is-virtual {
+  max-height: 640px;
+  overflow-y: auto;
+}
+
+.rents-table-container.is-virtual thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--neutral-50, #f9fafb);
 }
 
 .rents-table {
