@@ -22,6 +22,12 @@ export interface UseVirtualScrollOptions<T> {
    * position is reset to the top (used on filter / search / sort changes).
    */
   resetKey?: () => unknown;
+  /**
+   * Optional externally-owned scroll container ref (e.g. from `useTemplateRef`).
+   * When provided, it is used for DOM-level scroll resets and the caller binds
+   * it to the container element; otherwise the composable creates its own.
+   */
+  containerRef?: Readonly<Ref<HTMLElement | null>>;
 }
 
 export interface VirtualItem<T> {
@@ -30,8 +36,8 @@ export interface VirtualItem<T> {
 }
 
 export interface UseVirtualScrollReturn<T> {
-  /** Element ref to bind on the scroll container. */
-  containerRef: Ref<HTMLElement | null>;
+  /** Element ref used for the scroll container (own or the caller-provided one). */
+  containerRef: Readonly<Ref<HTMLElement | null>>;
   /** True when the list exceeds the threshold and virtualization is active. */
   isVirtual: ComputedRef<boolean>;
   /** The subset of items to actually render (all items when not virtual). */
@@ -63,7 +69,8 @@ export function useVirtualScroll<T>(
   const threshold = options.threshold ?? VIRTUAL_SCROLL_THRESHOLD;
   const overscan = options.overscan ?? 5;
 
-  const containerRef = ref<HTMLElement | null>(null);
+  const containerRef: Readonly<Ref<HTMLElement | null>> =
+    options.containerRef ?? ref<HTMLElement | null>(null);
   const scrollTop = ref(0);
 
   const isVirtual = computed(() => items.value.length > threshold);

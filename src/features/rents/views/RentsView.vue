@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useTemplateRef } from 'vue';
 import { useRoute } from 'vue-router';
 import { useVirtualScroll } from '@/shared/composables/useVirtualScroll';
 import { useRentsStore } from '../stores/rentsStore';
@@ -202,8 +202,8 @@ const displayedRents = computed(() => {
 // Below the threshold the plain table is rendered exactly as before.
 const RENT_ROW_HEIGHT = 78; // approx. rendered height of a table row (px)
 const RENT_VIEWPORT_HEIGHT = 640; // fixed scroll container height when virtualized
+const rentsScrollContainer = useTemplateRef<HTMLElement>('rentsScrollContainer');
 const {
-  containerRef: rentsScrollContainer,
   isVirtual: isRentsVirtual,
   visibleItems: visibleRents,
   topSpacerHeight: rentsTopSpacer,
@@ -213,6 +213,7 @@ const {
   items: displayedRents,
   itemHeight: RENT_ROW_HEIGHT,
   viewportHeight: RENT_VIEWPORT_HEIGHT,
+  containerRef: rentsScrollContainer,
   // Reset scroll to top whenever a filter that changes the list is applied.
   resetKey: () =>
     `${statusFilter.value}|${route.query.propertyId ?? ''}|${route.query.tenantId ?? ''}`,

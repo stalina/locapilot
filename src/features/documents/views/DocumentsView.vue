@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, useTemplateRef } from 'vue';
 import { useRoute } from 'vue-router';
 import { useDocumentsStore } from '../stores/documentsStore';
 import {
@@ -96,8 +96,8 @@ const filteredDocuments = computed(() => {
 // Below the threshold every card is rendered exactly as before.
 const DOCUMENT_CARD_HEIGHT = 292; // approx. rendered card height (276) + grid gap (16) in px
 const DOCUMENT_VIEWPORT_HEIGHT = 720; // fixed scroll container height when virtualized
+const documentsScrollContainer = useTemplateRef<HTMLElement>('documentsScrollContainer');
 const {
-  containerRef: documentsScrollContainer,
   isVirtual: isDocumentsVirtual,
   visibleItems: visibleDocuments,
   topSpacerHeight: documentsTopSpacer,
@@ -107,6 +107,7 @@ const {
   items: filteredDocuments,
   itemHeight: DOCUMENT_CARD_HEIGHT,
   viewportHeight: DOCUMENT_VIEWPORT_HEIGHT,
+  containerRef: documentsScrollContainer,
   // Reset scroll to top whenever a search / filter narrows the grid.
   resetKey: () =>
     `${searchQuery.value}|${filterType.value}|${filterEntityType.value}|${filterEntityId.value}`,
