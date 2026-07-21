@@ -33,6 +33,38 @@ test.describe('Settings - Synchronisation P2P', () => {
     });
   });
 
+  test('Golden path : héberger génère un ID de session UUID v4 et un PIN 6 chiffres (crypto)', async ({
+    page,
+  }) => {
+    const p2pCard = page
+      .locator('.setting-card', { hasText: 'Synchronisation Peer-to-peer' })
+      .first();
+    await expect(p2pCard).toBeVisible({ timeout: 10_000 });
+
+    // Le descriptif reflète la clé de session par appairage (pas de secret de build).
+    await expect(p2pCard).toContainText(/clé de session propre à chaque appairage/i);
+
+    // Démarrer l'hébergement : les identifiants de session s'affichent.
+    await p2pCard.getByRole('button', { name: 'Héberger' }).click();
+
+    const sessionInfo = p2pCard.locator('.peer-session-info');
+    await expect(sessionInfo).toBeVisible({ timeout: 15_000 });
+
+    // L'ID de session est un UUID v4 généré via crypto.getRandomValues,
+    // préfixé "lcp-", sans timestamp ni composant devinable.
+    const sessionId = (await sessionInfo.locator('code').first().innerText()).trim();
+    expect(sessionId).toMatch(
+      /^lcp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+
+    // Le PIN est composé de 6 chiffres.
+    const pin = (await sessionInfo.locator('.peer-pin').first().innerText()).trim();
+    expect(pin).toMatch(/^\d{6}$/);
+
+    // Le PIN n'est jamais inclus dans l'ID de session.
+    expect(sessionId).not.toContain(pin);
+  });
+
   test('Le formulaire client expose les deux champs requis : ID de session et code PIN', async ({
     page,
   }) => {

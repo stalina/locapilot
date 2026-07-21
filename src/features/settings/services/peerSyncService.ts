@@ -1,20 +1,38 @@
 import Peer, { type DataConnection } from 'peerjs';
 
-// Runtime-injected values (via Vite define). Typed through the `ImportMeta`
-// augmentation in `src/vite-env.d.ts`, so no `@ts-ignore`/`as any` is needed.
-const APP_VERSION = import.meta.__APP_VERSION__ || '';
-const BUILD_SECRET_KEY = import.meta.__BUILD_SECRET_KEY__ || '';
-const APP_NAME = 'locapilot';
+// ---------------------------------------------------------------------------
+// P2P security model (see docs/specs/data-transfer.md — "P2P security model")
+//
+// Confidentiality is NOT provided by any build-time secret. Each pairing derives
+// a fresh, unique AES-GCM key bound to the shared PIN and to a random salt
+// exchanged during the handshake (PBKDF2-SHA-256). Two pairings — even with the
+// same PIN — produce different keys because the salt is random per connection,
+// and the key cannot be derived from anything shipped in the public bundle.
+// ---------------------------------------------------------------------------
+
+/** PBKDF2 iterations for the session-key derivation. High enough to slow down
+ *  offline PIN brute-forcing of a captured ciphertext. */
+export const PBKDF2_ITERATIONS = 210_000;
+/** Length (bytes) of the random salt exchanged at handshake. */
+export const SALT_BYTES = 16;
+/** Wrong-PIN attempts the host tolerates before it locks out (3–5). */
+export const MAX_PIN_ATTEMPTS = 3;
+/** Base delay (ms) for the exponential back-off applied after a lockout. */
+export const LOCKOUT_BASE_MS = 30_000;
 
 /**
  * Typed protocol exchanged over the PeerJS data connection.
  *
  * A discriminated union on `type`: narrowing on `msg.type` makes the extra
- * fields (`pin`, `iv`, `payload`) type-safe only inside the matching branch.
- * Messages whose `type` is not part of this union are treated as pass-through
- * (see `connect()`), never as a protocol error.
+ * fields (`salt`, `pin`, `iv`, `payload`) type-safe only inside the matching
+ * branch. Messages whose `type` is not part of this union are ignored.
+ *
+ * Handshake order: host → `handshake` (random salt); client derives the session
+ * key then → `auth` (PIN); host verifies the PIN, derives the same key, and
+ * replies `auth_ok` / `auth_failed`; the encrypted `export` follows.
  */
 export type SyncMessage =
+  | { type: 'handshake'; salt: string }
   | { type: 'auth'; pin: string }
   | { type: 'auth_ok' }
   | { type: 'auth_failed' }
@@ -43,28 +61,60 @@ const uint8ToBase64 = (b: Uint8Array) => {
 };
 const base64ToUint8 = (s: string) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
-async function deriveKey(): Promise<CryptoKey> {
-  // Concatenate app name + version + build secret
-  const seed = `${APP_NAME}:${APP_VERSION}:${BUILD_SECRET_KEY}`;
-  const ikm = textToUint8(seed);
+/**
+ * Derive the per-pairing AES-GCM session key from the shared PIN and the random
+ * salt exchanged at handshake. Both peers call this with the same PIN + salt and
+ * therefore obtain an identical key; a different salt (or PIN) yields a
+ * different key. The result never depends on any build-time secret.
+ */
+export async function deriveSessionKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
+  if (!pin) throw new Error('deriveSessionKey: PIN is required');
+  if (!salt || salt.length === 0) throw new Error('deriveSessionKey: salt is required');
 
-  // Import as raw key for HKDF
-  const baseKey = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey']);
+  const baseKey = await crypto.subtle.importKey('raw', textToUint8(pin), 'PBKDF2', false, [
+    'deriveKey',
+  ]);
 
-  // Derive a 256-bit AES-GCM key using HKDF-SHA-256
-  const derived = await crypto.subtle.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(16), info: new Uint8Array(0) },
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: PBKDF2_ITERATIONS },
     baseKey,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']
   );
-
-  return derived;
 }
 
-async function encryptPayload(plain: string) {
-  const key = await deriveKey();
+/** Cryptographically random 16-byte salt for a new pairing. */
+export function generateSalt(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+}
+
+/**
+ * Cryptographically random session identifier (UUID v4, ≥122 bits of entropy).
+ * Contains no timestamp, no `Math.random()` output and no other guessable or
+ * enumerable component. A short non-secret prefix marks it as a Locapilot id.
+ */
+export function generateSessionId(): string {
+  return `lcp-${crypto.randomUUID()}`;
+}
+
+/**
+ * Cryptographically random 6-digit PIN, uniform over 000000–999999 with no
+ * modulo bias (rejection sampling) and generated via `crypto.getRandomValues`.
+ */
+export function generatePin(): string {
+  const range = 1_000_000; // 000000..999999
+  const limit = Math.floor(0xff_ff_ff_ff / range) * range; // largest unbiased bound
+  const buf = new Uint32Array(1);
+  let value: number;
+  do {
+    crypto.getRandomValues(buf);
+    value = buf[0];
+  } while (value >= limit);
+  return String(value % range).padStart(6, '0');
+}
+
+async function encryptPayload(key: CryptoKey, plain: string) {
   // random IV 12 bytes
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const enc = textToUint8(plain);
@@ -73,8 +123,7 @@ async function encryptPayload(plain: string) {
   return { iv: uint8ToBase64(iv), payload: uint8ToBase64(cipherU8) };
 }
 
-async function decryptPayload(ivB64: string, payloadB64: string) {
-  const key = await deriveKey();
+async function decryptPayload(key: CryptoKey, ivB64: string, payloadB64: string) {
   const iv = base64ToUint8(ivB64);
   const cipher = base64ToUint8(payloadB64);
   const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
@@ -90,6 +139,7 @@ export type PeerStatus =
   | 'auth-pending'
   | 'auth-ok'
   | 'auth-failed'
+  | 'locked-out'
   | 'connected'
   | 'importing'
   | 'warning'
@@ -105,10 +155,33 @@ export class PeerSyncService {
   private onData?: OnDataCb;
   private onStatus?: OnStatusCb;
   private pairingPin: string = '';
+  /** Random salt for the current pairing and the derived AES-GCM session key. */
+  private salt: Uint8Array | null = null;
+  private sessionKey: CryptoKey | null = null;
+  /** Host-side wrong-PIN counter for brute-force protection. */
+  private failedPinAttempts = 0;
+
+  // Cross-session lockout state: `static` so it survives service
+  // re-instantiation and a host cannot immediately re-host after being
+  // brute-forced. `lockoutUntil` is the wall-clock time before which hosting is
+  // refused; `lockoutCount` drives the exponential back-off.
+  private static lockoutUntil = 0;
+  private static lockoutCount = 0;
 
   constructor(onData?: OnDataCb, onStatus?: OnStatusCb) {
     this.onData = onData;
     this.onStatus = onStatus;
+  }
+
+  /** Test/utility hook: clear the module-level lockout back-off. */
+  static resetLockout(): void {
+    PeerSyncService.lockoutUntil = 0;
+    PeerSyncService.lockoutCount = 0;
+  }
+
+  /** Remaining lockout time in ms (0 when hosting is allowed). */
+  static lockoutRemainingMs(now: number = Date.now()): number {
+    return Math.max(0, PeerSyncService.lockoutUntil - now);
   }
 
   private notify(status: PeerStatus, info?: unknown) {
@@ -123,9 +196,33 @@ export class PeerSyncService {
     return import.meta.env.DEV ? 2 : 0;
   }
 
+  private engageLockout() {
+    const backoff = LOCKOUT_BASE_MS * 2 ** PeerSyncService.lockoutCount;
+    PeerSyncService.lockoutCount += 1;
+    PeerSyncService.lockoutUntil = Date.now() + backoff;
+    if (this.peer) {
+      try {
+        this.peer.destroy();
+      } catch (e) {
+        console.warn('peer.destroy failed', e);
+      }
+      this.peer = null;
+    }
+    this.conn = null;
+    this.notify('locked-out', { attempts: this.failedPinAttempts, retryAfterMs: backoff });
+  }
+
   async startHosting(id: string, pin: string) {
     if (this.peer) return;
+
+    const remaining = PeerSyncService.lockoutRemainingMs();
+    if (remaining > 0) {
+      this.notify('locked-out', { retryAfterMs: remaining });
+      return;
+    }
+
     this.pairingPin = pin;
+    this.failedPinAttempts = 0;
     this.notify('creating');
     this.peer = new Peer(id, { debug: this.debugLevel });
 
@@ -144,25 +241,14 @@ export class PeerSyncService {
 
       c.on('open', () => {
         this.notify('connection-open');
+        // Start the handshake: send a fresh random salt for this pairing.
+        this.salt = generateSalt();
+        c.send({ type: 'handshake', salt: uint8ToBase64(this.salt) } satisfies SyncMessage);
         this.notify('auth-pending');
       });
 
       c.on('data', (msg: unknown) => {
-        if (isRecord(msg) && msg.type === 'auth') {
-          if (msg.pin === this.pairingPin) {
-            c.send({ type: 'auth_ok' } satisfies SyncMessage);
-            this.notify('auth-ok');
-          } else {
-            c.send({ type: 'auth_failed' } satisfies SyncMessage);
-            this.notify('auth-failed');
-            try {
-              c.close();
-            } catch {
-              // ignore
-            }
-            this.conn = null;
-          }
-        }
+        void this.handleHostData(c, msg);
       });
 
       c.on('close', () => {
@@ -178,6 +264,33 @@ export class PeerSyncService {
     this.peer.on('error', (err: Error) => {
       this.notify('error', err);
     });
+  }
+
+  private async handleHostData(conn: DataConnection, msg: unknown) {
+    if (!isRecord(msg) || msg.type !== 'auth') return;
+
+    if (msg.pin === this.pairingPin && this.salt) {
+      // Correct PIN → derive the shared session key and confirm.
+      this.sessionKey = await deriveSessionKey(this.pairingPin, this.salt);
+      conn.send({ type: 'auth_ok' } satisfies SyncMessage);
+      this.notify('auth-ok');
+      return;
+    }
+
+    // Wrong PIN → count the failure, reject, and lock out past the threshold.
+    this.failedPinAttempts += 1;
+    conn.send({ type: 'auth_failed' } satisfies SyncMessage);
+    this.notify('auth-failed', { attempts: this.failedPinAttempts });
+    try {
+      conn.close();
+    } catch {
+      // ignore
+    }
+    this.conn = null;
+
+    if (this.failedPinAttempts >= MAX_PIN_ATTEMPTS) {
+      this.engageLockout();
+    }
   }
 
   stopHosting() {
@@ -197,7 +310,7 @@ export class PeerSyncService {
       }
       this.peer = null;
     }
-    this.pairingPin = '';
+    this.resetPairingState();
     this.notify('stopped');
   }
 
@@ -212,8 +325,8 @@ export class PeerSyncService {
     }
     this.pairingPin = pin;
 
-    // create an ephemeral peer id to avoid passing undefined to Peer constructor
-    const ephemeralId = `peer-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`;
+    // Ephemeral, non-guessable client peer id (never reused across pairings).
+    const ephemeralId = `peer-${crypto.randomUUID()}`;
     this.peer = new Peer(ephemeralId, { debug: this.debugLevel });
 
     this.peer.on('open', (id: string) => {
@@ -223,39 +336,12 @@ export class PeerSyncService {
 
       conn.on('open', () => {
         this.notify('connection-open');
-        // Send pairing authentication immediately after channel opens
-        conn.send({ type: 'auth', pin: this.pairingPin } satisfies SyncMessage);
         this.notify('auth-pending');
+        // Wait for the host handshake (salt) before sending the PIN.
       });
 
-      conn.on('data', async (data: unknown) => {
-        try {
-          if (isRecord(data) && data.type === 'auth_ok') {
-            this.notify('auth-ok');
-          } else if (isRecord(data) && data.type === 'auth_failed') {
-            this.notify('auth-failed');
-            this.disconnect();
-          } else if (
-            isRecord(data) &&
-            data.type === 'export' &&
-            typeof data.iv === 'string' &&
-            typeof data.payload === 'string'
-          ) {
-            try {
-              const decrypted = await decryptPayload(data.iv, data.payload);
-              await this.onData?.({ type: 'export', payload: decrypted });
-            } catch (e) {
-              console.error('Failed to decrypt incoming payload', e);
-              this.notify('error', e);
-            }
-          } else {
-            // Unknown message type: pass through unchanged. The remote payload is
-            // untyped at this boundary, so it is forwarded as-is to `onData`.
-            await this.onData?.(data as SyncMessage | DecryptedExportMessage);
-          }
-        } catch (e) {
-          console.error('onData handler failed', e);
-        }
+      conn.on('data', (data: unknown) => {
+        void this.handleClientData(conn, data);
       });
 
       conn.on('error', (err: Error) => {
@@ -266,6 +352,35 @@ export class PeerSyncService {
     this.peer.on('error', (err: Error) => {
       this.notify('error', err);
     });
+  }
+
+  private async handleClientData(conn: DataConnection, data: unknown) {
+    if (!isRecord(data) || typeof data.type !== 'string') return;
+
+    try {
+      if (data.type === 'handshake' && typeof data.salt === 'string') {
+        // Derive the session key from PIN + host salt, then authenticate.
+        this.salt = base64ToUint8(data.salt);
+        this.sessionKey = await deriveSessionKey(this.pairingPin, this.salt);
+        conn.send({ type: 'auth', pin: this.pairingPin } satisfies SyncMessage);
+      } else if (data.type === 'auth_ok') {
+        this.notify('auth-ok');
+      } else if (data.type === 'auth_failed') {
+        this.notify('auth-failed');
+        this.disconnect();
+      } else if (
+        data.type === 'export' &&
+        typeof data.iv === 'string' &&
+        typeof data.payload === 'string'
+      ) {
+        if (!this.sessionKey) throw new Error('No session key established');
+        const decrypted = await decryptPayload(this.sessionKey, data.iv, data.payload);
+        await this.onData?.({ type: 'export', payload: decrypted });
+      }
+    } catch (e) {
+      console.error('Failed to process incoming P2P data', e);
+      this.notify('error', e);
+    }
   }
 
   disconnect() {
@@ -285,8 +400,15 @@ export class PeerSyncService {
       }
       this.peer = null;
     }
-    this.pairingPin = '';
+    this.resetPairingState();
     this.notify('stopped');
+  }
+
+  private resetPairingState() {
+    this.pairingPin = '';
+    this.salt = null;
+    this.sessionKey = null;
+    this.failedPinAttempts = 0;
   }
 
   sendExport(json: string) {
@@ -294,11 +416,15 @@ export class PeerSyncService {
     if (!conn || conn.open === false) {
       throw new Error('No open connection to send data');
     }
+    const key = this.sessionKey;
+    if (!key) {
+      throw new Error('No session key established');
+    }
     try {
       // encrypt payload before sending
       (async () => {
         try {
-          const { iv, payload } = await encryptPayload(json);
+          const { iv, payload } = await encryptPayload(key, json);
           conn.send({ type: 'export', iv, payload } satisfies SyncMessage);
         } catch (e) {
           console.error('Encryption failed', e);
