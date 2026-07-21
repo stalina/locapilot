@@ -59,7 +59,14 @@ const uint8ToBase64 = (b: Uint8Array) => {
   }
   return btoa(binary);
 };
-const base64ToUint8 = (s: string) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+// Decode to a Uint8Array backed by a concrete ArrayBuffer (not ArrayBufferLike),
+// so the result satisfies WebCrypto's `BufferSource` in strict build mode.
+const base64ToUint8 = (s: string): Uint8Array<ArrayBuffer> => {
+  const binary = atob(s);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+};
 
 /**
  * Derive the per-pairing AES-GCM session key from the shared PIN and the random
@@ -67,7 +74,10 @@ const base64ToUint8 = (s: string) => Uint8Array.from(atob(s), c => c.charCodeAt(
  * therefore obtain an identical key; a different salt (or PIN) yields a
  * different key. The result never depends on any build-time secret.
  */
-export async function deriveSessionKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveSessionKey(
+  pin: string,
+  salt: Uint8Array<ArrayBuffer>
+): Promise<CryptoKey> {
   if (!pin) throw new Error('deriveSessionKey: PIN is required');
   if (!salt || salt.length === 0) throw new Error('deriveSessionKey: salt is required');
 
@@ -85,7 +95,7 @@ export async function deriveSessionKey(pin: string, salt: Uint8Array): Promise<C
 }
 
 /** Cryptographically random 16-byte salt for a new pairing. */
-export function generateSalt(): Uint8Array {
+export function generateSalt(): Uint8Array<ArrayBuffer> {
   return crypto.getRandomValues(new Uint8Array(SALT_BYTES));
 }
 
@@ -106,10 +116,10 @@ export function generatePin(): string {
   const range = 1_000_000; // 000000..999999
   const limit = Math.floor(0xff_ff_ff_ff / range) * range; // largest unbiased bound
   const buf = new Uint32Array(1);
-  let value: number;
+  let value = 0;
   do {
     crypto.getRandomValues(buf);
-    value = buf[0];
+    value = buf[0] ?? 0;
   } while (value >= limit);
   return String(value % range).padStart(6, '0');
 }
@@ -156,7 +166,7 @@ export class PeerSyncService {
   private onStatus?: OnStatusCb;
   private pairingPin: string = '';
   /** Random salt for the current pairing and the derived AES-GCM session key. */
-  private salt: Uint8Array | null = null;
+  private salt: Uint8Array<ArrayBuffer> | null = null;
   private sessionKey: CryptoKey | null = null;
   /** Host-side wrong-PIN counter for brute-force protection. */
   private failedPinAttempts = 0;
