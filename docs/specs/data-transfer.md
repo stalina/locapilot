@@ -16,6 +16,14 @@ The **data transfer** module allows the landlord to export all application data 
 - A single non-conforming record (wrong type, missing required field, unknown extra field) rejects the **entire** import — no partial import
 - The same strict validation applies to every import channel: JSON file import AND data received from a P2P peer — there is exactly one validated import path (`importFromObject`)
 
+### P2P security model
+
+- **No shared, build-time key**: the AES-GCM key protecting a P2P transfer MUST NOT be derived from `BUILD_SECRET_KEY` or any other secret baked into the public bundle. Such a key is identical for every installation of a version and is publicly extractable from the JavaScript shipped on GitHub Pages, so it provides no real confidentiality.
+- **Per-pairing session key**: each pairing derives a fresh, unique encryption key bound to the PIN and to random material exchanged during the handshake. Two different pairings (or the same pair reconnecting) MUST produce different keys. Acceptable schemes: ephemeral ECDH (X25519) with a Short Authentication String confirmed via the PIN, or `PBKDF2(PIN + random salt exchanged at handshake)` with a high iteration count and a per-session random salt (never an all-zero salt, never an empty `info`).
+- **Cryptographically random identifiers**: the host session ID and the 6-digit PIN MUST be generated with `crypto.getRandomValues`. The session ID MUST NOT embed a timestamp, `Math.random()` output, or any other guessable/enumerable component. Because the ID is dictated aloud for re-keying, it MUST be short (≈8 characters, a dozen at most including any prefix/separators) and drawn from an alphabet without characters that are ambiguous when spoken (no `0`/`O`, `1`/`I`/`L`, `U`); mapping bytes to that alphabet MUST be debiased (rejection sampling or unbiased modulo). ≈40 bits of entropy is sufficient to prevent trivial enumeration on the shared public PeerJS broker. The ID's non-predictability comes solely from the CSPRNG; it is NOT a secret — confidentiality and authentication rest on the PIN (PBKDF2 session key) and the brute-force lockout, never on the ID.
+- **Brute-force protection**: the host counts failed PIN attempts and, after a small threshold (3–5), destroys its `Peer` and stops accepting connections; retries are throttled with an exponential back-off. A human `confirm()` dialog is never the sole barrier against PIN guessing.
+- **Truthful UI**: the interface only claims the connection is "chiffrée" when the confidentiality guarantee is real (per-pairing session key), not when it relies on a publicly derivable key.
+
 ## Export Format
 
 ```json
@@ -206,7 +214,7 @@ And photos and other binary documents are also present
 **I want to** transfer my data directly from one browser to another without a file  
 **So that** I can switch devices quickly without going through a manual export/import
 
-> ⚠️ This feature is experimental. Authentication uses a shared PIN communicated out-of-band.
+> ⚠️ This feature is experimental. Authentication uses a shared PIN communicated out-of-band, and confidentiality relies on a per-pairing session key (see the P2P security model in Domain Rules).
 
 #### Scenario: Successful P2P synchronisation with correct PIN
 
@@ -214,22 +222,46 @@ And photos and other binary documents are also present
 Given I am on device A (host) and open Settings > Synchronisation P2P
 When I click "Héberger"
 Then a session ID and a 6-digit PIN are displayed
+And the session ID is a short dictable code generated with crypto.getRandomValues (≈8 characters from an unambiguous alphabet, ≈40 bits)
+And the PIN is generated with crypto.getRandomValues
 And the PIN is NOT included in the session ID
 
 Given I am on device B (client) and open Settings > Synchronisation P2P
-When I enter the session ID and the PIN communicated verbally by device A
+When I enter the session ID (case-insensitively, ignoring spaces and dashes) and the PIN communicated verbally by device A
 And I click "Se connecter"
 Then a WebRTC connection is established
 And device B sends an auth message containing the PIN
 And device A verifies the PIN matches
 
 Given the PIN matches
+When both devices derive a per-pairing session key from the PIN and random handshake material
+Then the session key does NOT depend on BUILD_SECRET_KEY
 When device A confirms the transfer in the confirmation dialog
-Then device A encrypts its full export payload (AES-GCM) and sends it
-And device B decrypts the payload
+Then device A encrypts its full export payload (AES-GCM) with the session key and sends it
+And device B decrypts the payload with the same session key
 And device B shows a confirmation dialog before importing
 And device B imports the data, replacing its local database
 And a success message is shown: "Données synchronisées avec succès !"
+```
+
+#### Scenario: Session key is independent of any build-time secret
+
+```gherkin
+Given two installations built with the same version and the same BUILD_SECRET_KEY
+When device A pairs with device B, and separately device C pairs with device D
+Then each pairing derives a different session key from its own PIN and random salt
+And an attacker who extracts BUILD_SECRET_KEY from the public bundle cannot derive any session key
+And an attacker who relays or intercepts the signalling/TURN traffic cannot decrypt the transferred database without the PIN
+```
+
+#### Scenario: Session identifier is not guessable
+
+```gherkin
+Given device A starts hosting
+Then the session ID is a short code (≈8 characters from an unambiguous, spoken-safe alphabet) prefixed to reduce cross-app broker collisions
+And it contains no timestamp, no Math.random() output, and no predictable component
+And its ≈40 bits of CSPRNG entropy make enumerating the session-ID space on the shared PeerJS broker infeasible within the pairing window
+And the session ID is not treated as a secret — confidentiality relies on the PIN-derived session key and the host lockout, not on the ID
 ```
 
 #### Scenario: Connection rejected with wrong PIN
@@ -238,9 +270,21 @@ And a success message is shown: "Données synchronisées avec succès !"
 Given device A is hosting with PIN "123456"
 When device B connects and sends PIN "000000"
 Then device A sends an auth_failed message and closes the connection
+And device A increments its failed-attempt counter
 And device A shows status: "Connexion rejetée — PIN incorrect"
 And device B shows status: "Authentification échouée — PIN incorrect"
 And no data is transferred
+```
+
+#### Scenario: Host locks out after repeated wrong PINs (brute-force protection)
+
+```gherkin
+Given device A is hosting with PIN "123456"
+When incoming connections send an incorrect PIN N times (N = the configured threshold, 3 to 5)
+Then device A destroys its Peer and stops accepting further connections
+And device A shows a lockout status to the user
+And any further connection attempt to that session ID fails
+And retries are throttled with an exponential back-off before a new session can be hosted
 ```
 
 #### Scenario: Host rejects the transfer after authentication
@@ -293,26 +337,13 @@ Then device A closes device C's connection immediately
 And device C receives a connection error
 ```
 
-#### Scenario: Production build fails if BUILD_SECRET_KEY is not set
+#### Scenario: P2P confidentiality does not rely on the build secret
 
 ```gherkin
-Given the project is being built with NODE_ENV=production
-And the BUILD_SECRET_KEY environment variable is not set
-When the build command is executed
-Then the build exits with a non-zero code
-And an error message is printed: "[BUILD ERROR] BUILD_SECRET_KEY is required for production builds."
-And no build artefact is produced
-```
-
-#### Scenario: Production build succeeds when BUILD_SECRET_KEY is set
-
-```gherkin
-Given the project is being built with NODE_ENV=production
-And BUILD_SECRET_KEY is set to a non-empty secret value
-When the build command is executed
-Then the build completes successfully
-And the secret is injected into the bundle as part of the AES key derivation seed
-And the plaintext secret value is NOT present in the output bundle
+Given a production bundle deployed on GitHub Pages
+When an attacker inspects the public JavaScript bundle
+Then no value present in the bundle (including any former BUILD_SECRET_KEY) can be used to derive a P2P session key
+And the AES-GCM key derivation no longer uses BUILD_SECRET_KEY, an all-zero salt, or an empty info parameter
 ```
 
 ### Story: Type the P2P synchronisation boundary

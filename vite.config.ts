@@ -11,15 +11,10 @@ import { fileURLToPath } from 'node:url';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-// Fail-fast: BUILD_SECRET_KEY must be set in production so every deployment
-// derives a unique AES key. An empty key makes all instances share the same key.
-if (process.env.NODE_ENV === 'production' && !process.env.BUILD_SECRET_KEY) {
-  console.error(
-    '\n[BUILD ERROR] BUILD_SECRET_KEY is required for production builds.\n' +
-      'Add it as a repository secret (Settings > Secrets and variables > Actions > BUILD_SECRET_KEY).\n'
-  );
-  process.exit(1);
-}
+// Note: P2P sync confidentiality no longer relies on a build-time secret. The
+// AES-GCM key is derived per pairing from the PIN + a random handshake salt
+// (see src/features/settings/services/peerSyncService.ts), so BUILD_SECRET_KEY
+// is no longer injected into the bundle and there is no production fail-fast.
 
 // Determine base path: use /locapilot/ in production build or when explicitly testing PWA
 const isPWABuild = process.env.ENABLE_PWA_IN_DEV === '1' || process.env.NODE_ENV === 'production';
@@ -43,7 +38,6 @@ export default defineConfig({
   // Inject package version at build time so runtime can access it via `import.meta.env.__APP_VERSION__`
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.1'),
-    __BUILD_SECRET_KEY__: JSON.stringify(process.env.BUILD_SECRET_KEY || ''),
   },
   base: basePath,
   plugins: [

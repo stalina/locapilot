@@ -12,5 +12,4 @@
 // keys is a separate, pre-existing concern, out of scope for issue #63.)
 interface ImportMeta {
   readonly __APP_VERSION__: string | undefined;
-  readonly __BUILD_SECRET_KEY__: string | undefined;
 }

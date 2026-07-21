@@ -4,12 +4,16 @@ import { useRouter } from 'vue-router';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useDataTransferStore } from '../stores/dataTransferStore';
-import PeerSyncService from '../services/peerSyncService';
-// Read version injected by Vite define into import.meta.env
-// @ts-ignore - injected by Vite via `define`
-const rawAppVersion = (import.meta as any).__APP_VERSION__ || '0.0.1';
-// PeerJS ids can't contain dots, remove them for id portion
-const appVersion = String(rawAppVersion).replace(/\./g, '');
+import PeerSyncService, {
+  generateSessionId,
+  generatePin,
+  normalizeSessionId,
+  SESSION_ID_PREFIX,
+  type PeerStatus,
+} from '../services/peerSyncService';
+// Version injected by Vite `define`; typed via the ImportMeta augmentation in
+// src/vite-env.d.ts, so no `@ts-ignore`/`as any` is needed.
+const rawAppVersion = import.meta.__APP_VERSION__ || '0.0.1';
 
 const router = useRouter();
 
@@ -88,18 +92,8 @@ const handleExportData = async () => {
   }
 };
 
-// Build PeerJS channel id: lcp-<version>-<hh-mm-sss>-<random3>
-const buildPeerId = () => {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const now = new Date();
-  const hh = pad(now.getHours());
-  const mm = pad(now.getMinutes());
-  const ss = pad(now.getSeconds());
-  const rand = Math.floor(Math.random() * 900) + 100; // 100-999
-  return `lcp-${appVersion}-${hh}-${mm}-${ss}-${rand}`;
-};
-
-const generatePin = () => String(Math.floor(Math.random() * 900000) + 100000);
+// Session id and PIN are generated with crypto.getRandomValues via the service
+// (generateSessionId / generatePin) — no timestamp, no Math.random.
 
 const startHosting = async () => {
   if (isHosting.value) return;
@@ -109,15 +103,28 @@ const startHosting = async () => {
 
   // Create service with handlers
   peerService = new PeerSyncService(
-    async (data: any) => {
-      // host shouldn't receive data in normal flow, but handle defensively
-      console.log('Host received data:', data);
+    async () => {
+      // Host does not receive data payloads in the normal flow.
     },
-    (status, info) => {
-      peerStatus.value = String(status) + (info ? ` - ${info}` : '');
+    (status: PeerStatus, info?: unknown) => {
+      peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
       if (status === 'hosting') {
-        hostId.value = String(info || '');
+        hostId.value = typeof info === 'string' ? info : '';
         isHosting.value = true;
+      }
+      if (status === 'locked-out') {
+        // Brute-force protection: the host peer is destroyed after too many wrong
+        // PINs. Surface the throttling so the human confirm() is not the sole barrier.
+        const retryAfterMs =
+          typeof info === 'object' && info !== null && 'retryAfterMs' in info
+            ? Number((info as { retryAfterMs?: unknown }).retryAfterMs)
+            : 0;
+        const seconds = Math.ceil((Number.isFinite(retryAfterMs) ? retryAfterMs : 0) / 1000);
+        peerStatus.value = `Session verrouillée — trop de tentatives de PIN. Réessayez dans ${seconds}s.`;
+        isHosting.value = false;
+        hostId.value = null;
+        generatedPin.value = '';
+        peerService = null;
       }
       if (status === 'auth-ok') {
         // Client authenticated — ask user before sending data
@@ -151,7 +158,7 @@ const startHosting = async () => {
   );
 
   try {
-    const id = buildPeerId();
+    const id = generateSessionId();
     await peerService.startHosting(id, generatedPin.value);
   } catch (e) {
     console.error('startHosting error', e);
@@ -178,27 +185,24 @@ const connectToHost = async () => {
   if (!connectId.value) return alert('Entrez un ID de session');
   if (!pairingPin.value) return alert("Entrez le code PIN fourni par l'hôte");
 
-  // validate version in id: expect lcp-<version>-...
-  const parts = connectId.value.split('-');
-  if (parts.length < 3 || parts[0] !== 'lcp') {
-    return alert('ID invalide');
-  }
-  const remoteVersion = parts[1];
-  const localVersion = appVersion;
-  if (remoteVersion !== localVersion) {
-    return alert(
-      `Version mismatch: remote=${remoteVersion} local=${localVersion}. Merci de mettre à jour l'application.`
-    );
+  // Normalise the typed id (uppercase, strip spaces/dashes) then sanity-check
+  // the short crypto-random format `<prefix><chars>` (no version, no timestamp).
+  const normalizedId = normalizeSessionId(connectId.value);
+  if (
+    !normalizedId.startsWith(SESSION_ID_PREFIX) ||
+    normalizedId.length <= SESSION_ID_PREFIX.length
+  ) {
+    return alert('ID de session invalide');
   }
 
   try {
     peerStatus.value = 'Connexion en cours...';
 
     peerService = new PeerSyncService(
-      async (data: any) => {
-        if (!data || data.type !== 'export' || !data.payload) return;
+      async data => {
+        if (data.type !== 'export' || typeof data.payload !== 'string') return;
         try {
-          const parsed = JSON.parse(data.payload);
+          const parsed: unknown = JSON.parse(data.payload);
           // confirm with user before destructive import
           const ok = confirm(
             'Recevoir des données depuis un autre appareil va remplacer vos données locales. Continuer ?'
@@ -226,8 +230,8 @@ const connectToHost = async () => {
           alert('Erreur lors de la réception des données');
         }
       },
-      (status, info) => {
-        peerStatus.value = String(status) + (info ? ` - ${info}` : '');
+      (status: PeerStatus, info?: unknown) => {
+        peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
         if (status === 'auth-pending') {
           peerStatus.value = 'Authentification en cours...';
         }
@@ -247,7 +251,7 @@ const connectToHost = async () => {
       }
     );
 
-    await peerService.connect(connectId.value, pairingPin.value);
+    await peerService.connect(normalizedId, pairingPin.value);
   } catch (e) {
     console.error('connectToHost error', e);
     peerStatus.value = 'Échec de la connexion';
@@ -685,8 +689,9 @@ const saveReminderThresholds = async () => {
               <span class="badge-experimental">Expérimental</span>
             </div>
             <p>
-              Transférez vos données directement entre deux navigateurs via une connexion P2P
-              chiffrée.
+              Transférez vos données directement entre deux navigateurs. La connexion est chiffrée
+              (AES-GCM) avec une clé de session propre à chaque appairage, dérivée du code PIN —
+              elle ne dépend d'aucun secret intégré à l'application.
             </p>
             <p class="experimental-warning">
               ⚠️ Fonctionnalité expérimentale. Vérifiez toujours l'identité de l'appareil connecté
