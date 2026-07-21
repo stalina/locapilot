@@ -20,7 +20,7 @@ The **data transfer** module allows the landlord to export all application data 
 
 - **No shared, build-time key**: the AES-GCM key protecting a P2P transfer MUST NOT be derived from `BUILD_SECRET_KEY` or any other secret baked into the public bundle. Such a key is identical for every installation of a version and is publicly extractable from the JavaScript shipped on GitHub Pages, so it provides no real confidentiality.
 - **Per-pairing session key**: each pairing derives a fresh, unique encryption key bound to the PIN and to random material exchanged during the handshake. Two different pairings (or the same pair reconnecting) MUST produce different keys. Acceptable schemes: ephemeral ECDH (X25519) with a Short Authentication String confirmed via the PIN, or `PBKDF2(PIN + random salt exchanged at handshake)` with a high iteration count and a per-session random salt (never an all-zero salt, never an empty `info`).
-- **Cryptographically random identifiers**: the host session ID and the 6-digit PIN MUST be generated with `crypto.getRandomValues` (session ID ≥ 122 bits of entropy, e.g. UUID v4). The session ID MUST NOT embed a timestamp, `Math.random()` output, or any other guessable/enumerable component.
+- **Cryptographically random identifiers**: the host session ID and the 6-digit PIN MUST be generated with `crypto.getRandomValues`. The session ID MUST NOT embed a timestamp, `Math.random()` output, or any other guessable/enumerable component. Because the ID is dictated aloud for re-keying, it MUST be short (≈8 characters, a dozen at most including any prefix/separators) and drawn from an alphabet without characters that are ambiguous when spoken (no `0`/`O`, `1`/`I`/`L`, `U`); mapping bytes to that alphabet MUST be debiased (rejection sampling or unbiased modulo). ≈40 bits of entropy is sufficient to prevent trivial enumeration on the shared public PeerJS broker. The ID's non-predictability comes solely from the CSPRNG; it is NOT a secret — confidentiality and authentication rest on the PIN (PBKDF2 session key) and the brute-force lockout, never on the ID.
 - **Brute-force protection**: the host counts failed PIN attempts and, after a small threshold (3–5), destroys its `Peer` and stops accepting connections; retries are throttled with an exponential back-off. A human `confirm()` dialog is never the sole barrier against PIN guessing.
 - **Truthful UI**: the interface only claims the connection is "chiffrée" when the confidentiality guarantee is real (per-pairing session key), not when it relies on a publicly derivable key.
 
@@ -222,12 +222,12 @@ And photos and other binary documents are also present
 Given I am on device A (host) and open Settings > Synchronisation P2P
 When I click "Héberger"
 Then a session ID and a 6-digit PIN are displayed
-And the session ID is generated with crypto.getRandomValues (≥122 bits, e.g. UUID v4)
+And the session ID is a short dictable code generated with crypto.getRandomValues (≈8 characters from an unambiguous alphabet, ≈40 bits)
 And the PIN is generated with crypto.getRandomValues
 And the PIN is NOT included in the session ID
 
 Given I am on device B (client) and open Settings > Synchronisation P2P
-When I enter the session ID and the PIN communicated verbally by device A
+When I enter the session ID (case-insensitively, ignoring spaces and dashes) and the PIN communicated verbally by device A
 And I click "Se connecter"
 Then a WebRTC connection is established
 And device B sends an auth message containing the PIN
@@ -258,8 +258,10 @@ And an attacker who relays or intercepts the signalling/TURN traffic cannot decr
 
 ```gherkin
 Given device A starts hosting
-Then the session ID contains no timestamp, no Math.random() output, and no predictable component
-And enumerating the session-ID space is not feasible within the pairing window
+Then the session ID is a short code (≈8 characters from an unambiguous, spoken-safe alphabet) prefixed to reduce cross-app broker collisions
+And it contains no timestamp, no Math.random() output, and no predictable component
+And its ≈40 bits of CSPRNG entropy make enumerating the session-ID space on the shared PeerJS broker infeasible within the pairing window
+And the session ID is not treated as a secret — confidentiality relies on the PIN-derived session key and the host lockout, not on the ID
 ```
 
 #### Scenario: Connection rejected with wrong PIN

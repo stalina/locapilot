@@ -33,7 +33,7 @@ test.describe('Settings - Synchronisation P2P', () => {
     });
   });
 
-  test('Golden path : héberger génère un ID de session UUID v4 et un PIN 6 chiffres (crypto)', async ({
+  test('Golden path : héberger génère un ID de session court dictable et un PIN 6 chiffres (crypto)', async ({
     page,
   }) => {
     const p2pCard = page
@@ -50,12 +50,11 @@ test.describe('Settings - Synchronisation P2P', () => {
     const sessionInfo = p2pCard.locator('.peer-session-info');
     await expect(sessionInfo).toBeVisible({ timeout: 15_000 });
 
-    // L'ID de session est un UUID v4 généré via crypto.getRandomValues,
-    // préfixé "lcp-", sans timestamp ni composant devinable.
+    // L'ID est un code court dictable (préfixe "LP" + 8 caractères d'un alphabet
+    // sans caractères ambigus), généré via crypto.getRandomValues, ≤ 10 chars.
     const sessionId = (await sessionInfo.locator('code').first().innerText()).trim();
-    expect(sessionId).toMatch(
-      /^lcp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    );
+    expect(sessionId).toMatch(/^LP[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
+    expect(sessionId.length).toBeLessThanOrEqual(10);
 
     // Le PIN est composé de 6 chiffres.
     const pin = (await sessionInfo.locator('.peer-pin').first().innerText()).trim();

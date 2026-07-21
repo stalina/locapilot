@@ -4,6 +4,7 @@ import {
   deriveSessionKey,
   generateSalt,
   generateSessionId,
+  normalizeSessionId,
   generatePin,
   MAX_PIN_ATTEMPTS,
   LOCKOUT_BASE_MS,
@@ -160,19 +161,40 @@ describe('PeerSyncService', () => {
       spy.mockRestore();
     });
 
-    it('generateSessionId returns lcp-<uuid v4> with no timestamp/Math.random component', () => {
-      const spy = vi.spyOn(Math, 'random');
+    it('generateSessionId returns a short dictable code via crypto (no Math.random/timestamp)', () => {
+      const rnd = vi.spyOn(Math, 'random');
+      const csprng = vi.spyOn(crypto, 'getRandomValues');
       const id = generateSessionId();
-      const uuidV4 = /^lcp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      expect(id).toMatch(uuidV4);
-      expect(spy).not.toHaveBeenCalled(); // never derived from Math.random
+
+      // Format: prefix "LP" + 8 chars from the unambiguous alphabet, ≤ 10 chars.
+      expect(id).toMatch(/^LP[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
+      expect(id.length).toBe(10);
+      // No ambiguous-when-spoken characters (0/O, 1/I/L, U) in the random part.
+      expect(id.slice(2)).not.toMatch(/[01OILU]/);
+
+      expect(csprng).toHaveBeenCalled();
+      expect(rnd).not.toHaveBeenCalled(); // never derived from Math.random
       // No embedded timestamp: the id must not contain the current-time prefix.
       const now = String(Date.now());
       expect(id).not.toContain(now.slice(0, 8));
-      spy.mockRestore();
+      csprng.mockRestore();
+      rnd.mockRestore();
 
-      const ids = new Set(Array.from({ length: 200 }, () => generateSessionId()));
-      expect(ids.size).toBe(200); // unique
+      // Uniqueness across many draws, and a spread of first random characters
+      // (sanity check that the alphabet is actually exercised, i.e. not biased).
+      const ids = Array.from({ length: 500 }, () => generateSessionId());
+      expect(new Set(ids).size).toBe(500);
+      const firstChars = new Set(ids.map(v => v[2]));
+      expect(firstChars.size).toBeGreaterThan(5);
+    });
+
+    it('normalizeSessionId uppercases and strips spaces/dashes for re-keying tolerance', () => {
+      expect(normalizeSessionId('lp7k4mq2xb')).toBe('LP7K4MQ2XB');
+      expect(normalizeSessionId('  LP-7K4M-Q2XB ')).toBe('LP7K4MQ2XB');
+      expect(normalizeSessionId('lp 7k4m q2xb')).toBe('LP7K4MQ2XB');
+      // Round-trips a freshly generated id unchanged.
+      const id = generateSessionId();
+      expect(normalizeSessionId(id)).toBe(id);
     });
 
     it('generatePin returns a uniform 6-digit PIN via crypto (no Math.random, no bias)', () => {

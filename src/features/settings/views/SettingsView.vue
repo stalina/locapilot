@@ -7,6 +7,8 @@ import { useDataTransferStore } from '../stores/dataTransferStore';
 import PeerSyncService, {
   generateSessionId,
   generatePin,
+  normalizeSessionId,
+  SESSION_ID_PREFIX,
   type PeerStatus,
 } from '../services/peerSyncService';
 // Version injected by Vite `define`; typed via the ImportMeta augmentation in
@@ -183,8 +185,13 @@ const connectToHost = async () => {
   if (!connectId.value) return alert('Entrez un ID de session');
   if (!pairingPin.value) return alert("Entrez le code PIN fourni par l'hôte");
 
-  // Basic sanity check: session ids are `lcp-<uuid v4>` (no version, no timestamp).
-  if (!connectId.value.startsWith('lcp-')) {
+  // Normalise the typed id (uppercase, strip spaces/dashes) then sanity-check
+  // the short crypto-random format `<prefix><chars>` (no version, no timestamp).
+  const normalizedId = normalizeSessionId(connectId.value);
+  if (
+    !normalizedId.startsWith(SESSION_ID_PREFIX) ||
+    normalizedId.length <= SESSION_ID_PREFIX.length
+  ) {
     return alert('ID de session invalide');
   }
 
@@ -244,7 +251,7 @@ const connectToHost = async () => {
       }
     );
 
-    await peerService.connect(connectId.value, pairingPin.value);
+    await peerService.connect(normalizedId, pairingPin.value);
   } catch (e) {
     console.error('connectToHost error', e);
     peerStatus.value = 'Échec de la connexion';

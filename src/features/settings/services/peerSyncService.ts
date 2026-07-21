@@ -21,6 +21,21 @@ export const MAX_PIN_ATTEMPTS = 3;
 export const LOCKOUT_BASE_MS = 30_000;
 
 /**
+ * Short, non-secret prefix on the session ID. Keeps Locapilot sessions in their
+ * own slice of the shared public PeerJS broker ID space (fewer cross-app
+ * collisions) and marks the code as a Locapilot pairing code.
+ */
+export const SESSION_ID_PREFIX = 'LP';
+/** Number of random characters in the session ID (30^8 ≈ 39 bits of entropy). */
+export const SESSION_ID_LENGTH = 8;
+/**
+ * Unambiguous-when-spoken alphabet (Crockford-style, 30 chars): no 0/O, 1/I/L,
+ * and no U. Uppercase only. 30 is not a power of two, so the byte→index mapping
+ * uses rejection sampling to stay uniform (no modulo bias).
+ */
+export const SESSION_ID_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/**
  * Typed protocol exchanged over the PeerJS data connection.
  *
  * A discriminated union on `type`: narrowing on `msg.type` makes the extra
@@ -100,12 +115,43 @@ export function generateSalt(): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Cryptographically random session identifier (UUID v4, ≥122 bits of entropy).
- * Contains no timestamp, no `Math.random()` output and no other guessable or
- * enumerable component. A short non-secret prefix marks it as a Locapilot id.
+ * Cryptographically random, short session identifier that can be dictated aloud
+ * (e.g. `LP7K4MQ2XB`): a fixed prefix + `SESSION_ID_LENGTH` characters drawn from
+ * an unambiguous alphabet via `crypto.getRandomValues`. Contains no timestamp,
+ * no `Math.random()` output and no other guessable/enumerable component; the
+ * bytes are debiased with rejection sampling so the alphabet is uniform.
+ *
+ * ~39 bits of entropy — enough to make enumeration on the shared PeerJS broker
+ * impractical within the pairing window. Real confidentiality/authentication
+ * still comes from the PIN (PBKDF2 session key) and the host brute-force lockout,
+ * never from the secrecy of this id.
  */
 export function generateSessionId(): string {
-  return `lcp-${crypto.randomUUID()}`;
+  const alphabet = SESSION_ID_ALPHABET;
+  const n = alphabet.length;
+  const limit = Math.floor(256 / n) * n; // largest byte multiple of n → unbiased
+  const buf = new Uint8Array(1);
+  let out = '';
+  while (out.length < SESSION_ID_LENGTH) {
+    crypto.getRandomValues(buf);
+    const b = buf[0] ?? 0;
+    if (b >= limit) continue; // reject the biased tail
+    out += alphabet[b % n];
+  }
+  return `${SESSION_ID_PREFIX}${out}`;
+}
+
+/**
+ * Normalise a session id typed by a human: uppercase and strip whitespace and
+ * separators so re-keying tolerance (spaces, dashes, lower-case) does not break
+ * the exact-match PeerJS lookup. The generated id contains no separators, so
+ * this is a no-op on a correctly copied id.
+ */
+export function normalizeSessionId(raw: string): string {
+  return raw
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '');
 }
 
 /**
