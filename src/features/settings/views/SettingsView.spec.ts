@@ -5,6 +5,7 @@ import SettingsView from './SettingsView.vue';
 import { generatePairingQrDataUrl } from '../services/pairingLinkService';
 
 type StatusCb = (status: string, info?: unknown) => void;
+type DataCb = (data: { type: 'export'; payload: string }) => Promise<void> | void;
 
 // vi.hoisted(): shared state available inside the vi.mock() factories below.
 const mocks = await vi.hoisted(async () => {
@@ -13,15 +14,18 @@ const mocks = await vi.hoisted(async () => {
 
   class MockPeerSyncService {
     static instances: MockPeerSyncService[] = [];
+    onData: DataCb;
     onStatus: StatusCb;
     startHosting = vi.fn(async (id: string) => {
       this.onStatus('hosting', id);
     });
-    stopHosting = vi.fn();
+    // Like the real service: tearing the peer down reports "stopped".
+    stopHosting = vi.fn(() => this.onStatus('stopped'));
     connect = vi.fn(async () => {});
-    disconnect = vi.fn();
+    disconnect = vi.fn(() => this.onStatus('stopped'));
     sendExport = vi.fn();
-    constructor(_onData: unknown, onStatus: StatusCb) {
+    constructor(onData: DataCb, onStatus: StatusCb) {
+      this.onData = onData;
       this.onStatus = onStatus;
       MockPeerSyncService.instances.push(this);
     }
@@ -112,27 +116,27 @@ const lastPeerService = () => {
   return instance;
 };
 
+beforeEach(() => {
+  mocks.MockPeerSyncService.instances = [];
+  mocks.route.hash = '';
+  vi.mocked(generatePairingQrDataUrl).mockResolvedValue(QR_DATA_URL);
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches: false }))
+  );
+  vi.stubGlobal('alert', vi.fn());
+  Element.prototype.scrollIntoView = scrollIntoView;
+  localStorage.clear();
+  sessionStorage.clear();
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
+  vi.unstubAllGlobals();
+});
+
 describe('SettingsView — P2P pairing QR code (#118)', () => {
-  beforeEach(() => {
-    mocks.MockPeerSyncService.instances = [];
-    mocks.route.hash = '';
-    vi.mocked(generatePairingQrDataUrl).mockResolvedValue(QR_DATA_URL);
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => ({ matches: false }))
-    );
-    vi.stubGlobal('alert', vi.fn());
-    Element.prototype.scrollIntoView = scrollIntoView;
-    localStorage.clear();
-    sessionStorage.clear();
-  });
-
-  afterEach(() => {
-    wrapper?.unmount();
-    wrapper = null;
-    vi.unstubAllGlobals();
-  });
-
   describe('client side — reading a pairing link', () => {
     it('leaves the fields empty and shows no status without a pairing link', async () => {
       const w = await mountView('');
@@ -310,6 +314,143 @@ describe('SettingsView — P2P pairing QR code (#118)', () => {
       await flushPromises();
 
       expect(w.get('[data-testid="p2p-qr-code"]').attributes('src')).toBe(QR_DATA_URL);
+    });
+  });
+});
+
+describe('SettingsView — P2P host session lifecycle', () => {
+  const hasHostSession = (w: VueWrapper) => {
+    const info = w.find('.peer-session-info');
+    return (
+      info.exists() &&
+      info.find('code').text().startsWith('LP') &&
+      /^\d{6}$/.test(info.find('.peer-pin').text()) &&
+      w.find('[data-testid="p2p-qr-code"]').exists() &&
+      p2pCard(w)
+        .findAll('button')
+        .some(b => b.text().trim() === 'Arrêter')
+    );
+  };
+
+  async function host() {
+    const w = await mountView();
+    await buttonByText(w, 'Héberger').trigger('click');
+    await flushPromises();
+    expect(hasHostSession(w)).toBe(true);
+    return { w, service: lastPeerService() };
+  }
+
+  async function connectAsClient(w: VueWrapper) {
+    await sessionInput(w).setValue('LP7K4MQ2XB');
+    await pinInput(w).setValue('482913');
+    await buttonByText(w, 'Se connecter').trigger('click');
+    await flushPromises();
+    return lastPeerService();
+  }
+
+  describe('host side', () => {
+    it('keeps the session id, PIN, QR code and "Arrêter" when a client disconnects', async () => {
+      const { w, service } = await host();
+
+      service.onStatus('client-connected');
+      service.onStatus('client-disconnected');
+      await flushPromises();
+
+      expect(hasHostSession(w)).toBe(true);
+      expect(p2pCard(w).text()).toContain(
+        "Appareil déconnecté — en attente d'une nouvelle connexion"
+      );
+      expect(service.stopHosting).not.toHaveBeenCalled();
+    });
+
+    it('keeps the host session after a rejected PIN', async () => {
+      const { w, service } = await host();
+
+      service.onStatus('auth-failed', { attempts: 1 });
+      await flushPromises();
+
+      expect(hasHostSession(w)).toBe(true);
+      expect(p2pCard(w).text()).toContain('Connexion rejetée — PIN incorrect');
+      expect(p2pCard(w).text()).not.toContain('stopped');
+    });
+
+    it('ends the host session once the transfer is complete', async () => {
+      const { w, service } = await host();
+
+      service.onStatus('transfer-complete');
+      await flushPromises();
+
+      expect(w.find('.peer-session-info').exists()).toBe(false);
+      expect(w.find('[data-testid="p2p-qr-code"]').exists()).toBe(false);
+      expect(buttonByText(w, 'Héberger').exists()).toBe(true);
+      expect(p2pCard(w).text()).toContain('Données envoyées — session de synchronisation terminée');
+    });
+
+    it('hosts a fresh session after a completed transfer', async () => {
+      const { w, service } = await host();
+      service.onStatus('transfer-complete');
+      await flushPromises();
+
+      await buttonByText(w, 'Héberger').trigger('click');
+      await flushPromises();
+
+      expect(mocks.MockPeerSyncService.instances).toHaveLength(2);
+      expect(lastPeerService()).not.toBe(service);
+      expect(hasHostSession(w)).toBe(true);
+    });
+
+    it('releases a client peer before hosting', async () => {
+      const w = await mountView();
+      const client = await connectAsClient(w);
+
+      await buttonByText(w, 'Héberger').trigger('click');
+      await flushPromises();
+
+      expect(client.disconnect).toHaveBeenCalledTimes(1);
+      expect(lastPeerService()).not.toBe(client);
+      expect(hasHostSession(w)).toBe(true);
+    });
+
+    it('releases the host peer and ends the host session before connecting as a client', async () => {
+      const { w, service } = await host();
+
+      const client = await connectAsClient(w);
+
+      expect(service.disconnect).toHaveBeenCalledTimes(1);
+      expect(client).not.toBe(service);
+      expect(client.connect).toHaveBeenCalledWith('LP7K4MQ2XB', '482913');
+      expect(w.find('.peer-session-info').exists()).toBe(false);
+      expect(buttonByText(w, 'Héberger').exists()).toBe(true);
+    });
+  });
+
+  describe('client side', () => {
+    it('keeps "Authentification échouée — PIN incorrect" once the client peer stops', async () => {
+      const w = await mountView();
+      const client = await connectAsClient(w);
+
+      client.onStatus('auth-failed');
+      client.onStatus('stopped');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain('Authentification échouée — PIN incorrect');
+      expect(p2pCard(w).text()).not.toContain('stopped');
+    });
+
+    it('keeps "Synchronisation terminée" after a successful sync disconnects the peer', async () => {
+      vi.stubGlobal(
+        'confirm',
+        vi.fn(() => true)
+      );
+      const w = await mountView();
+      const client = await connectAsClient(w);
+
+      await client.onData({ type: 'export', payload: '{}' });
+      await flushPromises();
+
+      expect(client.disconnect).toHaveBeenCalledTimes(1);
+      expect(p2pCard(w).text()).toContain('Synchronisation terminée');
+      expect(p2pCard(w).text()).not.toContain('stopped');
     });
   });
 });

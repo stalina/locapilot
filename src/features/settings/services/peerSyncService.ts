@@ -186,11 +186,20 @@ async function decryptPayload(key: CryptoKey, ivB64: string, payloadB64: string)
   return new TextDecoder().decode(plainBuf);
 }
 
+/**
+ * Host session lifecycle (see docs/specs/data-transfer.md — "P2P host session
+ * lifecycle"): a client connection closing never ends the hosting session on
+ * its own. The host `Peer` keeps listening (`client-disconnected`, or
+ * `auth-failed` for a rejected PIN) until one of the terminal statuses:
+ * `stopped` (explicit stop), `locked-out` (too many wrong PINs) or
+ * `transfer-complete` (the export was sent and the client then disconnected).
+ */
 export type PeerStatus =
   | 'idle'
   | 'creating'
   | 'hosting'
   | 'client-connected'
+  | 'client-disconnected'
   | 'connection-open'
   | 'auth-pending'
   | 'auth-ok'
@@ -198,6 +207,7 @@ export type PeerStatus =
   | 'locked-out'
   | 'connected'
   | 'importing'
+  | 'transfer-complete'
   | 'warning'
   | 'error'
   | 'stopped';
@@ -214,8 +224,11 @@ export class PeerSyncService {
   /** Random salt for the current pairing and the derived AES-GCM session key. */
   private salt: Uint8Array<ArrayBuffer> | null = null;
   private sessionKey: CryptoKey | null = null;
-  /** Host-side wrong-PIN counter for brute-force protection. */
+  /** Host-side wrong-PIN counter for brute-force protection. Kept for the whole
+   *  hosting session, across successive client connections. */
   private failedPinAttempts = 0;
+  /** Host side: the export has been sent over the current client connection. */
+  private exportSent = false;
 
   // Cross-session lockout state: `static` so it survives service
   // re-instantiation and a host cannot immediately re-host after being
@@ -252,20 +265,67 @@ export class PeerSyncService {
     return import.meta.env.DEV ? 2 : 0;
   }
 
+  /**
+   * Close the connection and destroy the peer. The fields are cleared first so
+   * the `close` events this triggers (emitted synchronously by PeerJS) are
+   * recognised as part of the teardown and not reported as a client leaving.
+   */
+  private releasePeer() {
+    const { conn, peer } = this;
+    this.conn = null;
+    this.peer = null;
+    if (conn) {
+      try {
+        conn.close();
+      } catch (e) {
+        console.warn('conn.close failed', e);
+      }
+    }
+    if (peer) {
+      try {
+        peer.destroy();
+      } catch (e) {
+        console.warn('peer.destroy failed', e);
+      }
+    }
+  }
+
   private engageLockout() {
     const backoff = LOCKOUT_BASE_MS * 2 ** PeerSyncService.lockoutCount;
     PeerSyncService.lockoutCount += 1;
     PeerSyncService.lockoutUntil = Date.now() + backoff;
-    if (this.peer) {
-      try {
-        this.peer.destroy();
-      } catch (e) {
-        console.warn('peer.destroy failed', e);
-      }
-      this.peer = null;
-    }
+    const attempts = this.failedPinAttempts;
+    this.releasePeer();
+    this.resetPairingState();
+    this.notify('locked-out', { attempts, retryAfterMs: backoff });
+  }
+
+  /** Forget the key material of a client connection that is gone. */
+  private resetConnectionState() {
+    this.salt = null;
+    this.sessionKey = null;
+    this.exportSent = false;
+  }
+
+  /**
+   * A client connection closed while the host peer is still listening. The
+   * hosting session only ends if the export was already sent over it;
+   * otherwise (client left before or without a transfer) the session ID, PIN
+   * and failed-attempt counter stay valid for a new connection.
+   */
+  private handleClientClosed(c: DataConnection) {
+    // Not the current connection: rejected by the host or already released.
+    if (this.conn !== c) return;
     this.conn = null;
-    this.notify('locked-out', { attempts: this.failedPinAttempts, retryAfterMs: backoff });
+
+    if (this.exportSent) {
+      this.releasePeer();
+      this.resetPairingState();
+      this.notify('transfer-complete');
+      return;
+    }
+    this.resetConnectionState();
+    this.notify('client-disconnected');
   }
 
   async startHosting(id: string, pin: string) {
@@ -308,8 +368,7 @@ export class PeerSyncService {
       });
 
       c.on('close', () => {
-        this.notify('stopped');
-        this.conn = null;
+        this.handleClientClosed(c);
       });
 
       c.on('error', (err: Error) => {
@@ -323,62 +382,48 @@ export class PeerSyncService {
   }
 
   private async handleHostData(conn: DataConnection, msg: unknown) {
-    if (!isRecord(msg) || msg.type !== 'auth') return;
+    if (conn !== this.conn || !isRecord(msg) || msg.type !== 'auth') return;
 
     if (msg.pin === this.pairingPin && this.salt) {
       // Correct PIN → derive the shared session key and confirm.
-      this.sessionKey = await deriveSessionKey(this.pairingPin, this.salt);
+      const sessionKey = await deriveSessionKey(this.pairingPin, this.salt);
+      // The client left (or the session ended) during the derivation: this key
+      // must not be used for whichever connection comes next.
+      if (conn !== this.conn) return;
+      this.sessionKey = sessionKey;
       conn.send({ type: 'auth_ok' } satisfies SyncMessage);
       this.notify('auth-ok');
       return;
     }
 
-    // Wrong PIN → count the failure, reject, and lock out past the threshold.
+    // Wrong PIN → count the failure and reject. The session stays open for a
+    // new connection until the lockout threshold is reached.
     this.failedPinAttempts += 1;
     conn.send({ type: 'auth_failed' } satisfies SyncMessage);
     this.notify('auth-failed', { attempts: this.failedPinAttempts });
+
+    if (this.failedPinAttempts >= MAX_PIN_ATTEMPTS) {
+      this.engageLockout();
+      return;
+    }
+    // Detach before closing: `auth-failed` already reports this disconnection.
+    this.conn = null;
+    this.resetConnectionState();
     try {
       conn.close();
     } catch {
       // ignore
     }
-    this.conn = null;
-
-    if (this.failedPinAttempts >= MAX_PIN_ATTEMPTS) {
-      this.engageLockout();
-    }
   }
 
   stopHosting() {
-    if (this.conn) {
-      try {
-        this.conn.close();
-      } catch (e) {
-        console.warn('conn.close failed', e);
-      }
-      this.conn = null;
-    }
-    if (this.peer) {
-      try {
-        this.peer.destroy();
-      } catch (e) {
-        console.warn('peer.destroy failed', e);
-      }
-      this.peer = null;
-    }
+    this.releasePeer();
     this.resetPairingState();
     this.notify('stopped');
   }
 
   async connect(hostId: string, pin: string) {
-    if (this.peer) {
-      try {
-        this.peer.destroy();
-      } catch (e) {
-        console.warn('peer.destroy failed', e);
-      }
-      this.peer = null;
-    }
+    this.releasePeer();
     this.pairingPin = pin;
 
     // Ephemeral, non-guessable client peer id (never reused across pairings).
@@ -440,31 +485,15 @@ export class PeerSyncService {
   }
 
   disconnect() {
-    if (this.conn) {
-      try {
-        this.conn.close();
-      } catch (e) {
-        console.warn('conn.close failed', e);
-      }
-      this.conn = null;
-    }
-    if (this.peer) {
-      try {
-        this.peer.destroy();
-      } catch (e) {
-        console.warn('peer.destroy failed', e);
-      }
-      this.peer = null;
-    }
+    this.releasePeer();
     this.resetPairingState();
     this.notify('stopped');
   }
 
   private resetPairingState() {
     this.pairingPin = '';
-    this.salt = null;
-    this.sessionKey = null;
     this.failedPinAttempts = 0;
+    this.resetConnectionState();
   }
 
   sendExport(json: string) {
@@ -482,6 +511,8 @@ export class PeerSyncService {
         try {
           const { iv, payload } = await encryptPayload(key, json);
           conn.send({ type: 'export', iv, payload } satisfies SyncMessage);
+          // The session ends once this client disconnects (see handleClientClosed).
+          if (conn === this.conn) this.exportSent = true;
         } catch (e) {
           console.error('Encryption failed', e);
           this.notify('error', e);

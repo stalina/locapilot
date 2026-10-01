@@ -24,6 +24,21 @@ The **data transfer** module allows the landlord to export all application data 
 - **Brute-force protection**: the host counts failed PIN attempts and, after a small threshold (3–5), destroys its `Peer` and stops accepting connections; retries are throttled with an exponential back-off. A human `confirm()` dialog is never the sole barrier against PIN guessing.
 - **Truthful UI**: the interface only claims the connection is "chiffrée" when the confidentiality guarantee is real (per-pairing session key), not when it relies on a publicly derivable key.
 
+### P2P host session lifecycle
+
+- A **hosting session** starts when the host clicks "Héberger" and lasts as long as its `Peer` is alive and listening. A client **connection** is a single attempt inside that session; the two MUST NOT be confused.
+- A client connection closing (wrong PIN rejected by the host, client leaving before or without a transfer, transfer cancelled) does **not** end the hosting session: the `Peer` keeps listening and the host keeps displaying the session ID, the PIN, the QR code and the "Arrêter" button, so another attempt can be made on the same session.
+- The hosting session ends — the `Peer` is destroyed, the session ID, PIN and QR code disappear, and "Héberger" is offered again — in exactly three cases:
+  - the host clicks **"Arrêter"** (or leaves Settings);
+  - the **lockout** threshold is reached (see "Brute-force protection");
+  - the **transfer is complete**: the host has sent its encrypted export and the client then disconnects. A session is therefore single-use: syncing again requires a new session, with a new session ID and PIN.
+- Failed PIN attempts are counted **per hosting session, across all its client connections**: a wrong PIN closes that connection but keeps the session open and counting, until the lockout destroys the `Peer`.
+- Key material is **per connection**: the handshake salt and the derived session key are discarded when a client connection closes. A later connection never inherits them. An authentication that only completes after its connection closed is ignored.
+- The UI never displays an interface that does not match the `Peer`: as long as the `Peer` listens, "Arrêter" is available. The view drives at most one `Peer` at a time: starting to host or connecting as a client first releases (destroys) any previous `Peer`.
+- Status labels:
+  - **Host side:** "Appareil déconnecté — en attente d'une nouvelle connexion" when a client leaves, "Connexion rejetée — PIN incorrect" after a wrong PIN, and "Données envoyées — session de synchronisation terminée" once the transfer is complete.
+  - **Client side:** tearing down the local `Peer` never replaces the last meaningful status, such as "Synchronisation terminée" or "Authentification échouée — PIN incorrect", with a raw "stopped".
+
 ### P2P pairing QR code
 
 - While hosting, the host displays a **QR code** next to the session ID and PIN. Scanning it with the native camera of another device opens Locapilot on that device with the session ID and PIN pre-filled, so the user does not have to type them.
@@ -33,7 +48,7 @@ The **data transfer** module allows the landlord to export all application data 
 - **Generated locally**: the QR image MUST be generated in the browser by a bundled library (offline-first). It MUST NOT be produced by a remote QR-code API, which would leak the session ID and PIN and break offline use.
 - **Consumed once, never persisted**: on arrival, the fragment is read, validated, and immediately removed from the address bar and the current history entry (`router.replace` / `history.replaceState`) so that a reload, the back button, or a bookmark cannot replay it. The PIN is never written to `localStorage`, `sessionStorage`, or IndexedDB.
 - **No silent connection**: a pairing link only pre-fills the "ID de session de l'hôte" and "Code PIN" fields; the connection starts only when the user explicitly clicks "Se connecter". The existing host-side "envoyer ?" and client-side "remplacer vos données ?" confirmations remain mandatory.
-- The QR code is only visible while the host session is active: it disappears when hosting is stopped, fails, or is locked out.
+- The QR code is only visible while the host session is active: it disappears when hosting is stopped, fails, is locked out or completes a transfer. It stays displayed when a client connection closes (wrong PIN, client leaving), because the session is still open (see "P2P host session lifecycle").
 - Scanning is done with the device's native camera app; an in-app camera scanner is out of scope.
 
 ## Export Format
@@ -254,6 +269,12 @@ And device B decrypts the payload with the same session key
 And device B shows a confirmation dialog before importing
 And device B imports the data, replacing its local database
 And a success message is shown: "Données synchronisées avec succès !"
+And device B shows status: "Synchronisation terminée"
+And device B disconnects from device A
+And device A ends its hosting session: its Peer is destroyed
+And device A shows status: "Données envoyées — session de synchronisation terminée"
+And the session ID, PIN and QR code are no longer displayed on device A
+And the "Héberger" button is available again on device A
 ```
 
 #### Scenario: Session key is independent of any build-time secret
@@ -284,7 +305,9 @@ When device B connects and sends PIN "000000"
 Then device A sends an auth_failed message and closes the connection
 And device A increments its failed-attempt counter
 And device A shows status: "Connexion rejetée — PIN incorrect"
-And device B shows status: "Authentification échouée — PIN incorrect"
+And device A keeps hosting: the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
+And device A's Peer keeps listening on the same session ID
+And device B shows status: "Authentification échouée — PIN incorrect", which is not replaced by "stopped" when device B releases its Peer
 And no data is transferred
 ```
 
@@ -292,8 +315,9 @@ And no data is transferred
 
 ```gherkin
 Given device A is hosting with PIN "123456"
-When incoming connections send an incorrect PIN N times (N = the configured threshold, 3 to 5)
-Then device A destroys its Peer and stops accepting further connections
+When successive connections to the same session send an incorrect PIN N times (N = the configured threshold, 3 to 5)
+Then after each of the first N-1 wrong PINs, device A keeps hosting the same session and keeps counting
+And on the N-th wrong PIN, device A destroys its Peer and stops accepting further connections
 And device A shows a lockout status to the user
 And any further connection attempt to that session ID fails
 And retries are throttled with an exponential back-off before a new session can be hosted
@@ -360,6 +384,101 @@ And the AES-GCM key derivation no longer uses BUILD_SECRET_KEY, an all-zero salt
 
 ---
 
+### Story: Keep a P2P host session open until it really ends
+
+**As a** landlord  
+**I want to** keep seeing my hosting session (session ID, PIN, QR code, "Arrêter") for as long as my device is actually listening  
+**So that** a failed or interrupted attempt does not leave a hidden session accepting connections, and I can always stop it
+
+> A client connection closing is not the end of the hosting session (see "P2P host session lifecycle" in Domain Rules). Only "Arrêter", the lockout, or a completed transfer end it.
+
+#### Scenario: A device disconnecting does not end the host session
+
+```gherkin
+Given device A is hosting and displays its session ID, PIN, QR code and the "Arrêter" button
+When device B connects and then disconnects without authenticating
+Then device A shows status: "Appareil déconnecté — en attente d'une nouvelle connexion"
+And the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
+And device A's Peer keeps listening on the same session ID
+And the status never shows "stopped"
+```
+
+#### Scenario: A new attempt succeeds on the same session after a wrong PIN
+
+```gherkin
+Given device A is hosting with PIN "123456"
+And device B was rejected with PIN "000000"
+When device B connects again to the same session ID with PIN "123456"
+Then device A accepts the connection and sends a fresh handshake salt
+And device B authenticates successfully
+And device A's failed-attempt counter still includes the earlier wrong PIN
+```
+
+#### Scenario: Wrong PINs from successive connections add up to the lockout
+
+```gherkin
+Given device A is hosting and the lockout threshold is 3
+When three successive connections to the same session each send a wrong PIN
+Then the first two connections are rejected while the session stays open
+And the third wrong PIN locks the session out and destroys device A's Peer
+And device A shows the lockout status and no longer displays the session ID, PIN or QR code
+```
+
+#### Scenario: A new connection does not inherit the previous connection's session key
+
+```gherkin
+Given device B authenticated on device A's session and then disconnected before any transfer
+When device C connects to the same session without authenticating
+And device A tries to send its data
+Then the send is refused because no session key is established for device C's connection
+And device A shows status: "Échec de l'envoi"
+And no data is sent to device C
+```
+
+#### Scenario: An authentication finishing after the device left is ignored
+
+```gherkin
+Given device B sent the correct PIN to device A
+When device B disconnects while device A is still deriving the session key
+Then device A does not confirm the authentication
+And device A does not ask "Un appareil vient de s'authentifier..."
+And device A keeps hosting the same session
+```
+
+#### Scenario: The host session ends after a completed transfer
+
+```gherkin
+Given device B authenticated and device A sent its encrypted export
+When device B disconnects
+Then device A destroys its Peer
+And device A shows status: "Données envoyées — session de synchronisation terminée"
+And the session ID, the PIN and the QR code are no longer displayed
+And the "Héberger" button is available again
+And clicking "Héberger" starts a new session with a new session ID and a new PIN
+```
+
+#### Scenario: The client keeps its final status after releasing its Peer
+
+```gherkin
+Given device B is connected to device A's session
+When device B's sync ends, either with "Synchronisation terminée" or with "Authentification échouée — PIN incorrect"
+And device B then releases its Peer
+Then device B keeps showing that final status
+And the status is not replaced by "stopped"
+```
+
+#### Scenario: Starting a new P2P role releases the previous Peer
+
+```gherkin
+Given Settings already holds a Peer, as host or as client
+When I click "Héberger" or "Se connecter"
+Then the previous Peer is destroyed before the new one is created
+And if the previous Peer was hosting, its session ID, PIN and QR code are no longer displayed
+And no Peer keeps listening without being shown in the interface
+```
+
+---
+
 ### Story: Share a P2P synchronisation session with a QR code
 
 **As a** landlord  
@@ -416,6 +535,24 @@ Given device A is hosting and the QR code is displayed
 When incoming connections send an incorrect PIN as many times as the lockout threshold
 Then device A shows the lockout status
 And the QR code is no longer displayed
+```
+
+#### Scenario: QR code stays displayed when a device disconnects or is rejected
+
+```gherkin
+Given device A is hosting and the QR code is displayed
+When device B connects and disconnects, or is rejected for a wrong PIN below the lockout threshold
+Then the QR code, the session ID, the PIN and the "Arrêter" button stay displayed
+And scanning the same QR code again still joins the same session
+```
+
+#### Scenario: QR code disappears after a completed transfer
+
+```gherkin
+Given device A is hosting and the QR code is displayed
+When device B has received device A's export and disconnects
+Then the QR code is no longer displayed
+And the "Héberger" button is available again
 ```
 
 #### Scenario: QR code generation fails
