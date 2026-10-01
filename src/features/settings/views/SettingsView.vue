@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, unref, watch, onBeforeUnmount, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, unref, watch, onBeforeUnmount, computed, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useDataTransferStore } from '../stores/dataTransferStore';
@@ -11,11 +11,17 @@ import PeerSyncService, {
   SESSION_ID_PREFIX,
   type PeerStatus,
 } from '../services/peerSyncService';
+import {
+  buildPairingUrl,
+  generatePairingQrDataUrl,
+  parsePairingFragment,
+} from '../services/pairingLinkService';
 // Version injected by Vite `define`; typed via the ImportMeta augmentation in
 // src/vite-env.d.ts, so no `@ts-ignore`/`as any` is needed.
 const rawAppVersion = import.meta.__APP_VERSION__ || '0.0.1';
 
 const router = useRouter();
+const route = useRoute();
 
 // PWA Status
 const isPWAInstalled = ref(false);
@@ -35,6 +41,64 @@ const peerStatus = ref('');
 const connectId = ref('');
 const pairingPin = ref('');
 let peerService: PeerSyncService | null = null;
+const p2pCard = ref<HTMLElement | null>(null);
+
+// Pairing QR code (issue #118): generated locally while hosting. It encodes the
+// pairing link `<origin><BASE_URL>#p2p=<id>&pin=<pin>`, i.e. exactly the session
+// id + PIN already displayed in plain text, credentials in the fragment only.
+const qrDataUrl = ref<string | null>(null);
+
+// Single source of truth: every path that clears hostId/generatedPin (Arrêter,
+// `stopped`, `locked-out`, startHosting failure) clears the QR code through this
+// watcher, before the next render.
+watch([hostId, generatedPin], async ([id, pin]) => {
+  qrDataUrl.value = null;
+  if (!id || !pin) return;
+  try {
+    const appRootUrl = new URL(import.meta.env.BASE_URL, window.location.origin).href;
+    const dataUrl = await generatePairingQrDataUrl(buildPairingUrl(id, pin, appRootUrl));
+    // Drop a stale result: hosting stopped, failed or restarted while rendering.
+    if (hostId.value === id && generatedPin.value === pin) {
+      qrDataUrl.value = dataUrl;
+    }
+  } catch (e) {
+    // Non-blocking: the session id and PIN stay usable for manual entry.
+    console.warn('Pairing QR code generation failed', e);
+  }
+});
+
+const PAIRING_LINK_READY_STATUS =
+  "Session de synchronisation détectée — vérifiez qu'elle provient de votre appareil puis cliquez sur « Se connecter »";
+const PAIRING_LINK_PIN_MISSING_STATUS =
+  "Session de synchronisation détectée — saisissez le code PIN fourni par l'hôte puis cliquez sur « Se connecter »";
+const PAIRING_LINK_INVALID_STATUS = 'Lien de synchronisation invalide';
+
+/**
+ * Read a pairing link fragment (`#p2p=…&pin=…`) opened on this device: only
+ * pre-fill the client fields (never connect automatically, never persist the
+ * PIN), then strip the fragment from the address bar and the current history
+ * entry so a reload, back or bookmark cannot replay it.
+ */
+const consumePairingFragment = (hash: string) => {
+  const link = parsePairingFragment(hash);
+  if (link.status === 'none') return;
+
+  if (link.status === 'invalid') {
+    peerStatus.value = PAIRING_LINK_INVALID_STATUS;
+  } else {
+    connectId.value = link.sessionId;
+    pairingPin.value = link.pin ?? '';
+    peerStatus.value = link.pin ? PAIRING_LINK_READY_STATUS : PAIRING_LINK_PIN_MISSING_STATUS;
+  }
+
+  void router.replace({ name: 'settings', hash: '' });
+  void nextTick(() => {
+    p2pCard.value?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  });
+};
+
+onMounted(() => consumePairingFragment(route.hash));
+watch(() => route.hash, consumePairingFragment);
 
 onMounted(() => {
   // Check if running as installed PWA
@@ -682,7 +746,7 @@ const saveReminderThresholds = async () => {
         </div>
 
         <!-- Peer-to-peer Sync -->
-        <div class="setting-card">
+        <div ref="p2pCard" class="setting-card" data-testid="p2p-sync-card">
           <div class="setting-info">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
               <h3 style="margin: 0">Synchronisation Peer-to-peer</h3>
@@ -710,6 +774,18 @@ const saveReminderThresholds = async () => {
               <p style="font-size: 0.8em; color: var(--color-text-muted)">
                 Communiquez ce code PIN verbalement à l'autre appareil
               </p>
+              <div v-if="qrDataUrl" class="peer-qr">
+                <img
+                  data-testid="p2p-qr-code"
+                  :src="qrDataUrl"
+                  alt="QR code de synchronisation"
+                  width="220"
+                  height="220"
+                />
+                <p class="peer-qr-hint">
+                  Scannez ce QR code avec l'appareil photo de l'autre appareil
+                </p>
+              </div>
             </div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 8px; min-width: 260px">
@@ -894,6 +970,31 @@ const saveReminderThresholds = async () => {
   letter-spacing: 0.15em;
   color: var(--color-primary);
   font-family: monospace;
+}
+
+/* Uses the global design tokens (variables.css). */
+.peer-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.peer-qr img {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  /* Keep the quiet zone white in dark mode so phone cameras can read it. */
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  image-rendering: pixelated;
+}
+
+.peer-qr .peer-qr-hint {
+  font-size: 0.8em;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {
