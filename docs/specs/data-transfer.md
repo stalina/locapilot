@@ -24,6 +24,18 @@ The **data transfer** module allows the landlord to export all application data 
 - **Brute-force protection**: the host counts failed PIN attempts and, after a small threshold (3–5), destroys its `Peer` and stops accepting connections; retries are throttled with an exponential back-off. A human `confirm()` dialog is never the sole barrier against PIN guessing.
 - **Truthful UI**: the interface only claims the connection is "chiffrée" when the confidentiality guarantee is real (per-pairing session key), not when it relies on a publicly derivable key.
 
+### P2P pairing QR code
+
+- While hosting, the host displays a **QR code** next to the session ID and PIN. Scanning it with the native camera of another device opens Locapilot on that device with the session ID and PIN pre-filled, so the user does not have to type them.
+- The QR code is an **out-of-band channel equivalent to reading the screen**: it encodes nothing more than what is already displayed in plain text on the host screen (session ID + PIN). It therefore does not weaken the security model — confidentiality still rests on the PIN-derived per-pairing session key, and every wrong PIN still counts toward the host lockout.
+- **Pairing link format**: `<origin><BASE_URL>#p2p=<sessionId>&pin=<pin>` (e.g. `https://stalina.github.io/locapilot/#p2p=LP7K4MQ2XB&pin=482913`). The link targets the application root (always served directly by GitHub Pages, without the `404.html` redirect, which drops URL fragments) and the app routes it to Settings.
+- **Fragment only, never the query string**: the session ID and PIN MUST be carried in the URL fragment (`#…`), which browsers never send to the web server (GitHub Pages / CDN logs), the PeerJS broker, or any third party.
+- **Generated locally**: the QR image MUST be generated in the browser by a bundled library (offline-first). It MUST NOT be produced by a remote QR-code API, which would leak the session ID and PIN and break offline use.
+- **Consumed once, never persisted**: on arrival, the fragment is read, validated, and immediately removed from the address bar and the current history entry (`router.replace` / `history.replaceState`) so that a reload, the back button, or a bookmark cannot replay it. The PIN is never written to `localStorage`, `sessionStorage`, or IndexedDB.
+- **No silent connection**: a pairing link only pre-fills the "ID de session de l'hôte" and "Code PIN" fields; the connection starts only when the user explicitly clicks "Se connecter". The existing host-side "envoyer ?" and client-side "remplacer vos données ?" confirmations remain mandatory.
+- The QR code is only visible while the host session is active: it disappears when hosting is stopped, fails, or is locked out.
+- Scanning is done with the device's native camera app; an in-app camera scanner is out of scope.
+
 ## Export Format
 
 ```json
@@ -345,6 +357,183 @@ When an attacker inspects the public JavaScript bundle
 Then no value present in the bundle (including any former BUILD_SECRET_KEY) can be used to derive a P2P session key
 And the AES-GCM key derivation no longer uses BUILD_SECRET_KEY, an all-zero salt, or an empty info parameter
 ```
+
+---
+
+### Story: Share a P2P synchronisation session with a QR code
+
+**As a** landlord  
+**I want to** display a QR code while hosting a P2P synchronisation, that my other device can scan to join the session  
+**So that** I can start syncing without dictating or typing the session ID and PIN
+
+> The QR code encodes a pairing link `<origin><BASE_URL>#p2p=<sessionId>&pin=<pin>` (see "P2P pairing QR code" in Domain Rules). It contains exactly the information already displayed in plain text on the host screen.
+
+#### Scenario: Host displays a QR code while hosting
+
+```gherkin
+Given I am on device A and open Settings > Synchronisation P2P
+When I click "Héberger"
+And the host session is open (session ID "LP7K4MQ2XB" and PIN "482913" are displayed)
+Then a QR code is displayed in the session information block, next to the session ID and PIN
+And the QR code has an accessible label "QR code de synchronisation"
+And a hint explains: "Scannez ce QR code avec l'appareil photo de l'autre appareil"
+And the QR code encodes the pairing link "<origin><BASE_URL>#p2p=LP7K4MQ2XB&pin=482913"
+And the session ID and PIN remain displayed in plain text for manual entry
+```
+
+#### Scenario: QR code is generated locally, without any network call
+
+```gherkin
+Given device A is offline or has no access to any QR-code web service
+When I click "Héberger" and the host session opens
+Then the QR code image is generated in the browser by a bundled library
+And no HTTP request containing the session ID or the PIN is made to any server
+```
+
+#### Scenario: Pairing link carries the credentials in the URL fragment only
+
+```gherkin
+Given device A is hosting with session ID "LP7K4MQ2XB" and PIN "482913"
+When the pairing link encoded in the QR code is built
+Then the session ID and the PIN are placed after "#" (URL fragment)
+And the link has no query string
+And the link points to the application root under the deployment base path (e.g. "/locapilot/")
+```
+
+#### Scenario: QR code disappears when hosting stops
+
+```gherkin
+Given device A is hosting and the QR code is displayed
+When I click "Arrêter"
+Then the QR code, the session ID and the PIN are no longer displayed
+And the "Héberger" button is available again
+```
+
+#### Scenario: QR code disappears when the host is locked out
+
+```gherkin
+Given device A is hosting and the QR code is displayed
+When incoming connections send an incorrect PIN as many times as the lockout threshold
+Then device A shows the lockout status
+And the QR code is no longer displayed
+```
+
+#### Scenario: QR code generation fails
+
+```gherkin
+Given device A is hosting
+When the QR code image cannot be generated (library error)
+Then no QR code is displayed
+And the session ID and PIN are still displayed in plain text
+And the hosting session keeps working for manual entry
+And no blocking error dialog is shown
+```
+
+#### Scenario: Scanning the QR code opens Locapilot with the session pre-filled
+
+```gherkin
+Given device A is hosting with session ID "LP7K4MQ2XB" and PIN "482913"
+When I scan the QR code with the camera of device B
+And device B opens the pairing link "<origin><BASE_URL>#p2p=LP7K4MQ2XB&pin=482913"
+Then device B is redirected to Settings
+And the Synchronisation P2P card is scrolled into view
+And the "ID de session de l'hôte" field contains "LP7K4MQ2XB"
+And the "Code PIN" field contains "482913"
+And a status invites me to check the session and click "Se connecter"
+And no connection is attempted until I click "Se connecter"
+```
+
+#### Scenario: Pairing link is removed from the address bar once read
+
+```gherkin
+Given device B opened the pairing link "<origin><BASE_URL>#p2p=LP7K4MQ2XB&pin=482913"
+When the Settings page has read the session ID and PIN from the fragment
+Then the URL fragment is removed from the address bar and from the current history entry
+And the URL becomes "<origin><BASE_URL>settings"
+And reloading the page shows empty "ID de session de l'hôte" and "Code PIN" fields
+And the PIN is not stored in localStorage, sessionStorage or IndexedDB
+```
+
+#### Scenario: Synchronisation completes after scanning the QR code
+
+```gherkin
+Given device B opened the pairing link and the fields are pre-filled
+When I click "Se connecter" on device B
+Then the standard P2P flow runs: handshake, PIN authentication, per-pairing session key derivation
+And device A is still asked to confirm before sending its data
+And device B is still asked to confirm before its local data is replaced
+And device B shows "Données synchronisées avec succès !" once the import succeeds
+```
+
+#### Scenario: Pairing link opened from another page of the app
+
+```gherkin
+Given Locapilot is already open on device B, on any route
+When device B navigates to a URL of the application whose fragment starts with "#p2p="
+Then device B is redirected to Settings with the session ID and PIN pre-filled
+And the fragment is removed from the address bar
+```
+
+#### Scenario: Pairing link with a lower-case or separated session ID
+
+```gherkin
+Given a pairing link whose fragment is "#p2p=lp7k-4mq2-xb&pin=482913"
+When device B opens it
+Then the session ID is normalised (uppercase, spaces and dashes removed)
+And the "ID de session de l'hôte" field contains "LP7K4MQ2XB"
+```
+
+#### Scenario: Pairing link with an invalid session ID
+
+```gherkin
+Given a pairing link whose "p2p" value is not a valid Locapilot session ID (missing "LP" prefix, wrong length, or characters outside the session alphabet)
+When device B opens it
+Then neither the session ID nor the PIN field is pre-filled
+And the status shows: "Lien de synchronisation invalide"
+And no connection is attempted
+And the fragment is removed from the address bar
+```
+
+#### Scenario: Pairing link without a valid PIN
+
+```gherkin
+Given a pairing link with a valid session ID "LP7K4MQ2XB" and a missing PIN or a PIN that is not exactly 6 digits
+When device B opens it
+Then the "ID de session de l'hôte" field contains "LP7K4MQ2XB"
+And the "Code PIN" field stays empty
+And the status invites me to enter the PIN given by the host
+And no connection is attempted
+```
+
+#### Scenario: Pairing link for a session that is no longer hosted
+
+```gherkin
+Given device A has stopped hosting session "LP7K4MQ2XB"
+When device B opens the pairing link for "LP7K4MQ2XB" and clicks "Se connecter"
+Then the connection fails with the existing P2P error status
+And device B's local database remains unchanged
+```
+
+#### Scenario: Wrong PIN in a pairing link counts toward the host lockout
+
+```gherkin
+Given device A is hosting with PIN "482913"
+When device B opens a pairing link for device A's session with PIN "000000" and clicks "Se connecter"
+Then device A rejects the connection exactly as for a manually typed wrong PIN
+And device A increments its failed-attempt counter toward the lockout threshold
+```
+
+#### Scenario: Settings opened without a pairing link
+
+```gherkin
+Given device B opens Settings normally (no "#p2p=" fragment in the URL)
+Then the "ID de session de l'hôte" and "Code PIN" fields are empty
+And no pairing status is shown
+```
+
+> Known limitation: on iOS, a site added to the home screen keeps its storage separate from Safari. The native camera opens the pairing link in Safari, so the data is imported into Safari's Locapilot storage, not into the home-screen app. On such a device, enter the session ID and PIN manually in the installed app instead.
+
+---
 
 ### Story: Type the P2P synchronisation boundary
 
