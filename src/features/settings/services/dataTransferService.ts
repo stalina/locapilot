@@ -74,7 +74,13 @@ function deserializeBlobRecord(record: Record<string, unknown>): Record<string, 
   const copy: any = { ...record };
   try {
     const data = (record as any).data;
-    if (typeof data === 'string' && data.startsWith('data:')) {
+    if (data instanceof Blob) {
+      // P2P sync (issue #122): the content arrives already reassembled as a
+      // Blob — keep it as is (never round-trip it through a string).
+      copy.data = data;
+      if (data.type) copy.mimeType = data.type;
+      copy.size = data.size;
+    } else if (typeof data === 'string' && data.startsWith('data:')) {
       const parsed = tryParseDataUrl(data);
       if (parsed) {
         const blob = base64ToBlob(parsed.b64, parsed.mime);
@@ -117,4 +123,96 @@ export function deserializeTenantDocuments(
   tenantDocuments: unknown[]
 ): Array<Record<string, unknown>> {
   return tenantDocuments.map(d => deserializeBlobRecord(d as Record<string, unknown>));
+}
+
+// ---------------------------------------------------------------------------
+// P2P streamed sync source (issue #122)
+//
+// The P2P channel never builds the whole database as one JSON string: it
+// streams the raw tables (documents keep their Blob `data`) in batches and
+// chunks. This is the data the host hands to `PeerSyncService.streamTransfer`.
+// ---------------------------------------------------------------------------
+
+/** Every business table carried by a P2P sync, in streaming order. */
+export const SYNC_TABLES = [
+  'properties',
+  'tenants',
+  'leases',
+  'rents',
+  'documents',
+  'tenantDocuments',
+  'tenantAudits',
+  'inventories',
+  'communications',
+  'chargesAdjustments',
+  'irlIndices',
+  'rentRevisions',
+  'reminders',
+  'settings',
+] as const;
+
+export type SyncTableName = (typeof SYNC_TABLES)[number];
+
+/** Tables whose records may carry binary `data` (a Blob), sent as chunks. */
+export const BLOB_TABLES = ['documents', 'tenantDocuments'] as const;
+
+export type BlobTableName = (typeof BLOB_TABLES)[number];
+
+export function isSyncTableName(value: unknown): value is SyncTableName {
+  return typeof value === 'string' && (SYNC_TABLES as readonly string[]).includes(value);
+}
+
+export function isBlobTableName(value: unknown): value is BlobTableName {
+  return typeof value === 'string' && (BLOB_TABLES as readonly string[]).includes(value);
+}
+
+export type SyncTables = Record<SyncTableName, unknown[]>;
+
+export interface SyncSource {
+  appVersion: string;
+  exportedAt: string;
+  /** Raw records per table; document `data` is kept as a Blob (no base64). */
+  tables: SyncTables;
+  /** Record count per table, announced in the manifest. */
+  counts: Record<SyncTableName, number>;
+  /** Number of document records (documents + tenantDocuments). */
+  documents: number;
+  /** Sum of the byte sizes of every document Blob. */
+  totalBytes: number;
+}
+
+/** The Blob held in a record's `data`, or null when it carries no Blob. */
+export function recordBlob(record: unknown): Blob | null {
+  if (typeof record !== 'object' || record === null || !('data' in record)) return null;
+  return record.data instanceof Blob ? record.data : null;
+}
+
+/**
+ * Build the P2P sync source from the raw tables: no serialization, Blobs kept
+ * as they are, plus the manifest counts and the total Blob byte size.
+ */
+export function createSyncSource(
+  tables: SyncTables,
+  appVersion: string,
+  exportedAt: string = new Date().toISOString()
+): SyncSource {
+  const counts = Object.fromEntries(
+    SYNC_TABLES.map(table => [table, tables[table].length])
+  ) as Record<SyncTableName, number>;
+
+  let totalBytes = 0;
+  for (const table of BLOB_TABLES) {
+    for (const record of tables[table]) {
+      totalBytes += recordBlob(record)?.size ?? 0;
+    }
+  }
+
+  return {
+    appVersion,
+    exportedAt,
+    tables,
+    counts,
+    documents: counts.documents + counts.tenantDocuments,
+    totalBytes,
+  };
 }
