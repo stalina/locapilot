@@ -100,7 +100,7 @@ textarea {
   padding: 12px;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-md, 0.5rem);
-  background: var(--color-surface, #fff);
+  background: var(--bg-primary, #fff);
   box-shadow: var(--shadow-sm, none);
 }
 

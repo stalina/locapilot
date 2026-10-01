@@ -37,16 +37,16 @@ const isEmpty = computed(() => {
 
 <style scoped>
 .rich-text-display {
-  font-family: var(--font-family);
+  font-family: var(--font-family-base);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 .rich-text-display-empty {
-  font-family: var(--font-family);
+  font-family: var(--font-family-base);
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -55,7 +55,7 @@ const isEmpty = computed(() => {
   font-size: 24px;
   font-weight: 600;
   margin: 24px 0 12px;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -63,7 +63,7 @@ const isEmpty = computed(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 20px 0 10px;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -82,7 +82,7 @@ const isEmpty = computed(() => {
 
 :deep(strong) {
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 :deep(em) {
@@ -91,7 +91,7 @@ const isEmpty = computed(() => {
 
 :deep(s) {
   text-decoration: line-through;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 /* Lists */
@@ -127,16 +127,16 @@ const isEmpty = computed(() => {
 
 /* Links */
 :deep(a) {
-  color: var(--color-primary);
+  color: var(--primary-600);
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 :deep(a:hover) {
-  color: var(--color-primary-dark);
+  color: var(--primary-700);
 }
 
 :deep(a:visited) {
-  color: var(--color-primary);
+  color: var(--primary-600);
 }
 </style>

@@ -39,12 +39,8 @@ const handleDismiss = () => {
           <p>Une nouvelle version de l'application est disponible</p>
         </div>
         <div class="prompt-actions">
-          <Button @click="handleUpdate" variant="primary" size="sm">
-            Actualiser
-          </Button>
-          <Button @click="handleDismiss" variant="ghost" size="sm">
-            Plus tard
-          </Button>
+          <Button @click="handleUpdate" variant="primary" size="sm"> Actualiser </Button>
+          <Button @click="handleDismiss" variant="ghost" size="sm"> Plus tard </Button>
         </div>
       </div>
     </div>
@@ -54,21 +50,21 @@ const handleDismiss = () => {
 <style scoped>
 .pwa-update-prompt {
   position: fixed;
-  bottom: var(--spacing-4, 1rem);
-  right: var(--spacing-4, 1rem);
+  bottom: var(--space-4, 1rem);
+  right: var(--space-4, 1rem);
   z-index: 9999;
   max-width: 400px;
 }
 
 .prompt-content {
-  background: var(--color-surface, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-lg, 0.75rem);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  padding: var(--spacing-4, 1rem);
+  padding: var(--space-4, 1rem);
   display: flex;
   align-items: center;
-  gap: var(--spacing-3, 0.75rem);
+  gap: var(--space-3, 0.75rem);
 }
 
 .prompt-icon {
@@ -78,7 +74,7 @@ const handleDismiss = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary, #4f46e5);
+  background: var(--primary-600, #4f46e5);
   color: white;
   border-radius: var(--radius-full, 9999px);
   font-size: 1.5rem;
@@ -89,22 +85,22 @@ const handleDismiss = () => {
 }
 
 .prompt-text h3 {
-  margin: 0 0 var(--spacing-1, 0.25rem) 0;
+  margin: 0 0 var(--space-1, 0.25rem) 0;
   font-size: var(--text-base, 1rem);
   font-weight: 600;
-  color: var(--color-text, #0f172a);
+  color: var(--text-primary, #0f172a);
 }
 
 .prompt-text p {
   margin: 0;
   font-size: var(--text-sm, 0.875rem);
-  color: var(--color-text-secondary, #64748b);
+  color: var(--text-secondary, #64748b);
 }
 
 .prompt-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2, 0.5rem);
+  gap: var(--space-2, 0.5rem);
 }
 
 /* Transition */
@@ -125,8 +121,8 @@ const handleDismiss = () => {
 
 @media (max-width: 640px) {
   .pwa-update-prompt {
-    left: var(--spacing-4, 1rem);
-    right: var(--spacing-4, 1rem);
+    left: var(--space-4, 1rem);
+    right: var(--space-4, 1rem);
     max-width: none;
   }
 

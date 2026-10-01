@@ -305,13 +305,13 @@ const handleFormSuccess = async () => {
 .header-title h1 {
   font-size: var(--text-3xl);
   font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-1) 0;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
 }
 
 .subtitle {
   font-size: var(--text-base);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   margin: 0;
 }
 
