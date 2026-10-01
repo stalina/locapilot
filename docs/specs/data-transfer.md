@@ -27,16 +27,16 @@ The **data transfer** module allows the landlord to export all application data 
 ### P2P host session lifecycle
 
 - A **hosting session** starts when the host clicks "Héberger" and lasts as long as its `Peer` is alive and listening. A client **connection** is a single attempt inside that session; the two MUST NOT be confused.
-- A client connection closing (wrong PIN rejected by the host, client leaving before or without a transfer, transfer cancelled) does **not** end the hosting session: the `Peer` keeps listening and the host keeps displaying the session ID, the PIN, the QR code and the "Arrêter" button, so another attempt can be made on the same session.
+- A client connection closing (wrong PIN rejected by the host, client leaving before or without a transfer, transfer refused, cancelled, interrupted or timed out) does **not** end the hosting session: the `Peer` keeps listening and the host keeps displaying the session ID, the PIN, the QR code and the "Arrêter" button, so another attempt can be made on the same session.
 - The hosting session ends — the `Peer` is destroyed, the session ID, PIN and QR code disappear, and "Héberger" is offered again — in exactly three cases:
   - the host clicks **"Arrêter"** (or leaves Settings);
   - the **lockout** threshold is reached (see "Brute-force protection");
-  - the **transfer is complete**: the host has sent its encrypted export and the client then disconnects. A session is therefore single-use: syncing again requires a new session, with a new session ID and PIN.
+  - the **transfer is complete**: the client has acknowledged the `end` message of the streamed transfer (see "P2P large-data transfer (streaming)") and then disconnects. A session is therefore single-use: syncing again requires a new session, with a new session ID and PIN.
 - Failed PIN attempts are counted **per hosting session, across all its client connections**: a wrong PIN closes that connection but keeps the session open and counting, until the lockout destroys the `Peer`.
 - Key material is **per connection**: the handshake salt and the derived session key are discarded when a client connection closes. A later connection never inherits them. An authentication that only completes after its connection closed is ignored.
 - The UI never displays an interface that does not match the `Peer`: as long as the `Peer` listens, "Arrêter" is available. The view drives at most one `Peer` at a time: starting to host or connecting as a client first releases (destroys) any previous `Peer`.
 - Status labels:
-  - **Host side:** "Appareil déconnecté — en attente d'une nouvelle connexion" when a client leaves, "Connexion rejetée — PIN incorrect" after a wrong PIN, and "Données envoyées — session de synchronisation terminée" once the transfer is complete.
+  - **Host side:** "Appareil déconnecté — en attente d'une nouvelle connexion" when a client leaves, "Connexion rejetée — PIN incorrect" after a wrong PIN, and "Données envoyées — session de synchronisation terminée" once the transfer is complete. When a transfer was refused ("Transfert refusé par l'appareil distant") or interrupted ("Transfert interrompu — …"), that outcome stays displayed when the client's connection then closes; it is not replaced by "Appareil déconnecté…".
   - **Client side:** tearing down the local `Peer` never replaces the last meaningful status, such as "Synchronisation terminée" or "Authentification échouée — PIN incorrect", with a raw "stopped".
 
 ### P2P pairing QR code
@@ -48,7 +48,7 @@ The **data transfer** module allows the landlord to export all application data 
 - **Generated locally**: the QR image MUST be generated in the browser by a bundled library (offline-first). It MUST NOT be produced by a remote QR-code API, which would leak the session ID and PIN and break offline use.
 - **Consumed once, never persisted**: on arrival, the fragment is read, validated, and immediately removed from the address bar and the current history entry (`router.replace` / `history.replaceState`) so that a reload, the back button, or a bookmark cannot replay it. The PIN is never written to `localStorage`, `sessionStorage`, or IndexedDB.
 - **No silent connection**: a pairing link only pre-fills the "ID de session de l'hôte" and "Code PIN" fields; the connection starts only when the user explicitly clicks "Se connecter". The existing host-side "envoyer ?" and client-side "remplacer vos données ?" confirmations remain mandatory.
-- The QR code is only visible while the host session is active: it disappears when hosting is stopped, fails, is locked out or completes a transfer. It stays displayed when a client connection closes (wrong PIN, client leaving), because the session is still open (see "P2P host session lifecycle").
+- The QR code is only visible while the host session is active: it disappears when hosting is stopped, fails, is locked out or completes a transfer. It stays displayed when a client connection closes (wrong PIN, client leaving, transfer refused or interrupted), because the session is still open (see "P2P host session lifecycle").
 - Scanning is done with the device's native camera app; an in-app camera scanner is out of scope.
 
 ### P2P large-data transfer (streaming)
@@ -63,13 +63,15 @@ A P2P synchronisation MUST succeed regardless of the volume of data, including d
 - **Flow control**: the host never lets data pile up in memory or in the WebRTC send buffer. It sends the next chunk only while the number of unacknowledged bytes stays inside a bounded window (≈4 MiB): the client acknowledges with `ack` messages carrying the last sequence number it processed (about every 1 MiB or 16 chunks, and at least every 5 seconds on a slow link). Duplicate acknowledgements and a second `ready` are ignored. The host also waits while `dataChannel.bufferedAmount` is above the same threshold. This prevents "send queue full" errors and the receiver being flooded.
 - **Inactivity timeout, not a global timeout**: a large transfer can take several minutes, so there is no overall time limit. The transfer is aborted only when no message has been received for **60 seconds** (either side). Each incoming message resets the timer. The timer runs during the streaming phase only (from the client's `ready` until `end`); the time a user spends answering a confirmation dialog is not counted.
 - **Confirmation before the bulk transfer**: the client asks the user to confirm the replacement of local data when it receives the `manifest`, which shows the total size (e.g. "≈ 612 Mo") and the number of documents. The host streams the data only after the client replies `ready`. If the client declines, it sends `cancel` and nothing more is sent.
+- **Completion vs. hosting session**: the host considers a transfer complete only when the client has acknowledged the `end` message. The hosting session then ends when that client disconnects (see "P2P host session lifecycle"). A transfer that is refused (`cancel`, insufficient storage), interrupted (connection lost, `abort`, corrupted stream) or timed out only ends the client **connection**: the host keeps its session ID, PIN, QR code and "Arrêter", and keeps showing the outcome of the transfer, so a new synchronisation can be attempted on the same session.
 - **Storage check**: before replying `ready`, the client checks the available quota (`navigator.storage.estimate()`, when supported). If the announced size cannot fit, it refuses the transfer with a clear message and its database is left unchanged. When supported, it also calls `navigator.storage.persist()` so the browser does not evict the data.
 - **Received content is never decoded into strings**: the client puts the decrypted chunks of each document together as a `Blob` (`new Blob(parts, { type: mimeType })`), so the browser manages the storage (and may page it to disk).
 - **Validate, then import atomically**: once `end` has been checked, the client validates every record with the same strict per-entity schemas as the file import. Then, in a single transaction, it clears the business tables and inserts the records with their `Blob`s. The P2P channel still goes through the single validated import path (`importFromObject`). The only difference is that a document's `data` arrives as a `Blob` instead of a data-URL string.
 - **All or nothing**: if anything fails before the import transaction commits (disconnection, timeout, invalid chunk, a gap in the sequence, totals that don't match, validation error, cancellation), the client throws away everything it received and its local database stays **unchanged**. Resuming an interrupted transfer is out of scope: the user starts a new synchronisation.
 - **Progress feedback**: both devices show the progress of the transfer (percentage and bytes, e.g. "Réception des données… 45 % (276 Mo / 612 Mo)"), updated at least once per second during the transfer.
-- **Keep the device awake**: while a transfer is running, both devices request a Screen Wake Lock (`navigator.wakeLock.request('screen')`) when the browser supports it, and release it at the end, on error or on cancel. If the request is unsupported or refused, the transfer continues anyway.
+- **Keep the device awake**: while a transfer is running, both devices request a Screen Wake Lock (`navigator.wakeLock.request('screen')`) when the browser supports it, and release it at the end, on error or on cancel. The lock is taken once the client has replied `ready`, not while a confirmation dialog is pending. If the request is unsupported or refused, the transfer continues anyway.
 - **Protocol version**: the `handshake` message carries a `protocolVersion`. A client that doesn't support the host's protocol version stops before authentication and shows "Version de synchronisation incompatible — mettez à jour les deux appareils".
+- **Client older than the streamed protocol (known limitation)**: a client that predates the protocol version (v1, e.g. a PWA not yet updated) ignores the version, authenticates, and then ignores the encrypted `manifest`. The host cannot tell this apart from a user who has not answered the confirmation yet, and there is deliberately no time limit on that human decision. The host therefore keeps showing "En attente de la confirmation de l'appareil distant…" until the user clicks "Arrêter". Updating both devices fixes it.
 
 ## Export Format
 
@@ -310,6 +312,7 @@ And device B shows a confirmation dialog before any bulk data is transferred
 When device B confirms
 Then device A streams its data as AES-GCM chunks encrypted with the session key (see "P2P large-data transfer")
 And device B decrypts each chunk with the same session key
+And device B acknowledges the "end" message
 And device B imports the data in a single transaction, replacing its local database
 And a success message is shown: "Données synchronisées avec succès !"
 And device B shows status: "Synchronisation terminée"
@@ -388,6 +391,9 @@ And device A sends no record batch and no blob chunk
 And device A shows status: "Transfert refusé par l'appareil distant"
 And no import is performed
 And device B's local database remains unchanged
+When device B then disconnects
+Then device A keeps hosting the same session: the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
+And device A still shows "Transfert refusé par l'appareil distant"
 ```
 
 #### Scenario: Malformed P2P payload is rejected by strict validation
@@ -494,13 +500,27 @@ And device A keeps hosting the same session
 #### Scenario: The host session ends after a completed transfer
 
 ```gherkin
-Given device B authenticated and device A sent its encrypted export
+Given device B authenticated and device A streamed all its data
+And device B acknowledged the "end" message
 When device B disconnects
 Then device A destroys its Peer
 And device A shows status: "Données envoyées — session de synchronisation terminée"
 And the session ID, the PIN and the QR code are no longer displayed
 And the "Héberger" button is available again
 And clicking "Héberger" starts a new session with a new session ID and a new PIN
+```
+
+#### Scenario: A refused or interrupted transfer does not end the host session
+
+```gherkin
+Given device B authenticated on device A's session and device A sent the manifest
+When the transfer is refused by device B, or interrupted before device B acknowledged the "end" message
+And device B's connection then closes
+Then device A's Peer keeps listening on the same session ID
+And the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
+And device A keeps showing the outcome ("Transfert refusé par l'appareil distant" or "Transfert interrompu — …")
+And the outcome is not replaced by "Appareil déconnecté — en attente d'une nouvelle connexion"
+And a new connection to the same session can start a new synchronisation
 ```
 
 #### Scenario: The client keeps its final status after releasing its Peer
@@ -651,8 +671,9 @@ When the WebRTC connection closes (network loss, tab closed, host clicks "Arrêt
 Then device B throws away the partially received data
 And device B's local database remains unchanged
 And device B shows: "Transfert interrompu — aucune donnée n'a été modifiée"
-And device A shows that the transfer was interrupted
 And a new synchronisation can be started from the beginning
+And unless device A clicked "Arrêter", device A shows "Transfert interrompu — aucune donnée n'a été modifiée" (or the timeout wording, when an abrupt network loss is only detected by the 60 s inactivity timeout)
+And device A keeps hosting the same session: the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
 ```
 
 #### Scenario: Transfer stalls and hits the inactivity timeout
@@ -663,6 +684,7 @@ When no message is received for 60 seconds by either device
 Then the waiting device aborts the transfer and closes the connection
 And device B's local database remains unchanged
 And the status explains that the transfer timed out and can be restarted
+And device A keeps hosting the same session, so the synchronisation can be restarted on it
 ```
 
 #### Scenario: A long transfer is not cut by a global time limit
@@ -696,6 +718,7 @@ Then device B shows: "Espace de stockage insuffisant sur cet appareil pour recev
 And device B sends "cancel" to device A
 And no data is streamed
 And device B's local database remains unchanged
+And device A shows "Transfert refusé par l'appareil distant" and keeps hosting the same session
 ```
 
 #### Scenario: Storage estimate unavailable
@@ -731,8 +754,9 @@ And an error status is shown to the user
 
 ```gherkin
 Given the browser supports the Screen Wake Lock API
-When a P2P transfer starts on device A and device B
+When device B replies "ready" to the manifest and the transfer starts
 Then each device holds a screen wake lock while the transfer runs
+And neither device holds it while a confirmation dialog is still pending
 And the wake lock is released when the transfer succeeds, fails or is cancelled
 And if the wake lock is unsupported or refused, the transfer continues anyway
 ```
@@ -746,6 +770,20 @@ When device B receives the handshake
 Then device B does not send its PIN
 And device B shows: "Version de synchronisation incompatible — mettez à jour les deux appareils"
 And no data is transferred
+```
+
+#### Scenario: Host paired with a client older than the streamed protocol
+
+```gherkin
+Given device A uses the streamed protocol version 2
+And device B runs an older Locapilot that predates the protocol version (v1)
+When device B authenticates and device A confirms "Envoyer la synchronisation ?"
+Then device A sends the encrypted manifest, which device B ignores
+And device A sends no record batch and no blob chunk
+And device A keeps showing "En attente de la confirmation de l'appareil distant…", with no time limit
+And device A keeps its session ID, PIN, QR code and "Arrêter" button
+When the user clicks "Arrêter" on device A
+Then the session ends and device B's local database remains unchanged
 ```
 
 ---
