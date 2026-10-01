@@ -5,35 +5,52 @@ import SettingsView from './SettingsView.vue';
 import { generatePairingQrDataUrl } from '../services/pairingLinkService';
 
 type StatusCb = (status: string, info?: unknown) => void;
-type DataCb = (data: { type: 'export'; payload: string }) => Promise<void> | void;
 
 // vi.hoisted(): shared state available inside the vi.mock() factories below.
 const mocks = await vi.hoisted(async () => {
   const { reactive } = await import('vue');
   const route = reactive({ hash: '' });
 
+  type DataCb = (payload: unknown) => Promise<void>;
+  type ManifestCb = (manifest: unknown) => Promise<boolean>;
+
   class MockPeerSyncService {
     static instances: MockPeerSyncService[] = [];
     onData: DataCb;
     onStatus: StatusCb;
+    onManifest: ManifestCb;
     startHosting = vi.fn(async (id: string) => {
       this.onStatus('hosting', id);
     });
     // Like the real service: tearing the peer down reports "stopped".
     stopHosting = vi.fn(() => this.onStatus('stopped'));
     connect = vi.fn(async () => {});
-    disconnect = vi.fn(() => this.onStatus('stopped'));
-    sendExport = vi.fn();
-    constructor(onData: DataCb, onStatus: StatusCb) {
+    disconnect = vi.fn(() => {
+      this.onStatus('stopped');
+    });
+    streamTransfer = vi.fn(async () => 'completed');
+    constructor(onData: DataCb, onStatus: StatusCb, onManifest: ManifestCb) {
       this.onData = onData;
       this.onStatus = onStatus;
+      this.onManifest = onManifest;
       MockPeerSyncService.instances.push(this);
     }
   }
 
+  const syncSource = { appVersion: 'test', totalBytes: 0 };
+  const dataTransferStore = {
+    isExporting: false,
+    isImporting: false,
+    exportData: vi.fn(async () => ({ json: '{}' })),
+    buildSyncSource: vi.fn(async () => syncSource),
+    importFromObject: vi.fn(async (_payload: unknown) => {}),
+  };
+
   return {
     route,
     MockPeerSyncService,
+    syncSource,
+    dataTransferStore,
     replace: vi.fn(async (to: { hash?: string }) => {
       // Behave like the real router: the fragment is gone once replaced.
       route.hash = to.hash ?? '';
@@ -73,12 +90,7 @@ vi.mock('../stores/settingsStore', () => ({
 }));
 
 vi.mock('../stores/dataTransferStore', () => ({
-  useDataTransferStore: () => ({
-    isExporting: false,
-    isImporting: false,
-    exportData: vi.fn(async () => ({ json: '{}' })),
-    importFromObject: vi.fn(async () => {}),
-  }),
+  useDataTransferStore: () => mocks.dataTransferStore,
 }));
 
 const QR_DATA_URL = 'data:image/png;base64,QRCODE';
@@ -108,6 +120,19 @@ const buttonByText = (w: VueWrapper, text: string) => {
     .find(b => b.text().trim() === text);
   if (!button) throw new Error(`button "${text}" not found`);
   return button;
+};
+/** The host session (session ID, PIN, QR code, "Arrêter") is displayed. */
+const hasHostSession = (w: VueWrapper) => {
+  const info = w.find('.peer-session-info');
+  return (
+    info.exists() &&
+    info.find('code').text().startsWith('LP') &&
+    /^\d{6}$/.test(info.find('.peer-pin').text()) &&
+    w.find('[data-testid="p2p-qr-code"]').exists() &&
+    p2pCard(w)
+      .findAll('button')
+      .some(b => b.text().trim() === 'Arrêter')
+  );
 };
 const lastPeerService = () => {
   const { instances } = mocks.MockPeerSyncService;
@@ -319,19 +344,6 @@ describe('SettingsView — P2P pairing QR code (#118)', () => {
 });
 
 describe('SettingsView — P2P host session lifecycle', () => {
-  const hasHostSession = (w: VueWrapper) => {
-    const info = w.find('.peer-session-info');
-    return (
-      info.exists() &&
-      info.find('code').text().startsWith('LP') &&
-      /^\d{6}$/.test(info.find('.peer-pin').text()) &&
-      w.find('[data-testid="p2p-qr-code"]').exists() &&
-      p2pCard(w)
-        .findAll('button')
-        .some(b => b.text().trim() === 'Arrêter')
-    );
-  };
-
   async function host() {
     const w = await mountView();
     await buttonByText(w, 'Héberger').trigger('click');
@@ -445,12 +457,313 @@ describe('SettingsView — P2P host session lifecycle', () => {
       const w = await mountView();
       const client = await connectAsClient(w);
 
-      await client.onData({ type: 'export', payload: '{}' });
+      await client.onData({ properties: [], tenants: [], version: '1.2.0' });
       await flushPromises();
 
       expect(client.disconnect).toHaveBeenCalledTimes(1);
       expect(p2pCard(w).text()).toContain('Synchronisation terminée');
       expect(p2pCard(w).text()).not.toContain('stopped');
+    });
+  });
+});
+
+// Issue #122 — streamed P2P transfer wired into the view.
+describe('SettingsView — streamed P2P transfer (#122)', () => {
+  const MO = 1024 * 1024;
+  const manifest = (totalBytes: number, documents = 900) => ({
+    protocolVersion: 2,
+    appVersion: '1.2.0',
+    exportedAt: '2026-01-01T00:00:00.000Z',
+    counts: {},
+    documents,
+    totalBytes,
+    totalChunks: 10,
+  });
+  const progress = (w: VueWrapper) => w.find('[data-testid="p2p-transfer-progress"]');
+
+  function stubStorage(storage: Record<string, unknown> | undefined) {
+    Object.defineProperty(navigator, 'storage', { configurable: true, value: storage });
+  }
+
+  async function startClient(w: VueWrapper) {
+    await sessionInput(w).setValue('LP7K4MQ2XB');
+    await pinInput(w).setValue('482913');
+    await buttonByText(w, 'Se connecter').trigger('click');
+    await flushPromises();
+    return lastPeerService();
+  }
+
+  async function startHost(w: VueWrapper) {
+    await buttonByText(w, 'Héberger').trigger('click');
+    await flushPromises();
+    return lastPeerService();
+  }
+
+  beforeEach(() => {
+    mocks.MockPeerSyncService.instances = [];
+    mocks.route.hash = '';
+    vi.mocked(generatePairingQrDataUrl).mockResolvedValue(QR_DATA_URL);
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false }))
+    );
+    vi.stubGlobal('alert', vi.fn());
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true)
+    );
+    Element.prototype.scrollIntoView = scrollIntoView;
+    mocks.dataTransferStore.importFromObject.mockImplementation(async () => {});
+    stubStorage(undefined);
+  });
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = null;
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(navigator, 'storage');
+  });
+
+  describe('host side', () => {
+    it('streams the sync source (no JSON export) once the user confirms', async () => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('auth-ok');
+      await flushPromises();
+
+      expect(window.confirm).toHaveBeenCalledWith(
+        expect.stringContaining('Envoyer la synchronisation ?')
+      );
+      expect(mocks.dataTransferStore.buildSyncSource).toHaveBeenCalled();
+      expect(svc.streamTransfer).toHaveBeenCalledWith(mocks.syncSource);
+      expect(mocks.dataTransferStore.exportData).not.toHaveBeenCalled();
+    });
+
+    it('does not stream anything when the host declines', async () => {
+      vi.mocked(window.confirm).mockReturnValue(false);
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('auth-ok');
+      await flushPromises();
+
+      expect(svc.streamTransfer).not.toHaveBeenCalled();
+      expect(p2pCard(w).text()).toContain("Transfert annulé par l'hôte");
+    });
+
+    it('shows the sending progress', async () => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('transfer-progress', { transferredBytes: 1 * MO, totalBytes: 2 * MO });
+      await flushPromises();
+
+      expect(progress(w).text()).toBe('Envoi des données… 50 % (1 Mo / 2 Mo)');
+      expect(progress(w).get('progress').attributes('value')).toBe('50');
+    });
+
+    it('keeps the session and "Transfert refusé par l\'appareil distant" after the client leaves', async () => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('client-connected');
+      svc.onStatus('transfer-pending', { totalBytes: 2 * MO });
+      svc.onStatus('transfer-cancelled');
+      svc.onStatus('client-disconnected');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain("Transfert refusé par l'appareil distant");
+      expect(p2pCard(w).text()).not.toContain('Appareil déconnecté');
+      expect(hasHostSession(w)).toBe(true);
+      expect(svc.stopHosting).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['interrupted', "Transfert interrompu — aucune donnée n'a été modifiée"],
+      ['timeout', 'aucune réponse depuis 60 s'],
+      ['corrupted', 'Transfert interrompu — données corrompues'],
+    ])('keeps the session and the %s outcome after the client leaves', async (reason, text) => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('client-connected');
+      svc.onStatus('transfer-progress', { transferredBytes: 1 * MO, totalBytes: 2 * MO });
+      svc.onStatus('transfer-error', { reason });
+      svc.onStatus('client-disconnected');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain(text);
+      expect(progress(w).exists()).toBe(false);
+      expect(hasHostSession(w)).toBe(true);
+    });
+
+    it('reports a later client leaving normally once a new attempt started', async () => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('client-connected');
+      svc.onStatus('transfer-cancelled');
+      svc.onStatus('client-disconnected');
+      svc.onStatus('client-connected');
+      svc.onStatus('client-disconnected');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain(
+        "Appareil déconnecté — en attente d'une nouvelle connexion"
+      );
+      expect(hasHostSession(w)).toBe(true);
+    });
+
+    it('ends the session when the client leaves after a completed stream', async () => {
+      const w = await mountView();
+      const svc = await startHost(w);
+
+      svc.onStatus('transfer-progress', { transferredBytes: 2 * MO, totalBytes: 2 * MO });
+      svc.onStatus('transfer-complete');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain('Données envoyées — session de synchronisation terminée');
+      expect(progress(w).exists()).toBe(false);
+      expect(w.find('.peer-session-info').exists()).toBe(false);
+      expect(w.find('[data-testid="p2p-qr-code"]').exists()).toBe(false);
+    });
+  });
+
+  describe('client side — consent on the manifest', () => {
+    it('shows the announced size and number of documents before any bulk transfer', async () => {
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      const ok = await svc.onManifest(manifest(612 * MO));
+
+      expect(ok).toBe(true);
+      expect(window.confirm).toHaveBeenCalledWith(
+        'Recevoir des données depuis un autre appareil va remplacer vos données locales (≈ 612 Mo, 900 document(s)). Continuer ?'
+      );
+    });
+
+    it('refuses with a clear message when the storage quota is insufficient', async () => {
+      const persist = vi.fn(async () => true);
+      stubStorage({ estimate: vi.fn(async () => ({ quota: 700 * MO, usage: 200 * MO })), persist });
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      const ok = await svc.onManifest(manifest(612 * MO));
+      await flushPromises();
+
+      expect(ok).toBe(false);
+      expect(window.confirm).not.toHaveBeenCalled();
+      expect(persist).not.toHaveBeenCalled();
+      expect(p2pCard(w).text()).toContain(
+        'Espace de stockage insuffisant sur cet appareil pour recevoir 612 Mo'
+      );
+    });
+
+    it('asks for persistent storage when the quota is enough', async () => {
+      const persist = vi.fn(async () => true);
+      stubStorage({ estimate: vi.fn(async () => ({ quota: 10_000 * MO, usage: 0 })), persist });
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      expect(await svc.onManifest(manifest(612 * MO))).toBe(true);
+      expect(window.confirm).toHaveBeenCalled();
+      expect(persist).toHaveBeenCalled();
+    });
+
+    it('skips the quota check when storage.estimate is unavailable', async () => {
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      expect(await svc.onManifest(manifest(612 * MO))).toBe(true);
+      expect(window.confirm).toHaveBeenCalled();
+    });
+
+    it('cancels when the user declines the replacement', async () => {
+      vi.mocked(window.confirm).mockReturnValue(false);
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      expect(await svc.onManifest(manifest(612 * MO))).toBe(false);
+      svc.onStatus('transfer-cancelled');
+      svc.onStatus('stopped');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain('Import annulé');
+      expect(mocks.dataTransferStore.importFromObject).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('client side — transfer and import', () => {
+    it('shows the receiving progress', async () => {
+      const w = await mountView();
+      const svc = await startClient(w);
+      await svc.onManifest(manifest(612 * MO));
+
+      svc.onStatus('transfer-progress', { transferredBytes: 276 * MO, totalBytes: 612 * MO });
+      await flushPromises();
+
+      expect(progress(w).text()).toBe('Réception des données… 45 % (276 Mo / 612 Mo)');
+    });
+
+    it('imports the received data through importFromObject, then reports success', async () => {
+      const w = await mountView();
+      const svc = await startClient(w);
+      const payload = { properties: [], tenants: [], version: '1.2.0' };
+
+      await svc.onData(payload);
+      await flushPromises();
+
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledWith(payload);
+      expect(window.alert).toHaveBeenCalledWith('Données synchronisées avec succès !');
+      expect(svc.disconnect).toHaveBeenCalled();
+      expect(p2pCard(w).text()).toContain('Synchronisation terminée');
+      expect(pinInput(w).element.value).toBe('');
+    });
+
+    it('reports an import failure without claiming success', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mocks.dataTransferStore.importFromObject.mockRejectedValueOnce(new Error('invalide'));
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      await svc.onData({ properties: [], tenants: [], version: '1.2.0' });
+      await flushPromises();
+
+      expect(window.alert).toHaveBeenCalledWith('Erreur lors de la réception des données');
+      expect(window.alert).not.toHaveBeenCalledWith('Données synchronisées avec succès !');
+      expect(p2pCard(w).text()).toContain("aucune donnée n'a été modifiée");
+    });
+
+    it.each([
+      ['corrupted', 'Transfert interrompu — données corrompues'],
+      ['interrupted', "Transfert interrompu — aucune donnée n'a été modifiée"],
+      ['timeout', 'aucune réponse depuis 60 s'],
+    ])('shows the %s error status, kept after the connection closes', async (reason, text) => {
+      const w = await mountView();
+      const svc = await startClient(w);
+      await svc.onManifest(manifest(10 * MO));
+      svc.onStatus('transfer-progress', { transferredBytes: 1 * MO, totalBytes: 10 * MO });
+
+      svc.onStatus('transfer-error', { reason });
+      svc.onStatus('stopped');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain(text);
+      expect(progress(w).exists()).toBe(false);
+    });
+
+    it('shows the incompatible protocol version status', async () => {
+      const w = await mountView();
+      const svc = await startClient(w);
+
+      svc.onStatus('protocol-mismatch', { local: 2, remote: 1 });
+      svc.onStatus('stopped');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain(
+        'Version de synchronisation incompatible — mettez à jour les deux appareils'
+      );
     });
   });
 });

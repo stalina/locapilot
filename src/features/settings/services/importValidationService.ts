@@ -13,7 +13,9 @@
  *
  * Note: `documents` and `tenantDocuments` are validated in their SERIALIZED
  * form (`data` as a base64 data-URL string or null), as produced by the export
- * feature, before `deserializeDocuments` converts them back to Blob.
+ * feature, before `deserializeDocuments` converts them back to Blob. The P2P
+ * streamed sync (issue #122) hands over `data` as an already reassembled Blob,
+ * which the same schemas accept.
  */
 
 import { z } from 'zod';
@@ -102,8 +104,12 @@ export const rentSchema = z.strictObject({
   updatedAt: dateLike,
 });
 
-// Serialized form: `data` is a base64 data-URL string (or null when the blob
-// could not be serialized), never a Blob — see dataTransferService.
+// `data` is a base64 data-URL string (JSON file import), a Blob (P2P streamed
+// sync, issue #122: the content is reassembled as a Blob and never decoded into
+// a string), or null when the blob could not be serialized — see
+// dataTransferService.
+const documentData = z.union([z.string(), z.instanceof(Blob)]);
+
 export const serializedDocumentSchema = z.strictObject({
   id: idField,
   name: z.string(),
@@ -125,7 +131,7 @@ export const serializedDocumentSchema = z.strictObject({
   relatedEntityId: z.number().optional(),
   mimeType: z.string(),
   size: z.number(),
-  data: z.string().nullable(),
+  data: documentData.nullable(),
   description: z.string().optional(),
   expiresAt: dateLike.optional(),
   createdAt: dateLike,
@@ -140,7 +146,7 @@ export const serializedTenantDocumentSchema = z.strictObject({
   size: z.number(),
   uploadedAt: dateLike,
   notes: z.string().optional(),
-  data: z.string().nullable().optional(),
+  data: documentData.nullable().optional(),
   documentId: z.number().optional(),
 });
 
