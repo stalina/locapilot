@@ -159,8 +159,27 @@ const handleExportData = async () => {
 // Session id and PIN are generated with crypto.getRandomValues via the service
 // (generateSessionId / generatePin) — no timestamp, no Math.random.
 
+// The view drives at most one Peer at a time (host or client): release the
+// current one before starting another, so no Peer keeps listening unseen.
+const releasePeerService = () => {
+  const previous = peerService;
+  peerService = null;
+  try {
+    previous?.disconnect();
+  } catch (e) {
+    console.warn('peer release failed', e);
+  }
+};
+
+const clearHostSession = () => {
+  isHosting.value = false;
+  hostId.value = null;
+  generatedPin.value = '';
+};
+
 const startHosting = async () => {
   if (isHosting.value) return;
+  releasePeerService();
   isHosting.value = true;
   peerStatus.value = 'Creating peer...';
   generatedPin.value = generatePin();
@@ -185,9 +204,7 @@ const startHosting = async () => {
             : 0;
         const seconds = Math.ceil((Number.isFinite(retryAfterMs) ? retryAfterMs : 0) / 1000);
         peerStatus.value = `Session verrouillée — trop de tentatives de PIN. Réessayez dans ${seconds}s.`;
-        isHosting.value = false;
-        hostId.value = null;
-        generatedPin.value = '';
+        clearHostSession();
         peerService = null;
       }
       if (status === 'auth-ok') {
@@ -210,13 +227,22 @@ const startHosting = async () => {
           }
         })();
       }
+      // A device leaving (or rejected for a wrong PIN) does not end the hosting
+      // session: the Peer still listens, so the session ID, PIN, QR code and
+      // "Arrêter" stay displayed until stopped, locked out or transfer complete.
       if (status === 'auth-failed') {
         peerStatus.value = 'Connexion rejetée — PIN incorrect';
       }
+      if (status === 'client-disconnected') {
+        peerStatus.value = "Appareil déconnecté — en attente d'une nouvelle connexion";
+      }
+      if (status === 'transfer-complete') {
+        peerStatus.value = 'Données envoyées — session de synchronisation terminée';
+        clearHostSession();
+        peerService = null;
+      }
       if (status === 'stopped') {
-        isHosting.value = false;
-        hostId.value = null;
-        generatedPin.value = '';
+        clearHostSession();
       }
     }
   );
@@ -239,9 +265,7 @@ const stopHosting = () => {
     console.warn('stopHosting failed', e);
   }
   peerService = null;
-  isHosting.value = false;
-  hostId.value = null;
-  generatedPin.value = '';
+  clearHostSession();
   peerStatus.value = '';
 };
 
@@ -259,6 +283,7 @@ const connectToHost = async () => {
     return alert('ID de session invalide');
   }
 
+  releasePeerService();
   try {
     peerStatus.value = 'Connexion en cours...';
 
@@ -295,6 +320,12 @@ const connectToHost = async () => {
         }
       },
       (status: PeerStatus, info?: unknown) => {
+        if (status === 'stopped') {
+          // Local teardown after a sync, a rejected PIN or a release: keep the
+          // last meaningful status instead of replacing it with "stopped".
+          peerService = null;
+          return;
+        }
         peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
         if (status === 'auth-pending') {
           peerStatus.value = 'Authentification en cours...';
@@ -308,9 +339,6 @@ const connectToHost = async () => {
         }
         if (status === 'error') {
           console.error('Peer error', info);
-        }
-        if (status === 'stopped') {
-          peerService = null;
         }
       }
     );

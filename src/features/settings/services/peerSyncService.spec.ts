@@ -292,18 +292,157 @@ describe('PeerSyncService', () => {
       expect(conn1.closed).toBe(false);
       expect(conn2.closed).toBe(true);
     });
+  });
 
-    it('notifies stopped when the connection closes', async () => {
+  // -------------------------------------------------------------------------
+  describe('host session lifecycle', () => {
+    const PIN = '123456';
+
+    async function host() {
       const statuses: PeerStatus[] = [];
       const svc = new PeerSyncService(undefined, s => statuses.push(s));
+      await svc.startHosting('host-peer', PIN);
+      const peer = mocks.last()!;
+      peer.emit('open', 'host-peer');
+      return { svc, peer, statuses };
+    }
 
-      await svc.startHosting('host-peer', '123456');
+    function openConn(peer: MockPeerT) {
       const conn = new mocks.MockDataConn();
-      mocks.last()!.emit('connection', conn);
+      peer.emit('connection', conn);
       conn.emit('open');
+      return conn;
+    }
+
+    async function authenticate(conn: InstanceType<typeof mocks.MockDataConn>) {
+      conn.emit('data', { type: 'auth', pin: PIN });
+      await waitFor(() => conn.sentOfType('auth_ok').length > 0);
+    }
+
+    it('notifies client-disconnected — not stopped — and keeps listening when a client leaves', async () => {
+      const { peer, statuses } = await host();
+      const conn = openConn(peer);
+
+      statuses.length = 0;
+      conn.close();
+
+      expect(statuses).toEqual(['client-disconnected']);
+      expect(peer.destroyed).toBe(false);
+    });
+
+    it('accepts and authenticates a new connection on the same session after a client left', async () => {
+      const { peer } = await host();
+      openConn(peer).close();
+
+      const conn2 = openConn(peer);
+      expect(conn2.closed).toBe(false);
+      expect(conn2.sentOfType('handshake')).toHaveLength(1);
+
+      await authenticate(conn2);
+      expect(conn2.closed).toBe(false);
+    });
+
+    it('keeps hosting after a wrong PIN: reports auth-failed only, then accepts a new connection', async () => {
+      const { peer, statuses } = await host();
+      const conn = openConn(peer);
+
+      statuses.length = 0;
+      conn.emit('data', { type: 'auth', pin: '000000' });
+      await waitFor(() => conn.closed);
+
+      // The rejection is reported once, as auth-failed — never as stopped.
+      expect(statuses).toEqual(['auth-failed']);
+      expect(peer.destroyed).toBe(false);
+      expect(PeerSyncService.lockoutRemainingMs()).toBe(0);
+
+      const conn2 = openConn(peer);
+      expect(conn2.closed).toBe(false);
+      expect(conn2.sentOfType('handshake')).toHaveLength(1);
+    });
+
+    it('counts wrong PINs across the connections of one session, then locks out', async () => {
+      const { peer, statuses } = await host();
+
+      for (let i = 1; i < MAX_PIN_ATTEMPTS; i++) {
+        const conn = openConn(peer);
+        conn.emit('data', { type: 'auth', pin: '000000' });
+        await waitFor(() => conn.closed);
+        expect(peer.destroyed).toBe(false);
+      }
+
+      const last = openConn(peer);
+      last.emit('data', { type: 'auth', pin: '000000' });
+      await waitFor(() => peer.destroyed);
+
+      expect(statuses.filter(s => s === 'auth-failed')).toHaveLength(MAX_PIN_ATTEMPTS);
+      expect(statuses[statuses.length - 1]).toBe('locked-out');
+      expect(statuses).not.toContain('client-disconnected');
+      expect(statuses).not.toContain('stopped');
+      expect(last.closed).toBe(true);
+    });
+
+    it('discards the session key of a client that disconnected', async () => {
+      const { svc, peer } = await host();
+      const conn1 = openConn(peer);
+      await authenticate(conn1);
+      conn1.close();
+
+      // An unauthenticated next client must not inherit the previous key.
+      openConn(peer);
+      expect(() => svc.sendExport('{"test":1}')).toThrow('No session key established');
+    });
+
+    it('ignores an authentication that completes after the client left', async () => {
+      const key = await deriveSessionKey(PIN, generateSalt());
+      let finishDerivation: (k: CryptoKey) => void = () => {};
+      const deriveKey = vi
+        .spyOn(crypto.subtle, 'deriveKey')
+        .mockImplementationOnce(() => new Promise<CryptoKey>(r => (finishDerivation = r)));
+
+      const { peer, statuses } = await host();
+      const conn = openConn(peer);
+      conn.emit('data', { type: 'auth', pin: PIN });
+      await waitFor(() => deriveKey.mock.calls.length > 0);
 
       conn.close();
-      expect(statuses).toContain('stopped');
+      finishDerivation(key);
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(conn.sentOfType('auth_ok')).toHaveLength(0);
+      expect(statuses).not.toContain('auth-ok');
+      expect(peer.destroyed).toBe(false);
+      deriveKey.mockRestore();
+    });
+
+    it('ends the session with transfer-complete when the client leaves after the export', async () => {
+      const { svc, peer, statuses } = await host();
+      const conn = openConn(peer);
+      await authenticate(conn);
+      svc.sendExport('{"test":1}');
+      await waitFor(() => conn.sentOfType('export').length > 0);
+
+      statuses.length = 0;
+      conn.close();
+
+      expect(statuses).toEqual(['transfer-complete']);
+      expect(peer.destroyed).toBe(true);
+
+      // The service can host a brand-new session afterwards.
+      const instancesBefore = mocks.instances.length;
+      await svc.startHosting('host-peer-2', '654321');
+      expect(mocks.instances.length).toBe(instancesBefore + 1);
+    });
+
+    it('stopHosting with a connected client reports stopped only', async () => {
+      const { svc, peer, statuses } = await host();
+      const conn = openConn(peer);
+
+      statuses.length = 0;
+      svc.stopHosting();
+
+      expect(statuses).toEqual(['stopped']);
+      expect(conn.closed).toBe(true);
+      expect(peer.destroyed).toBe(true);
     });
   });
 
