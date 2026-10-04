@@ -104,9 +104,4 @@ textarea {
   color: var(--text-primary, #0f172a);
   box-shadow: var(--shadow-sm, none);
 }
-
-.modal-footer {
-  display: flex;
-  gap: 12px;
-}
 </style>

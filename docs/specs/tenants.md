@@ -290,6 +290,35 @@ Then it is pre-filled with the default rejection message template
 And I can edit it before confirming
 ```
 
+#### Scenario: Cancel the refusal dialog
+
+```gherkin
+Given I open the refusal dialog for a candidate
+When I click "Annuler"
+Then the dialog closes
+And the tenant's status remains "candidate"
+And no TenantAudit entry is recorded
+```
+
+#### Scenario: Refusal dialog on a mobile screen
+
+```gherkin
+Given I use a screen 480px wide or narrower
+And a candidate's profile shows the "Actions rapides" cards
+When I open the refusal dialog
+Then the dialog is displayed above the whole page, including the "Actions rapides" cards, the mobile header and the navigation menu
+And the "Refuser et proposer l'email" and "Annuler" buttons are stacked full width, the confirm action on top
+And both buttons are entirely visible and clickable
+```
+
+#### Scenario: Refusal dialog on a desktop screen
+
+```gherkin
+Given I use a desktop screen
+When I open the refusal dialog
+Then the "Annuler" and "Refuser et proposer l'email" buttons are displayed side by side, aligned to the right of the dialog footer
+```
+
 #### Scenario: Re-open a refused application
 
 ```gherkin
