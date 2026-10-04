@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { resetApp, navigateFromSidebar, withinModal } from './utils/app';
+import { resetApp, navigateFromSidebar, withinModal, contrastRatio } from './utils/app';
 
 test.describe('Propriétés - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -92,5 +92,34 @@ test.describe('Propriétés - éditeur riche chargé à la demande (issue #65)',
 
     // Le chunk de l'éditeur n'a été demandé qu'après l'ouverture du formulaire.
     expect(editorRequests.length).toBeGreaterThan(0);
+  });
+});
+
+test.describe('Propriétés - formulaire lisible en mode sombre', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await resetApp(page);
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+  });
+
+  test('La modale « Nouveau bien » et son bouton Annuler restent lisibles', async ({ page }) => {
+    expect(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)).toBe(
+      true
+    );
+
+    await page.locator('[data-testid="new-property-button"]').first().click();
+    const modal = withinModal(page, /Nouveau bien/i);
+    await modal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // En mode sombre --text-primary devient quasi blanc : le fond de la modale et
+    // celui du bouton « Annuler » doivent suivre le thème pour rester lisibles.
+    const cancel = modal.locator('[data-testid="property-form-cancel"]');
+    await expect
+      .poll(() => contrastRatio(modal.locator('[data-testid="modal-title"]'), modal))
+      .toBeGreaterThanOrEqual(4.5);
+    await expect.poll(() => contrastRatio(cancel, cancel)).toBeGreaterThanOrEqual(4.5);
+
+    await cancel.click();
+    await expect(modal).toBeHidden();
   });
 });

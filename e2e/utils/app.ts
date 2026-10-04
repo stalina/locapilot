@@ -95,3 +95,24 @@ export function withinModal(page: Page, title: RegExp): Locator {
     .filter({ has: page.locator('[data-testid="modal-title"]', { hasText: title }) })
     .first();
 }
+
+/**
+ * WCAG 2 contrast ratio (1 to 21) between the computed text colour of
+ * `foreground` and the computed background colour of `background`.
+ */
+export async function contrastRatio(foreground: Locator, background: Locator): Promise<number> {
+  const [text, surface] = await Promise.all([
+    foreground.evaluate(el => getComputedStyle(el).color),
+    background.evaluate(el => getComputedStyle(el).backgroundColor),
+  ]);
+  const luminance = (color: string) => {
+    const channels = (color.match(/\d+(\.\d+)?/g) ?? []).map(Number);
+    const linear = (index: number) => {
+      const channel = (channels[index] ?? 0) / 255;
+      return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * linear(0) + 0.7152 * linear(1) + 0.0722 * linear(2);
+  };
+  const luminances = [luminance(text), luminance(surface)];
+  return (Math.max(...luminances) + 0.05) / (Math.min(...luminances) + 0.05);
+}
