@@ -47,12 +47,22 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick" data-testid="modal-overlay">
+      <div
+        v-if="modelValue"
+        class="modal-overlay"
+        @click="handleOverlayClick"
+        data-testid="modal-overlay"
+      >
         <div class="modal" :class="`modal-${size}`" @click.stop data-testid="modal">
           <!-- Header -->
           <div class="modal-header">
             <h3 class="modal-title" data-testid="modal-title">{{ title }}</h3>
-            <button class="close-button" @click="handleClose" type="button" data-testid="modal-close">
+            <button
+              class="close-button"
+              @click="handleClose"
+              type="button"
+              data-testid="modal-close"
+            >
               <i class="mdi mdi-close"></i>
             </button>
           </div>
@@ -80,7 +90,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* The overlay hosts the dialog, so it sits on the modal layer of the z-index scale,
+     above sticky page content and the fixed app chrome. */
+  z-index: var(--z-modal, 1050);
   padding: var(--space-4, 1rem);
   overflow-y: auto;
 }
@@ -155,6 +167,7 @@ onUnmounted(() => {
 
 .modal-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-3, 0.75rem);
   padding: var(--space-6, 1.5rem);
@@ -191,6 +204,13 @@ onUnmounted(() => {
 
   .modal-overlay {
     padding: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stack full-width footer buttons, primary action (last in the slot) on top */
+  .modal-footer {
+    flex-direction: column-reverse;
   }
 }
 </style>

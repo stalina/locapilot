@@ -103,9 +103,4 @@ textarea {
   background: var(--color-surface, #fff);
   box-shadow: var(--shadow-sm, none);
 }
-
-.modal-footer {
-  display: flex;
-  gap: 12px;
-}
 </style>
