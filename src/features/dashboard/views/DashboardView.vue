@@ -508,4 +508,11 @@ function handleEventClick(event: DashboardEventItem) {
   font-weight: 600;
   color: var(--text-primary, #0f172a);
 }
+
+/* primary-600 is 2.9:1 on the dark section card, so the date steps up the scale. */
+@media (prefers-color-scheme: dark) {
+  .schedule-date {
+    color: var(--primary-300);
+  }
+}
 </style>

@@ -138,7 +138,7 @@ const closeSidebar = () => {
   padding: 0 var(--space-4, 1rem);
   align-items: center;
   justify-content: space-between;
-  z-index: 999;
+  z-index: var(--z-fixed, 1030);
 }
 
 .menu-toggle {
@@ -172,7 +172,8 @@ const closeSidebar = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 900; /* Keep overlay beneath the sidebar to avoid intercepting clicks */
+  /* Above sticky page content, beneath the mobile header and the sidebar (avoids intercepting clicks) */
+  z-index: calc(var(--z-fixed, 1030) - 1);
   cursor: pointer;
 }
 
@@ -339,7 +340,7 @@ const closeSidebar = () => {
     left: -280px;
     top: 0;
     bottom: 0;
-    z-index: 1000; /* Sidebar above overlay when open */
+    z-index: var(--z-fixed, 1030); /* Above the overlay; above the mobile header by DOM order */
     transition: left var(--transition-base, 0.2s ease);
     box-shadow: none;
     pointer-events: none; /* Disabled when closed to avoid intercepting clicks */

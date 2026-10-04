@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { resetApp } from './utils/app';
+import { resetApp, withinModal, contrastRatio } from './utils/app';
 
 test('Dashboard shows recent activities and upcoming events', async ({ page }) => {
   await page.goto('/');
@@ -296,5 +296,36 @@ test.describe('Dashboard analysis charts - e2e', () => {
     await expect(perPropertyCard.locator('.bar-row').first()).toBeVisible();
     await expect(perPropertyCard).toContainText(propertyName);
     await expect(page.locator('[data-testid="dashboard-chart-revenue-empty"]')).toHaveCount(0);
+  });
+});
+
+test.describe('Dashboard - lisible en mode sombre', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await resetApp(page);
+  });
+
+  test('Les sections et les actions rapides restent lisibles', async ({ page }) => {
+    // En mode sombre --text-primary devient quasi blanc : les sections du tableau
+    // de bord doivent suivre le thème, et le texte des boutons « outline »
+    // (primary-300) doit rester lisible sur leur fond.
+    const recent = page
+      .locator('.section-card')
+      .filter({ has: page.locator('.section-title', { hasText: 'Activité récente' }) });
+    await expect(recent).toBeVisible();
+    await expect
+      .poll(() => contrastRatio(recent.locator('.section-title'), recent))
+      .toBeGreaterThanOrEqual(4.5);
+
+    const quickActionsCard = page
+      .locator('.section-card')
+      .filter({ has: page.locator('.quick-actions') });
+    const newProperty = quickActionsCard.locator('.btn-outline', { hasText: 'Nouvelle propriété' });
+    await expect
+      .poll(() => contrastRatio(newProperty, quickActionsCard))
+      .toBeGreaterThanOrEqual(4.5);
+
+    await newProperty.click();
+    await expect(withinModal(page, /Nouveau bien/i)).toBeVisible({ timeout: 10_000 });
   });
 });

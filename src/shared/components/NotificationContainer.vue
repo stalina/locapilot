@@ -85,7 +85,7 @@ const { notifications, position, remove } = useNotification();
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: all;
@@ -169,6 +169,21 @@ const { notifications, position, remove } = useNotification();
 
 .notification__close:hover {
   color: #111827;
+}
+
+/*
+ * The light greys above are not on the neutral scale, so no semantic token
+ * reproduces them; the dark theme maps them to the semantic tokens here.
+ */
+@media (prefers-color-scheme: dark) {
+  .notification__message,
+  .notification__close:hover {
+    color: var(--text-primary);
+  }
+
+  .notification__close {
+    color: var(--text-secondary);
+  }
 }
 
 /* Animations */

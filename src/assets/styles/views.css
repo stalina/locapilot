@@ -109,7 +109,7 @@
 
 .section-card,
 .card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl, 1rem);
   padding: var(--space-6, 1.5rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
@@ -165,7 +165,7 @@
   gap: var(--space-8, 2rem);
   margin-bottom: var(--space-8, 2rem);
   padding: var(--space-6, 1.5rem);
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
   flex-wrap: wrap;
@@ -220,7 +220,7 @@
   font-size: var(--text-sm, 0.875rem);
   font-family: inherit;
   color: var(--text-primary, #0f172a);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-lg, 0.75rem);
   cursor: pointer;
@@ -380,7 +380,7 @@
   .quick-actions {
     position: sticky;
     top: 64px; /* below mobile header */
-    z-index: 1500;
+    z-index: var(--z-sticky, 1020); /* stays under the app chrome and modals */
     background: transparent;
     padding: var(--space-2, 0.5rem) 0;
   }
@@ -393,7 +393,7 @@
     bottom: 12px;
     display: flex;
     gap: var(--space-3, 0.75rem);
-    z-index: 2500;
+    z-index: var(--z-fixed, 1030);
     background: rgba(255, 255, 255, 0.98);
     padding: var(--space-2, 0.5rem);
     border-radius: var(--radius-xl, 1rem);
@@ -460,7 +460,7 @@
   gap: var(--space-4, 1rem);
   margin: var(--space-6, 1.5rem) 0;
   padding: var(--space-4, 1rem);
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
 }
@@ -486,6 +486,35 @@
   color: var(--primary-600, #4f46e5);
   min-width: 50px;
   text-align: right;
+}
+
+/* ===================================
+   THÈME SOMBRE
+   =================================== */
+
+/*
+ * On the dark surfaces primary-600 is 2.9:1 and error-600 3.7:1, so coloured
+ * text uses the shades from the appearance spec. `color-scheme` makes the
+ * sort select's native option list dark too.
+ */
+@media (prefers-color-scheme: dark) {
+  .section-link,
+  .event-date,
+  .progress-text {
+    color: var(--primary-300);
+  }
+
+  .section-link:hover {
+    color: var(--primary-200);
+  }
+
+  .error-state {
+    color: var(--error-500);
+  }
+
+  .sort-select {
+    color-scheme: dark;
+  }
 }
 
 /* ===================================

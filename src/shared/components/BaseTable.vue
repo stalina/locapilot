@@ -164,7 +164,7 @@ const formatCellValue = (item: T, column: TableColumn<T>): string => {
 
 <style scoped>
 .base-table {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -254,6 +254,40 @@ const formatCellValue = (item: T, column: TableColumn<T>): string => {
 .actions-cell {
   text-align: right;
   white-space: nowrap;
+}
+
+/*
+ * The light greys above are not on the neutral scale, so no semantic token
+ * reproduces them; the dark theme maps them to the semantic tokens here, and
+ * the sort colour steps up to a primary shade that stays readable.
+ */
+@media (prefers-color-scheme: dark) {
+  .table-header {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-color);
+  }
+
+  .table-header.sortable:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  .table-header.sorted,
+  .sort-icon {
+    color: var(--primary-300);
+  }
+
+  .table-row {
+    border-bottom-color: var(--border-color);
+  }
+
+  .table-row:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  .table-cell {
+    color: var(--text-primary);
+  }
 }
 
 @media (max-width: 768px) {

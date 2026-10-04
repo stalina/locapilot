@@ -177,11 +177,22 @@ const isLink = computed(() => !!props.to && !props.disabled && !props.loading);
  * In dark mode --bg-tertiary and --border-color both resolve to neutral-700 and
  * no semantic token sits one step above them, so the neutral variants step up
  * the neutral scale here to keep a visible hover behind light --text-primary.
+ * The outline variant mirrors its light pairing (primary-600 text, primary-50
+ * hover) from the other end of the primary scale, as primary-600 is only 2.9:1
+ * on the dark surface.
  */
 @media (prefers-color-scheme: dark) {
   .btn-secondary:hover:not(:disabled),
   .btn-default:hover:not(:disabled) {
     background: var(--neutral-600);
+  }
+
+  .btn-outline {
+    color: var(--primary-300);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: var(--primary-900);
   }
 }
 

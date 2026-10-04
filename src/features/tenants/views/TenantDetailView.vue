@@ -854,6 +854,21 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
   color: #115e59;
 }
 
+/*
+ * primary-600 is 2.9:1 on the dark card, and the light primary-50 hover sits
+ * behind near-white text, so both use the other end of the primary scale.
+ */
+@media (prefers-color-scheme: dark) {
+  .property-item > i:first-child,
+  .lease-amount {
+    color: var(--primary-300);
+  }
+
+  .property-item.clickable:hover {
+    background: var(--primary-900);
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .hero-section {
