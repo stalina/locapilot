@@ -122,4 +122,40 @@ test.describe('Propriétés - formulaire lisible en mode sombre', () => {
     await cancel.click();
     await expect(modal).toBeHidden();
   });
+
+  test('Les valeurs saisies et la carte du bien créé restent lisibles', async ({ page }) => {
+    const name = `E2E Bien sombre ${Date.now()}`;
+
+    await page.locator('[data-testid="new-property-button"]').first().click();
+    const modal = withinModal(page, /Nouveau bien/i);
+    await modal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Les champs doivent suivre le thème : une valeur quasi blanche sur un champ
+    // blanc serait illisible.
+    const nameField = modal.locator('[data-testid="property-name"]');
+    const surfaceField = modal.locator('input[data-testid="property-surface"]');
+    const typeField = modal.locator('[data-testid="property-type"]');
+    await nameField.fill(name);
+    await modal.locator('[data-testid="property-address"]').fill('1 rue de Test, 75000 Paris');
+    await surfaceField.fill('42');
+    await modal.locator('input[data-testid="property-rooms"]').fill('2');
+    await modal.locator('input[data-testid="property-rent"]').fill('850');
+    await typeField.selectOption({ label: 'Maison' });
+
+    for (const field of [nameField, surfaceField, typeField]) {
+      await expect.poll(() => contrastRatio(field, field)).toBeGreaterThanOrEqual(4.5);
+    }
+
+    await modal.locator('[data-testid="property-form-submit"]').click();
+    await expect(modal).toBeHidden();
+
+    const card = page.locator('.property-card', { hasText: name }).first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(() => contrastRatio(card.locator('.property-name'), card))
+      .toBeGreaterThanOrEqual(4.5);
+    await expect
+      .poll(() => contrastRatio(card.locator('.stat-price'), card))
+      .toBeGreaterThanOrEqual(4.5);
+  });
 });

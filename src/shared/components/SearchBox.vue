@@ -20,13 +20,16 @@ const emit = defineEmits<{
 const inputValue = ref(props.modelValue);
 const timeoutId = ref<number>();
 
-watch(() => props.modelValue, (newValue) => {
-  inputValue.value = newValue;
-});
+watch(
+  () => props.modelValue,
+  newValue => {
+    inputValue.value = newValue;
+  }
+);
 
-watch(inputValue, (newValue) => {
+watch(inputValue, newValue => {
   emit('update:modelValue', newValue);
-  
+
   clearTimeout(timeoutId.value);
   timeoutId.value = window.setTimeout(() => {
     emit('search', newValue);
@@ -41,18 +44,8 @@ function clearSearch() {
 <template>
   <div class="search-box">
     <i class="mdi mdi-magnify search-icon"></i>
-    <input
-      v-model="inputValue"
-      type="text"
-      class="search-input"
-      :placeholder="placeholder"
-    />
-    <button
-      v-if="inputValue"
-      type="button"
-      class="clear-button"
-      @click="clearSearch"
-    >
+    <input v-model="inputValue" type="text" class="search-input" :placeholder="placeholder" />
+    <button v-if="inputValue" type="button" class="clear-button" @click="clearSearch">
       <i class="mdi mdi-close"></i>
     </button>
   </div>
@@ -81,7 +74,7 @@ function clearSearch() {
   font-size: var(--text-base, 1rem);
   font-family: inherit;
   color: var(--text-primary, #0f172a);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-lg, 0.75rem);
   outline: none;

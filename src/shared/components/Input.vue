@@ -26,7 +26,8 @@ const hasError = computed(() => !!props.error);
 
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
-  const value = props.type === 'number' ? (target.value === '' ? null : Number(target.value)) : target.value;
+  const value =
+    props.type === 'number' ? (target.value === '' ? null : Number(target.value)) : target.value;
   emit('update:modelValue', value);
 }
 </script>
@@ -37,7 +38,7 @@ function handleInput(event: Event) {
       {{ label }}
       <span v-if="required" class="required">*</span>
     </label>
-    
+
     <div class="input-container" :class="{ 'has-icon': icon, 'has-error': hasError }">
       <i v-if="icon" :class="`mdi mdi-${icon}`" class="input-icon"></i>
       <input
@@ -51,12 +52,12 @@ function handleInput(event: Event) {
         @input="handleInput"
       />
     </div>
-    
+
     <div v-if="error" class="input-error">
       <i class="mdi mdi-alert-circle"></i>
       {{ error }}
     </div>
-    
+
     <div v-else-if="hint" class="input-hint">
       {{ hint }}
     </div>
@@ -104,7 +105,7 @@ function handleInput(event: Event) {
   font-size: var(--text-base, 1rem);
   font-family: inherit;
   color: var(--text-primary, #0f172a);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-lg, 0.75rem);
   outline: none;
@@ -145,5 +146,19 @@ function handleInput(event: Event) {
 .input-hint {
   font-size: var(--text-sm, 0.875rem);
   color: var(--text-secondary, #64748b);
+}
+
+/*
+ * --error-600 drops to 3.7:1 on the dark surface, so the message steps down the
+ * error scale. `color-scheme` makes native parts (date picker icon) light too.
+ */
+@media (prefers-color-scheme: dark) {
+  .input-field {
+    color-scheme: dark;
+  }
+
+  .input-error {
+    color: var(--error-500);
+  }
 }
 </style>

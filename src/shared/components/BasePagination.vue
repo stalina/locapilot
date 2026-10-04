@@ -10,7 +10,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   itemsPerPage: 10,
-  maxVisiblePages: 7
+  maxVisiblePages: 7,
 });
 
 const emit = defineEmits<{
@@ -143,9 +143,9 @@ const changeItemsPerPage = (event: Event) => {
         v-for="(page, index) in visiblePages"
         :key="index"
         class="page-btn"
-        :class="{ 
-          'active': page === currentPage,
-          'dots': page === '...'
+        :class="{
+          active: page === currentPage,
+          dots: page === '...',
         }"
         :disabled="page === '...'"
         @click="typeof page === 'number' ? goToPage(page) : null"
@@ -201,14 +201,16 @@ const changeItemsPerPage = (event: Event) => {
   border-radius: 6px;
   font-size: 0.875rem;
   color: #374151;
-  background-color: white;
+  background-color: var(--bg-primary);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
   background-size: 1.25em 1.25em;
   appearance: none;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .items-select:hover {
@@ -233,7 +235,7 @@ const changeItemsPerPage = (event: Event) => {
   padding: 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--bg-primary);
   color: #374151;
   font-size: 0.875rem;
   font-weight: 500;
@@ -274,6 +276,35 @@ const changeItemsPerPage = (event: Event) => {
 .next-btn {
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+/*
+ * The light greys above are not on the neutral scale, so no semantic token
+ * reproduces them; the dark theme maps them to the semantic tokens here.
+ */
+@media (prefers-color-scheme: dark) {
+  .pagination-info {
+    color: var(--text-secondary);
+  }
+
+  .items-select,
+  .page-btn {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+
+  .items-select {
+    color-scheme: dark;
+  }
+
+  .items-select:hover,
+  .page-btn:hover:not(:disabled):not(.dots) {
+    border-color: var(--neutral-500);
+  }
+
+  .page-btn:hover:not(:disabled):not(.dots) {
+    background-color: var(--bg-tertiary);
+  }
 }
 
 @media (max-width: 640px) {

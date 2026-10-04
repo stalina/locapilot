@@ -1,6 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import StatCard from './StatCard.vue';
+import { contrastRatio, themeColors, type Theme } from '@/test/themeColors';
+
+describe('StatCard theme colours', () => {
+  const resolve = themeColors('src/shared/components/StatCard.vue');
+  const surface = (theme: Theme) => resolve('background', ['.stat-card'], theme);
+
+  describe.each(['light', 'dark'] as const)('in %s mode', theme => {
+    it.each(['.stat-value', '.stat-label', '.trend-up', '.trend-down'])(
+      'keeps %s readable on the card',
+      selector => {
+        expect(
+          contrastRatio(resolve('color', [selector], theme), surface(theme))
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    );
+  });
+
+  it('follows the theme surface: white in light mode, neutral-900 in dark mode', () => {
+    expect(surface('light')).toBe('#ffffff');
+    expect(surface('dark')).toBe('#171717');
+  });
+
+  it('keeps the light trend colours unchanged', () => {
+    expect([
+      resolve('color', ['.trend-up'], 'light'),
+      resolve('color', ['.trend-down'], 'light'),
+    ]).toEqual(['#15803d', '#b91c1c']);
+  });
+});
 
 describe('StatCard', () => {
   it('should display label and value', () => {
@@ -107,7 +136,7 @@ describe('StatCard', () => {
       'error',
     ];
 
-    colors.forEach((color) => {
+    colors.forEach(color => {
       const wrapper = mount(StatCard, {
         props: {
           label: 'Test',

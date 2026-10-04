@@ -189,7 +189,7 @@ function isToday(date: Date | null): boolean {
 
 <style scoped>
 .calendar {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
   padding: var(--space-6, 1.5rem);

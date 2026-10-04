@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import Button from '@/shared/components/Button.vue';
-import { contrastRatio, themeColors, type Theme } from '@/test/themeColors';
+import { contrastRatio, themeColors, themeToken, type Theme } from '@/test/themeColors';
 
 // The neutral variants paint --text-primary, which turns near-white in dark
 // mode, so their backgrounds must follow the theme too.
@@ -35,6 +35,26 @@ describe('Button theme colours', () => {
         contrastRatio(text(variant, theme), hoverBackground(variant, theme))
       ).toBeGreaterThanOrEqual(4.5);
     });
+
+    // The outline variant is transparent, so its text sits on the page or card.
+    it.each(['--bg-primary', '--bg-secondary'])(
+      'keeps the outline variant readable on %s',
+      surface => {
+        expect(
+          contrastRatio(text('outline', theme), themeToken(surface, theme))
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    );
+
+    it('keeps the outline variant readable on hover', () => {
+      expect(
+        contrastRatio(text('outline', theme), hoverBackground('outline', theme))
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
+  it('gives the outline variant a dark hover in dark mode', () => {
+    expect(hoverBackground('outline', 'dark')).toBe('#312e81');
   });
 
   it('keeps the light theme colours of the neutral variants unchanged', () => {
@@ -43,11 +63,13 @@ describe('Button theme colours', () => {
       default: [background('default', 'light'), hoverBackground('default', 'light')],
       ghostHover: hoverBackground('ghost', 'light'),
       textHover: hoverBackground('text', 'light'),
+      outline: [text('outline', 'light'), hoverBackground('outline', 'light')],
     }).toEqual({
       secondary: ['#f5f5f5', '#e5e5e5'],
       default: ['#e5e5e5', '#d4d4d4'],
       ghostHover: '#f5f5f5',
       textHover: '#f5f5f5',
+      outline: ['#4f46e5', '#f0f4ff'],
     });
   });
 });

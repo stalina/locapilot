@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 export type Theme = 'light' | 'dark';
 
-interface CssRule {
+export interface CssRule {
   selectors: string[];
   declarations: Record<string, string>;
   media: string | null;
@@ -88,19 +88,34 @@ function resolveValue(value: string, tokens: Record<string, string>): string {
   return resolveValue(next.trim(), tokens);
 }
 
-/** Raw content of a single-file component's `<style>` block. */
+/** Raw CSS of a stylesheet, or of a single-file component's `<style>` block. */
 export function readComponentStyles(path: string): string {
-  return readSource(path).match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? '';
+  const source = readSource(path);
+  if (path.endsWith('.css')) return source;
+  return source.match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? '';
+}
+
+/** Rules of a stylesheet or of an SFC `<style>` block, `@media` blocks flattened. */
+export function readComponentRules(path: string): CssRule[] {
+  return parseStylesheet(readComponentStyles(path));
 }
 
 /**
- * Returns a resolver for the value a component declares for `property` once
+ * Value of a design token in the given theme, e.g. the surface a component's
+ * text sits on when that surface belongs to its parent.
+ */
+export function themeToken(token: string, theme: Theme): string {
+  return resolveValue(`var(${token})`, loadTokens(theme));
+}
+
+/**
+ * Returns a resolver for the value a component (or stylesheet) declares for `property` once
  * `selectors` cascade in order (list the base class before its `:hover` rule),
  * with design tokens resolved for the given theme. Only theme media queries are
  * honoured, so the result matches a desktop viewport.
  */
 export function themeColors(path: string) {
-  const rules = parseStylesheet(readComponentStyles(path));
+  const rules = readComponentRules(path);
   const tokens = { light: loadTokens('light'), dark: loadTokens('dark') };
 
   return function resolve(property: string, selectors: string[], theme: Theme): string {

@@ -141,7 +141,7 @@ onUnmounted(() => {
 
 <style scoped>
 .property-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
   overflow: hidden;
@@ -267,5 +267,12 @@ onUnmounted(() => {
   border-top: 1px solid var(--border-color, #e2e8f0);
   display: flex;
   gap: var(--space-2, 0.5rem);
+}
+
+/* --primary-600 drops to 2.9:1 on the dark card, so the price steps up the scale. */
+@media (prefers-color-scheme: dark) {
+  .stat-price {
+    color: var(--primary-300);
+  }
 }
 </style>

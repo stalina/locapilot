@@ -8,22 +8,21 @@
               {{ currentDialog.title }}
             </h3>
           </div>
-          
+
           <div class="confirm-dialog__body">
-            <div v-if="currentDialog.type" :class="['confirm-dialog__icon', `confirm-dialog__icon--${currentDialog.type}`]">
+            <div
+              v-if="currentDialog.type"
+              :class="['confirm-dialog__icon', `confirm-dialog__icon--${currentDialog.type}`]"
+            >
               <span v-if="currentDialog.type === 'danger'">⚠</span>
               <span v-else-if="currentDialog.type === 'warning'">⚠</span>
               <span v-else>ℹ</span>
             </div>
             <p class="confirm-dialog__message">{{ currentDialog.message }}</p>
           </div>
-          
+
           <div class="confirm-dialog__footer">
-            <button
-              class="btn btn--secondary"
-              type="button"
-              @click="handleCancel"
-            >
+            <button class="btn btn--secondary" type="button" @click="handleCancel">
               {{ currentDialog.cancelText }}
             </button>
             <button
@@ -62,11 +61,13 @@ const { currentDialog, handleConfirm, handleCancel } = useConfirm();
 }
 
 .confirm-dialog {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 12px;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -141,7 +142,7 @@ const { currentDialog, handleConfirm, handleCancel } = useConfirm();
 }
 
 .btn--secondary {
-  background: white;
+  background: var(--bg-primary);
   color: #374151;
   border: 1px solid #d1d5db;
 }
@@ -168,6 +169,33 @@ const { currentDialog, handleConfirm, handleCancel } = useConfirm();
   background: #dc2626;
 }
 
+/*
+ * The light greys above are not on the neutral scale, so no semantic token
+ * reproduces them; the dark theme maps them to the semantic tokens here.
+ */
+@media (prefers-color-scheme: dark) {
+  .confirm-dialog__title {
+    color: var(--text-primary);
+  }
+
+  .confirm-dialog__message {
+    color: var(--text-secondary);
+  }
+
+  .confirm-dialog__footer {
+    background: var(--bg-secondary);
+  }
+
+  .btn--secondary {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+
+  .btn--secondary:hover {
+    background: var(--bg-tertiary);
+  }
+}
+
 /* Animations */
 .modal-enter-active,
 .modal-leave-active {
@@ -176,7 +204,9 @@ const { currentDialog, handleConfirm, handleCancel } = useConfirm();
 
 .modal-enter-active .confirm-dialog,
 .modal-leave-active .confirm-dialog {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .modal-enter-from,
