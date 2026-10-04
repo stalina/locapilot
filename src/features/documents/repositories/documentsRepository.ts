@@ -10,7 +10,7 @@ export async function fetchDocumentById(id: number): Promise<Document | undefine
 }
 
 export async function createDocument(data: Omit<Document, 'id'>): Promise<Document | null> {
-  const id = (await db.documents.add(data as any)) as number;
+  const id = (await db.documents.add(data)) as number;
   const created = await db.documents.get(id);
   return created ?? null;
 }
@@ -19,7 +19,7 @@ export async function updateDocument(
   id: number,
   updates: Partial<Omit<Document, 'id' | 'createdAt' | 'data'>>
 ): Promise<number> {
-  return db.documents.update(id, updates as any);
+  return db.documents.update(id, updates);
 }
 
 export async function deleteDocument(id: number): Promise<void> {

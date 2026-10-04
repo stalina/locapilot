@@ -6,10 +6,10 @@ import Button from './Button.vue';
 const showUpdatePrompt = ref(false);
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({
-  onRegistered(registration: any) {
+  onRegistered(registration: ServiceWorkerRegistration | undefined) {
     console.log('Service Worker registered:', registration);
   },
-  onRegisterError(error: any) {
+  onRegisterError(error: unknown) {
     console.error('Service Worker registration error:', error);
   },
   onNeedRefresh() {

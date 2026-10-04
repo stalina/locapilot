@@ -189,7 +189,7 @@ const validateForm = (): boolean => {
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
-  let leaseData: any = null;
+  let leaseData: Omit<Lease, 'id' | 'createdAt' | 'updatedAt'> | null = null;
 
   try {
     // Convert all selected candidates to active tenants
@@ -205,7 +205,7 @@ const handleSubmit = async () => {
 
     leaseData = {
       propertyId: Number(formData.value.propertyId),
-      tenantIds: formData.value.tenantIds.map((id: any) => Number(id)),
+      tenantIds: formData.value.tenantIds.map(id => Number(id)),
       startDate: new Date(formData.value.startDate),
       rent: Number(formData.value.rent),
       charges: Number(formData.value.charges),
@@ -230,12 +230,14 @@ const handleSubmit = async () => {
     emit('success');
     emit('update:modelValue', false);
     resetForm();
-  } catch (error: any) {
+  } catch (error) {
+    // Dexie errors may carry an `inner` cause in addition to the Error fields
+    const err = error as (Partial<Error> & { inner?: unknown }) | null | undefined;
     console.error('Failed to save lease:', error);
     console.error('Error details:', {
-      message: error?.message,
-      inner: error?.inner,
-      stack: error?.stack,
+      message: err?.message,
+      inner: err?.inner,
+      stack: err?.stack,
       formData: formData.value,
       leaseData,
     });

@@ -1,12 +1,16 @@
 import { ref } from 'vue';
 import { useNotification } from './useNotification';
 
-export interface ImportOptions {
-  validate?: (data: any) => boolean | Promise<boolean>;
-  transform?: (data: any) => any | Promise<any>;
+/**
+ * @template TIn  shape of the parsed file content handed to `validate`/`transform`
+ * @template TOut shape of the imported data once transformed
+ */
+export interface ImportOptions<TIn = unknown, TOut = TIn> {
+  validate?: (data: TIn) => boolean | Promise<boolean>;
+  transform?: (data: TIn) => TOut | Promise<TOut>;
 }
 
-export interface ImportResult<T = any> {
+export interface ImportResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -19,9 +23,9 @@ export function useImport() {
   /**
    * Import data from JSON file
    */
-  const importFromJSON = async <T = any>(
+  const importFromJSON = async <T = unknown>(
     file: File,
-    options: ImportOptions = {}
+    options: ImportOptions<unknown, T> = {}
   ): Promise<ImportResult<T>> => {
     isImporting.value = true;
 
@@ -35,25 +39,24 @@ export function useImport() {
       const content = await readFileAsText(file);
 
       // Parse JSON
-      let data: T;
+      let parsed: unknown;
       try {
-        data = JSON.parse(content);
+        parsed = JSON.parse(content);
       } catch {
         throw new Error('Format JSON invalide');
       }
 
       // Validate data if validator provided
       if (options.validate) {
-        const isValid = await options.validate(data);
+        const isValid = await options.validate(parsed);
         if (!isValid) {
           throw new Error('Les données ne sont pas valides');
         }
       }
 
-      // Transform data if transformer provided
-      if (options.transform) {
-        data = await options.transform(data);
-      }
+      // Transform data if transformer provided. Without a transformer the
+      // parsed content is trusted to match T (the caller's validator guards it).
+      const data = options.transform ? await options.transform(parsed) : (parsed as T);
 
       showSuccess(`Fichier ${file.name} importé avec succès`);
       return {
@@ -79,10 +82,10 @@ export function useImport() {
   /**
    * Import data from CSV file
    */
-  const importFromCSV = async (
+  const importFromCSV = async <T = Record<string, string>[]>(
     file: File,
-    options: ImportOptions = {}
-  ): Promise<ImportResult<Record<string, string>[]>> => {
+    options: ImportOptions<Record<string, string>[], T> = {}
+  ): Promise<ImportResult<T>> => {
     isImporting.value = true;
 
     try {
@@ -124,11 +127,10 @@ export function useImport() {
         }
       }
 
-      // Transform data if transformer provided
-      let transformedData: any = data;
-      if (options.transform) {
-        transformedData = await options.transform(data);
-      }
+      // Transform data if transformer provided (T defaults to the raw rows)
+      const transformedData = options.transform
+        ? await options.transform(data)
+        : (data as unknown as T);
 
       showSuccess(`Fichier ${file.name} importé avec succès (${data.length} lignes)`);
 
@@ -155,8 +157,8 @@ export function useImport() {
   /**
    * Open file picker and import JSON
    */
-  const pickAndImportJSON = async <T = any>(
-    options: ImportOptions = {}
+  const pickAndImportJSON = async <T = unknown>(
+    options: ImportOptions<unknown, T> = {}
   ): Promise<ImportResult<T>> => {
     const file = await pickFile('.json');
     if (!file) {
@@ -171,9 +173,9 @@ export function useImport() {
   /**
    * Open file picker and import CSV
    */
-  const pickAndImportCSV = async (
-    options: ImportOptions = {}
-  ): Promise<ImportResult<Record<string, string>[]>> => {
+  const pickAndImportCSV = async <T = Record<string, string>[]>(
+    options: ImportOptions<Record<string, string>[], T> = {}
+  ): Promise<ImportResult<T>> => {
     const file = await pickFile('.csv');
     if (!file) {
       return {
@@ -181,7 +183,7 @@ export function useImport() {
         error: 'Aucun fichier sélectionné',
       };
     }
-    return importFromCSV(file, options);
+    return importFromCSV<T>(file, options);
   };
 
   return {

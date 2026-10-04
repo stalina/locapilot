@@ -170,7 +170,7 @@ export interface Inventory {
   /** Structured per-room inspection data (preferred over the legacy roomsData). */
   rooms?: InventoryRoom[];
   /** @deprecated Legacy flexible per-room data; kept for backward compatibility. */
-  roomsData?: Record<string, any>;
+  roomsData?: Record<string, unknown>;
   /** Acceptance/signature record. */
   signature?: InventorySignature;
   createdAt?: Date;

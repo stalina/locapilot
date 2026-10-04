@@ -115,7 +115,7 @@ async function handleSubmit() {
   isSubmitting.value = true;
 
   try {
-    const data: any = {
+    const data: Omit<Tenant, 'id' | 'createdAt' | 'updatedAt'> = {
       civility: formData.value.civility,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,

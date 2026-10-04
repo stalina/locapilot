@@ -10,6 +10,24 @@ export type VirtualRent = {
   isVirtual: true;
 };
 
+/** A row of the rents list: a persisted rent or a virtual (not yet created) one. */
+export type RentListItem = (Rent & { isVirtual: false }) | VirtualRent;
+
+/** Calendar event built from a real or virtual rent (extends the Calendar's event shape). */
+export type RentCalendarEvent = {
+  id: string;
+  rentId: number | undefined;
+  leaseId: number;
+  date: Date;
+  title: string;
+  status: 'pending' | 'paid' | 'overdue';
+  /** Total (rent + charges), kept for backward compatibility */
+  amount: number;
+  rentAmount: number;
+  charges: number;
+  isVirtual: boolean;
+};
+
 export function buildPaidRentUpdates(paidDate?: Date): Partial<Rent> {
   return {
     status: 'paid',
@@ -44,7 +62,7 @@ export function generateVirtualRents(params: {
 
   return activeLeases
     .map(lease => {
-      const paymentDay = (lease as any).paymentDay || 1;
+      const paymentDay = lease.paymentDay || 1;
       const candidate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
       if (candidate < today) candidate.setMonth(candidate.getMonth() + 1);
 
@@ -60,8 +78,8 @@ export function generateVirtualRents(params: {
         id: `virtual-${String(lease.id)}-${candidate.getFullYear()}-${candidate.getMonth()}`,
         leaseId: lease.id as number,
         dueDate: candidate,
-        amount: Number((lease as any).rent) || 0,
-        charges: Number((lease as any).charges) || 0,
+        amount: Number(lease.rent) || 0,
+        charges: Number(lease.charges) || 0,
         status: 'pending',
         isVirtual: true,
       } satisfies VirtualRent;
@@ -73,7 +91,7 @@ export function buildCalendarEvents(params: {
   rents: Rent[];
   leases: Lease[];
   properties: Property[];
-}): any[] {
+}): RentCalendarEvent[] {
   const real = params.rents.map((rent: Rent) => {
     const lease = params.leases.find(l => l.id === rent.leaseId);
     const property = lease ? params.properties.find(p => p.id === lease.propertyId) : null;
@@ -90,12 +108,12 @@ export function buildCalendarEvents(params: {
       title: property?.name || 'Bien inconnu',
       status: calendarStatus as 'pending' | 'paid' | 'overdue',
       // Keep `amount` for backward compatibility (total = rent + charges)
-      amount: (Number(rent.amount) || 0) + (Number((rent as any).charges) || 0),
+      amount: (Number(rent.amount) || 0) + (Number(rent.charges) || 0),
       // Expose separate fields so the UI can display them in dedicated columns
       rentAmount: Number(rent.amount) || 0,
-      charges: Number((rent as any).charges) || 0,
+      charges: Number(rent.charges) || 0,
       isVirtual: false,
-    } as any;
+    } satisfies RentCalendarEvent;
   });
 
   const virtual = generateVirtualRents({
@@ -120,7 +138,7 @@ export function buildCalendarEvents(params: {
       rentAmount: Number(v.amount) || 0,
       charges: Number(v.charges) || 0,
       isVirtual: true,
-    } as any;
+    } satisfies RentCalendarEvent;
   });
 
   return [...real, ...virtualEvents];

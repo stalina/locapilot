@@ -3,12 +3,16 @@
  * Fournit des règles de validation réutilisables
  */
 
-export type ValidationRule = (value: any) => string | true;
+/**
+ * A validation rule: returns `true` when `value` is valid, the error message otherwise.
+ * `T` is the input the rule understands; the default `unknown` accepts any value.
+ */
+export type ValidationRule<T = unknown> = (value: T) => string | true;
 
 export function useValidation() {
   // Règles de validation basiques
   const required = (message = 'Ce champ est requis'): ValidationRule => {
-    return (value: any) => {
+    return (value: unknown) => {
       if (value === null || value === undefined || value === '') {
         return message;
       }
@@ -19,7 +23,7 @@ export function useValidation() {
     };
   };
 
-  const email = (message = 'Email invalide'): ValidationRule => {
+  const email = (message = 'Email invalide'): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true; // Skip validation if empty (use required() separately)
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,7 +31,7 @@ export function useValidation() {
     };
   };
 
-  const phone = (message = 'Numéro de téléphone invalide'): ValidationRule => {
+  const phone = (message = 'Numéro de téléphone invalide'): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       // French phone format: 06 12 34 56 78 or 0612345678 or +33612345678
@@ -36,7 +40,7 @@ export function useValidation() {
     };
   };
 
-  const minLength = (min: number, message?: string): ValidationRule => {
+  const minLength = (min: number, message?: string): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       const msg = message || `Minimum ${min} caractères`;
@@ -44,7 +48,7 @@ export function useValidation() {
     };
   };
 
-  const maxLength = (max: number, message?: string): ValidationRule => {
+  const maxLength = (max: number, message?: string): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       const msg = message || `Maximum ${max} caractères`;
@@ -52,7 +56,7 @@ export function useValidation() {
     };
   };
 
-  const min = (minValue: number, message?: string): ValidationRule => {
+  const min = (minValue: number, message?: string): ValidationRule<number> => {
     return (value: number) => {
       if (value === null || value === undefined) return true;
       const msg = message || `Valeur minimale: ${minValue}`;
@@ -60,7 +64,7 @@ export function useValidation() {
     };
   };
 
-  const max = (maxValue: number, message?: string): ValidationRule => {
+  const max = (maxValue: number, message?: string): ValidationRule<number> => {
     return (value: number) => {
       if (value === null || value === undefined) return true;
       const msg = message || `Valeur maximale: ${maxValue}`;
@@ -68,7 +72,7 @@ export function useValidation() {
     };
   };
 
-  const pattern = (regex: RegExp, message = 'Format invalide'): ValidationRule => {
+  const pattern = (regex: RegExp, message = 'Format invalide'): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       return regex.test(value) || message;
@@ -76,34 +80,34 @@ export function useValidation() {
   };
 
   const numeric = (message = 'Doit être un nombre'): ValidationRule => {
-    return (value: any) => {
+    return (value: unknown) => {
       if (value === null || value === undefined || value === '') return true;
       return !isNaN(Number(value)) || message;
     };
   };
 
   const integer = (message = 'Doit être un nombre entier'): ValidationRule => {
-    return (value: any) => {
+    return (value: unknown) => {
       if (value === null || value === undefined || value === '') return true;
       return Number.isInteger(Number(value)) || message;
     };
   };
 
-  const positive = (message = 'Doit être positif'): ValidationRule => {
+  const positive = (message = 'Doit être positif'): ValidationRule<number> => {
     return (value: number) => {
       if (value === null || value === undefined) return true;
       return Number(value) > 0 || message;
     };
   };
 
-  const positiveOrZero = (message = 'Doit être positif ou zéro'): ValidationRule => {
+  const positiveOrZero = (message = 'Doit être positif ou zéro'): ValidationRule<number> => {
     return (value: number) => {
       if (value === null || value === undefined) return true;
       return Number(value) >= 0 || message;
     };
   };
 
-  const url = (message = 'URL invalide'): ValidationRule => {
+  const url = (message = 'URL invalide'): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       try {
@@ -115,7 +119,7 @@ export function useValidation() {
     };
   };
 
-  const date = (message = 'Date invalide'): ValidationRule => {
+  const date = (message = 'Date invalide'): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       const timestamp = Date.parse(value);
@@ -123,7 +127,7 @@ export function useValidation() {
     };
   };
 
-  const dateBefore = (beforeDate: Date | string, message?: string): ValidationRule => {
+  const dateBefore = (beforeDate: Date | string, message?: string): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       const inputDate = new Date(value);
@@ -133,7 +137,7 @@ export function useValidation() {
     };
   };
 
-  const dateAfter = (afterDate: Date | string, message?: string): ValidationRule => {
+  const dateAfter = (afterDate: Date | string, message?: string): ValidationRule<string> => {
     return (value: string) => {
       if (!value) return true;
       const inputDate = new Date(value);
@@ -143,7 +147,7 @@ export function useValidation() {
     };
   };
 
-  const fileSize = (maxSizeInMB: number, message?: string): ValidationRule => {
+  const fileSize = (maxSizeInMB: number, message?: string): ValidationRule<File> => {
     return (file: File) => {
       if (!file) return true;
       const msg = message || `Taille maximale: ${maxSizeInMB} MB`;
@@ -152,7 +156,7 @@ export function useValidation() {
     };
   };
 
-  const fileType = (allowedTypes: string[], message?: string): ValidationRule => {
+  const fileType = (allowedTypes: string[], message?: string): ValidationRule<File> => {
     return (file: File) => {
       if (!file) return true;
       const msg = message || `Types autorisés: ${allowedTypes.join(', ')}`;
@@ -161,7 +165,7 @@ export function useValidation() {
   };
 
   // Fonction utilitaire pour valider une valeur contre plusieurs règles
-  const validate = (value: any, rules: ValidationRule[]): string | true => {
+  const validate = <T>(value: T, rules: ValidationRule<T>[]): string | true => {
     for (const rule of rules) {
       const result = rule(value);
       if (result !== true) {
@@ -172,19 +176,19 @@ export function useValidation() {
   };
 
   // Fonction utilitaire pour valider un objet complet
-  const validateForm = <T extends Record<string, any>>(
+  const validateForm = <T extends object>(
     formData: T,
-    rules: Record<keyof T, ValidationRule[]>
+    rules: { [K in keyof T]-?: ValidationRule<T[K]>[] }
   ): Record<keyof T, string | true> => {
-    const errors: Record<string, string | true> = {};
-    
+    const errors = {} as Record<keyof T, string | true>;
+
     for (const field in rules) {
       const fieldRules = rules[field];
       const value = formData[field];
       errors[field] = validate(value, fieldRules);
     }
-    
-    return errors as Record<keyof T, string | true>;
+
+    return errors;
   };
 
   // Fonction pour vérifier si un formulaire est valide
@@ -212,7 +216,7 @@ export function useValidation() {
     dateAfter,
     fileSize,
     fileType,
-    
+
     // Utilitaires
     validate,
     validateForm,

@@ -9,6 +9,7 @@ import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
 import Badge from '@/shared/components/Badge.vue';
 import { useDashboardStore } from '../stores/dashboardStore';
+import type { DashboardActivityItem, DashboardEventItem } from '../services/dashboardService';
 import type { DashboardAlert } from '../services/dashboardAlertsService';
 import type { ScheduleItem } from '../services/dashboardScheduleService';
 import MiniLineChart from '../components/MiniLineChart.vue';
@@ -53,7 +54,7 @@ onMounted(async () => {
   await dashboardStore.loadDashboardData();
 });
 
-function handleActivityClick(activity: any) {
+function handleActivityClick(activity: DashboardActivityItem) {
   // Map activity types to relevant routes
   if (activity.type === 'payment') {
     router.push('/rents');
@@ -82,7 +83,7 @@ function formatScheduleDate(date: Date): string {
   });
 }
 
-function handleEventClick(event: any) {
+function handleEventClick(event: DashboardEventItem) {
   // For simplicity, navigate to leases view for visits or to rents for due dates
   if (event.title && event.title.toLowerCase().includes('visite')) {
     router.push('/leases');

@@ -61,7 +61,7 @@ export const useRemindersStore = defineStore('reminders', {
           date: now,
           attachments: [params.documentId],
           createdAt: now,
-        } as any)) as number;
+        })) as number;
 
         const reminder = await createReminderRepo({
           rentId: params.rentId,

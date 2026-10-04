@@ -170,9 +170,8 @@ function loadPhotoPreview() {
     if (typeof data === 'object' && data !== null) {
       // Some exported JSON might have an empty object for binary data.
       // Avoid calling createObjectURL on plain objects.
-      // Try to handle ArrayBuffer-like shapes
-      // @ts-ignore
-      const buf = (data as any).buffer;
+      // Try to handle ArrayBuffer-like shapes (TypedArray / { buffer: ArrayBuffer })
+      const buf = 'buffer' in data ? data.buffer : undefined;
       if (buf instanceof ArrayBuffer) {
         const blob = new Blob([new Uint8Array(buf)], {
           type: props.document.mimeType || 'application/octet-stream',

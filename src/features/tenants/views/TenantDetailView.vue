@@ -13,13 +13,14 @@ import TenantDocumentsList from '../components/TenantDocumentsList.vue';
 import CommunicationsTimeline from '@/features/communications/components/CommunicationsTimeline.vue';
 import { computeTenantAge, getTenantStatusConfig } from '../services/tenantsService';
 import { fetchLastRefusalReason } from '../repositories/tenantAuditsRepository';
+import type { Lease } from '@/db/types';
 
 const route = useRoute();
 const router = useRouter();
 const tenantsStore = useTenantsStore();
 const settingsStore = useSettingsStore();
 const settingsDefaultMsg = computed(
-  () => (unref(settingsStore.currentDefaultRejectionMessage) as any) || ''
+  () => unref(settingsStore.currentDefaultRejectionMessage) || ''
 );
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
@@ -146,7 +147,7 @@ async function validateApplicant() {
   showCreateLeaseModal.value = true;
 }
 
-async function handleLeaseCreated(newLease: any) {
+async function handleLeaseCreated(newLease: Lease) {
   // After creating the lease, set tenant status to active and navigate to lease
   if (!tenant.value?.id) return;
   try {

@@ -33,8 +33,8 @@ const filteredProperties = computed(() => {
       p =>
         p.name.toLowerCase().includes(query) ||
         p.address.toLowerCase().includes(query) ||
-        ((p as any).postalCode && (p as any).postalCode.toLowerCase().includes(query)) ||
-        ((p as any).town && (p as any).town.toLowerCase().includes(query))
+        (p.postalCode && p.postalCode.toLowerCase().includes(query)) ||
+        (p.town && p.town.toLowerCase().includes(query))
     );
   }
 

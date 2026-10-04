@@ -64,22 +64,22 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends object">
 import { computed, ref } from 'vue';
 import Spinner from './Spinner.vue';
 import EmptyState from './EmptyState.vue';
 
-export interface TableColumn {
+export interface TableColumn<Row = unknown> {
   key: string;
   label: string;
   sortable?: boolean;
   width?: string;
-  formatter?: (value: any, item: any) => string;
+  formatter?: (value: unknown, item: Row) => string;
 }
 
 interface Props {
-  columns: TableColumn[];
-  data: any[];
+  columns: TableColumn<T>[];
+  data: T[];
   loading?: boolean;
   clickable?: boolean;
   rowKey?: string;
@@ -101,7 +101,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 defineEmits<{
-  (e: 'row-click', item: any): void;
+  (e: 'row-click', item: T): void;
 }>();
 
 const sortBy = ref<string>(props.defaultSort || '');
@@ -116,8 +116,13 @@ const handleSort = (columnKey: string) => {
   }
 };
 
-const getNestedValue = (obj: any, path: string): any => {
-  return path.split('.').reduce((value, key) => value?.[key], obj);
+const getNestedValue = (obj: unknown, path: string): unknown => {
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (value, key) => (value as Record<string, unknown> | null | undefined)?.[key],
+      obj
+    );
 };
 
 const sortedData = computed(() => {
@@ -126,8 +131,10 @@ const sortedData = computed(() => {
   }
 
   return [...props.data].sort((a, b) => {
-    const aValue = getNestedValue(a, sortBy.value);
-    const bValue = getNestedValue(b, sortBy.value);
+    // Cell values are heterogeneous (strings, numbers, dates…); `>` relies on
+    // JS's native relational comparison, exactly as before typing.
+    const aValue = getNestedValue(a, sortBy.value) as string | number;
+    const bValue = getNestedValue(b, sortBy.value) as string | number;
 
     if (aValue === bValue) return 0;
 
@@ -136,11 +143,11 @@ const sortedData = computed(() => {
   });
 });
 
-const getRowKey = (item: any, index: number): string | number => {
-  return getNestedValue(item, props.rowKey) ?? index;
+const getRowKey = (item: T, index: number): string | number => {
+  return (getNestedValue(item, props.rowKey) as string | number | null | undefined) ?? index;
 };
 
-const formatCellValue = (item: any, column: TableColumn): string => {
+const formatCellValue = (item: T, column: TableColumn<T>): string => {
   const value = getNestedValue(item, column.key);
 
   if (column.formatter) {

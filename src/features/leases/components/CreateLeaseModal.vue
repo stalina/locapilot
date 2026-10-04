@@ -61,13 +61,17 @@ import Modal from '../../../shared/components/Modal.vue';
 import Button from '../../../shared/components/Button.vue';
 import { useLeasesStore } from '../../leases/stores/leasesStore';
 import { usePropertiesStore } from '../../properties/stores/propertiesStore';
+import type { Lease } from '@/db/types';
 
 const props = defineProps({
   modelValue: { type: Boolean as PropType<boolean>, required: true },
   tenantId: { type: Number as PropType<number | undefined>, required: false },
 });
 
-const emit = defineEmits(['update:modelValue', 'created']);
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean];
+  created: [lease: Lease];
+}>();
 
 const leasesStore = useLeasesStore();
 const propertiesStore = usePropertiesStore();
@@ -122,7 +126,7 @@ async function confirm() {
   if (!props.tenantId) return alert('ID du locataire manquant');
 
   try {
-    const leaseData: any = {
+    const leaseData: Omit<Lease, 'id' | 'createdAt' | 'updatedAt'> = {
       propertyId: Number(selectedPropertyId.value),
       tenantIds: [Number(props.tenantId)],
       startDate: new Date(startDate.value),

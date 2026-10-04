@@ -57,8 +57,8 @@ watch(
       formData.value = {
         name: newProperty.name,
         address: newProperty.address,
-        postalCode: (newProperty as any).postalCode || '',
-        town: (newProperty as any).town || '',
+        postalCode: newProperty.postalCode || '',
+        town: newProperty.town || '',
         type: newProperty.type,
         surface: newProperty.surface,
         rooms: newProperty.rooms,
@@ -69,7 +69,7 @@ watch(
         deposit: newProperty.deposit ?? null,
         status: newProperty.status,
         description: newProperty.description || '',
-        annonce: (newProperty as any).annonce || '',
+        annonce: newProperty.annonce || '',
       };
     } else {
       resetForm();

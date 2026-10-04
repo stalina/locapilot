@@ -26,7 +26,7 @@ export async function addTenantDocument(params: {
       updatedAt: now,
     };
 
-    const globalId = (await db.documents.add(globalDoc as any)) as number;
+    const globalId = (await db.documents.add(globalDoc)) as number;
 
     const tenantDoc: Omit<TenantDocument, 'id'> = {
       tenantId: params.tenantId,

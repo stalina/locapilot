@@ -25,5 +25,5 @@ export async function fetchLastRefusalReason(tenantId: number): Promise<string |
   const audits = await db.tenantAudits.where({ tenantId, action: 'refused' }).sortBy('timestamp');
   if (!audits.length) return null;
   const last = audits[audits.length - 1];
-  return last && typeof (last as any).reason === 'string' ? (last as any).reason || null : null;
+  return last && typeof last.reason === 'string' ? last.reason || null : null;
 }

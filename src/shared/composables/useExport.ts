@@ -13,7 +13,7 @@ export function useExport() {
   /**
    * Export data to JSON file
    */
-  const exportToJSON = async <T = any>(data: T, options: ExportOptions = {}): Promise<void> => {
+  const exportToJSON = async <T = unknown>(data: T, options: ExportOptions = {}): Promise<void> => {
     isExporting.value = true;
 
     try {
@@ -54,7 +54,7 @@ export function useExport() {
    * Export data to CSV file
    */
   const exportToCSV = async (
-    data: Record<string, any>[],
+    data: Record<string, unknown>[],
     filename: string = `export-${new Date().toISOString().split('T')[0]}.csv`
   ): Promise<void> => {
     isExporting.value = true;

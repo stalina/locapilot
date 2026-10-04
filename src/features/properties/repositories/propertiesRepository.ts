@@ -17,7 +17,7 @@ export async function createProperty(
     ...data,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (typeof id !== 'number') {
     throw new Error('Failed to create property');

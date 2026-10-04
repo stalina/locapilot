@@ -12,14 +12,14 @@ export async function saveSettingValue(
 ): Promise<void> {
   try {
     // Fast path: simple put (many environments and tests expect this)
-    await db.settings.put({ key, value, updatedAt: now } as any);
+    await db.settings.put({ key, value, updatedAt: now });
   } catch {
     // Fallback to explicit upsert (handles edge cases with unique index)
     const existing = await db.settings.where('key').equals(key).first();
-    if (existing && (existing as any).id) {
-      await db.settings.update((existing as any).id, { value, updatedAt: now } as any);
+    if (existing && existing.id) {
+      await db.settings.update(existing.id, { value, updatedAt: now });
     } else {
-      await db.settings.add({ key, value, updatedAt: now } as any);
+      await db.settings.add({ key, value, updatedAt: now });
     }
   }
 }
