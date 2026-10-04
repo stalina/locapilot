@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 interface Props {
-  label: string
-  value: string | number
-  icon?: string
-  trend?: { value: number; direction: 'up' | 'down' }
-  iconColor?: 'primary' | 'success' | 'warning' | 'accent' | 'error'
+  label: string;
+  value: string | number;
+  icon?: string;
+  trend?: { value: number; direction: 'up' | 'down' };
+  iconColor?: 'primary' | 'success' | 'warning' | 'accent' | 'error';
 }
 
 const props = withDefaults(defineProps<Props>(), {
   iconColor: 'primary',
-})
+});
 
-const iconBgClass = computed(() => `stat-icon-${props.iconColor}`)
+const iconBgClass = computed(() => `stat-icon-${props.iconColor}`);
 </script>
 
 <template>
@@ -41,7 +41,7 @@ const iconBgClass = computed(() => `stat-icon-${props.iconColor}`)
 
 <style scoped>
 .stat-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
   box-shadow: var(--shadow-md);
@@ -128,5 +128,16 @@ const iconBgClass = computed(() => `stat-icon-${props.iconColor}`)
 
 .trend-label {
   color: var(--text-tertiary);
+}
+
+/* The -700 shades drop below 4:1 on the dark card, so the trends use the -500 ones. */
+@media (prefers-color-scheme: dark) {
+  .trend-up {
+    color: var(--success-500);
+  }
+
+  .trend-down {
+    color: var(--error-500);
+  }
 }
 </style>

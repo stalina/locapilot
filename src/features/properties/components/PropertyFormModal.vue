@@ -408,7 +408,7 @@ function handleClose() {
   font-size: var(--text-base, 1rem);
   font-family: inherit;
   color: var(--text-primary, #0f172a);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-lg, 0.75rem);
   outline: none;
@@ -424,6 +424,14 @@ function handleClose() {
 .textarea {
   resize: vertical;
   line-height: 1.5;
+}
+
+/* Makes the native parts (option list, resize grip, scrollbar) dark too. */
+@media (prefers-color-scheme: dark) {
+  .select,
+  .textarea {
+    color-scheme: dark;
+  }
 }
 
 @media (max-width: 768px) {

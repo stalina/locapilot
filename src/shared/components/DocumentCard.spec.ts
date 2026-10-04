@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import DocumentCard from './DocumentCard.vue';
 import type { Document } from '@/db/types';
+import { contrastRatio, themeColors, type Theme } from '@/test/themeColors';
 
 const renderPdfFirstPageThumbnail = vi.fn();
 
@@ -23,6 +24,46 @@ function makeDocument(overrides: Partial<Document>): Document {
     ...overrides,
   } as Document;
 }
+
+describe('DocumentCard theme colours', () => {
+  const resolve = themeColors('src/shared/components/DocumentCard.vue');
+  const surface = (theme: Theme) => resolve('background', ['.document-card'], theme);
+  const expired = (theme: Theme) => resolve('color', ['.meta-item', '.expiry-item.expired'], theme);
+
+  describe.each(['light', 'dark'] as const)('in %s mode', theme => {
+    it.each(['.document-name', '.document-description'])(
+      'keeps %s readable on the card',
+      selector => {
+        expect(
+          contrastRatio(resolve('color', [selector], theme), surface(theme))
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    );
+
+    it('keeps an expired diagnostic date readable on the card', () => {
+      expect(contrastRatio(expired(theme), surface(theme))).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
+  it('follows the theme surface: white in light mode, neutral-900 in dark mode', () => {
+    expect(surface('light')).toBe('#ffffff');
+    expect(surface('dark')).toBe('#171717');
+  });
+
+  it('keeps the light expiry colour unchanged', () => {
+    expect(expired('light')).toBe('#dc2626');
+  });
+
+  it('keeps a white page behind PDF thumbnails in both themes', () => {
+    expect(resolve('background', ['.pdf-thumbnail'], 'light')).toBe('#ffffff');
+    expect(resolve('background', ['.pdf-thumbnail'], 'dark')).toBe('#ffffff');
+  });
+
+  it('renders the expiry date picker icon for a dark background in dark mode only', () => {
+    expect(resolve('color-scheme', ['.expiry-input'], 'dark')).toBe('dark');
+    expect(() => resolve('color-scheme', ['.expiry-input'], 'light')).toThrow();
+  });
+});
 
 describe('DocumentCard', () => {
   beforeEach(() => {

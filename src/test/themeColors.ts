@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 export type Theme = 'light' | 'dark';
 
-interface CssRule {
+export interface CssRule {
   selectors: string[];
   declarations: Record<string, string>;
   media: string | null;
@@ -93,6 +93,19 @@ export function readComponentStyles(path: string): string {
   return readSource(path).match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? '';
 }
 
+/** Rules of a single-file component's `<style>` block, `@media` blocks flattened. */
+export function readComponentRules(path: string): CssRule[] {
+  return parseStylesheet(readComponentStyles(path));
+}
+
+/**
+ * Value of a design token in the given theme, e.g. the surface a component's
+ * text sits on when that surface belongs to its parent.
+ */
+export function themeToken(token: string, theme: Theme): string {
+  return resolveValue(`var(${token})`, loadTokens(theme));
+}
+
 /**
  * Returns a resolver for the value a component declares for `property` once
  * `selectors` cascade in order (list the base class before its `:hover` rule),
@@ -100,7 +113,7 @@ export function readComponentStyles(path: string): string {
  * honoured, so the result matches a desktop viewport.
  */
 export function themeColors(path: string) {
-  const rules = parseStylesheet(readComponentStyles(path));
+  const rules = readComponentRules(path);
   const tokens = { light: loadTokens('light'), dark: loadTokens('dark') };
 
   return function resolve(property: string, selectors: string[], theme: Theme): string {

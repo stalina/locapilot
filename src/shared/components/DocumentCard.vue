@@ -308,7 +308,7 @@ onUnmounted(() => {
   display: flex;
   gap: var(--space-4, 1rem);
   padding: var(--space-4, 1rem);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-xl, 1rem);
   box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
@@ -347,6 +347,7 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
   object-position: top;
+  /* The thumbnail shows a paper page, which stays white in both themes. */
   background: white;
 }
 
@@ -531,6 +532,20 @@ onUnmounted(() => {
 .action-button.delete:hover {
   background: var(--error-50, #fef2f2);
   border-color: var(--error-300, #fca5a5);
+}
+
+/*
+ * --error-600 drops to 3.7:1 on the dark card, so the expiry steps down the error
+ * scale. `color-scheme` makes the date input's native picker icon light too.
+ */
+@media (prefers-color-scheme: dark) {
+  .expiry-item.expired {
+    color: var(--error-500);
+  }
+
+  .expiry-input {
+    color-scheme: dark;
+  }
 }
 
 @media (max-width: 768px) {
