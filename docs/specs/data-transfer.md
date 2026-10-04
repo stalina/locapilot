@@ -674,6 +674,7 @@ And device B shows: "Transfert interrompu — aucune donnée n'a été modifiée
 And a new synchronisation can be started from the beginning
 And unless device A clicked "Arrêter", device A shows "Transfert interrompu — aucune donnée n'a été modifiée" (or the timeout wording, when an abrupt network loss is only detected by the 60 s inactivity timeout)
 And device A keeps hosting the same session: the session ID, the PIN, the QR code and the "Arrêter" button stay displayed
+And when the network loss is reported as a connection error before the close, neither device replaces the "Transfert interrompu" message with a generic error
 ```
 
 #### Scenario: Transfer stalls and hits the inactivity timeout

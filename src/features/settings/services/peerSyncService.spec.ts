@@ -1315,6 +1315,39 @@ describe('PeerSyncService', () => {
         expect(p.hostPeer.destroyed).toBe(false);
       });
 
+      it('a network loss (error then close) mid-transfer keeps "interrupted" as the outcome', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { p, run } = await blockedTransfer();
+
+        // PeerJS emits 'error' (e.g. NegotiationFailed on ICE failure) before 'close'.
+        p.hostConn.emit('error', new Error('NegotiationFailed'));
+        p.clientConn.emit('error', new Error('NegotiationFailed'));
+        p.clientConn.close();
+
+        expect(await run).toBe('failed');
+        await waitFor(() => has(p.clientEvents, 'transfer-error'));
+        expect(errorReasons(p.clientEvents)).toEqual(['interrupted']);
+        expect(errorReasons(p.hostEvents)).toEqual(['interrupted']);
+        // No generic 'error' status overwrites the outcome on either side.
+        expect(has(p.hostEvents, 'error')).toBe(false);
+        expect(has(p.clientEvents, 'error')).toBe(false);
+        expect(p.received).toHaveLength(0);
+        // The host session stays open.
+        expect(has(p.hostEvents, 'stopped')).toBe(false);
+        expect(p.hostPeer.destroyed).toBe(false);
+        warn.mockRestore();
+      });
+
+      it('a connection error outside a transfer is still notified as error', async () => {
+        const p = await pair();
+
+        p.hostConn.emit('error', new Error('boom'));
+        p.clientConn.emit('error', new Error('boom'));
+
+        expect(has(p.hostEvents, 'error')).toBe(true);
+        expect(has(p.clientEvents, 'error')).toBe(true);
+      });
+
       it('the host stopping mid-transfer aborts the client, which imports nothing', async () => {
         const { p, run } = await blockedTransfer();
 

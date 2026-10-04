@@ -889,7 +889,13 @@ export class PeerSyncService {
 
       c.on('error', (err: Error) => {
         const t = this.outgoing;
-        if (t && t.conn === c) this.stopOutgoing(t, 'interrupted', { sendAbort: false });
+        if (t && t.conn === c) {
+          // A network loss (PeerJS emits 'error' then 'close'): the transfer
+          // outcome is the status shown, not a generic error over it.
+          this.stopOutgoing(t, 'interrupted', { sendAbort: false });
+          console.warn('P2P connection error during transfer', err);
+          return;
+        }
         this.notify('error', err);
       });
     });
@@ -1316,7 +1322,10 @@ export class PeerSyncService {
 
       conn.on('error', (err: Error) => {
         if (this.incoming && this.conn === conn) {
+          // Same as the host: keep "interrupted" as the displayed outcome.
           this.failIncoming('interrupted', { sendAbort: false });
+          console.warn('P2P connection error during transfer', err);
+          return;
         }
         this.notify('error', err);
       });
