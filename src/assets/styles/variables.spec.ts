@@ -15,33 +15,6 @@ const sources: Record<string, string> = Object.fromEntries(
     ])
 );
 
-// Undefined tokens still referenced by older components. Remove entries as
-// they are migrated to the design tokens in variables.css — never add new ones.
-const LEGACY_UNDEFINED_TOKENS = new Set([
-  '--bg-muted',
-  '--border-color-strong',
-  '--color-error',
-  '--error-200',
-  '--error-300',
-  '--error-900',
-  '--gray-100',
-  '--gray-700',
-  '--input-bg',
-  '--input-focus-bg',
-  '--primary-color',
-  '--success-900',
-  '--success-color',
-  '--surface-alt',
-  '--surface-color',
-  '--surface-muted',
-  '--surface-primary',
-  '--surface-secondary',
-  '--text-color',
-  '--text-muted',
-  '--warning-200',
-  '--warning-900',
-]);
-
 // The lookbehind keeps BEM modifiers in selectors (e.g. `.btn--primary:hover`)
 // from being counted as `--primary` declarations.
 const declaredTokens = new Set(
@@ -53,7 +26,7 @@ const declaredTokens = new Set(
 function findUndefinedTokens(): string[] {
   return Object.entries(sources).flatMap(([file, source]) =>
     Array.from(source.matchAll(/var\(\s*(--[\w-]+)/g), match => match[1])
-      .filter(token => !declaredTokens.has(token) && !LEGACY_UNDEFINED_TOKENS.has(token))
+      .filter(token => !declaredTokens.has(token))
       .map(token => `${file}: ${token}`)
   );
 }
@@ -71,11 +44,5 @@ describe('design tokens', () => {
       .map(([file]) => file);
 
     expect(offenders).toEqual([]);
-  });
-
-  it('keeps the legacy allowlist free of tokens that are now declared', () => {
-    const nowDeclared = [...LEGACY_UNDEFINED_TOKENS].filter(token => declaredTokens.has(token));
-
-    expect(nowDeclared).toEqual([]);
   });
 });

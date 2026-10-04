@@ -530,7 +530,7 @@ onUnmounted(() => {
 
 .action-button.delete:hover {
   background: var(--error-50, #fef2f2);
-  border-color: var(--error-300, #fca5a5);
+  border-color: var(--error-100, #fca5a5);
 }
 
 @media (max-width: 768px) {

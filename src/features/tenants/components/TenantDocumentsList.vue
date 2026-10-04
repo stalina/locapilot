@@ -156,7 +156,7 @@ function download(doc: TenantDocument) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-muted, #f8fafc);
+  background: var(--bg-secondary, #f8fafc);
   cursor: pointer;
 }
 .doc-preview img {
@@ -222,7 +222,7 @@ function download(doc: TenantDocument) {
 }
 .action-button.delete:hover {
   background: var(--error-50, #fef2f2);
-  border-color: var(--error-300, #fca5a5);
+  border-color: var(--error-100, #fca5a5);
 }
 .add-doc {
   display: flex;

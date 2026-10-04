@@ -784,8 +784,8 @@ async function handleRefusalConfirm(payload: { reason?: string; emailMessage?: s
 }
 
 .status-badge.ended {
-  background: var(--gray-100, #f1f5f9);
-  color: var(--gray-700, #334155);
+  background: var(--neutral-100, #f1f5f9);
+  color: var(--neutral-700, #334155);
 }
 
 .lease-date {
