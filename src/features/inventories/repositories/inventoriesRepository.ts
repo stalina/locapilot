@@ -17,7 +17,7 @@ export async function createInventory(
     ...data,
     createdAt: now,
     updatedAt: now,
-  } as any);
+  });
 
   if (typeof id !== 'number') {
     throw new Error('Failed to create inventory');
@@ -34,7 +34,7 @@ export async function updateInventory(
   return db.inventories.update(id, {
     ...data,
     updatedAt: now,
-  } as any);
+  });
 }
 
 export async function deleteInventory(id: number): Promise<void> {

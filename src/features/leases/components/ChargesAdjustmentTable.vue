@@ -5,7 +5,7 @@ import Button from '@/shared/components/Button.vue';
 import { useLeasesStore } from '../stores/leasesStore';
 import { useDocumentsStore } from '../../documents/stores/documentsStore';
 import { useConfirm } from '@/shared/composables/useConfirm';
-import type { ChargesAdjustmentRow } from '@/db/types';
+import type { ChargesAdjustmentRow, Rent } from '@/db/types';
 import { fetchRentsByLeaseId } from '../repositories/leaseRentsRepository';
 import {
   prepareRegulationLetterData,
@@ -61,7 +61,7 @@ onMounted(async () => {
         const now = new Date();
         // Create default rows and persist
         for (const y of missingYears) {
-          const defaultRow: any = {
+          const defaultRow: Omit<ChargesAdjustmentRow, 'id'> = {
             leaseId: props.leaseId,
             year: y,
             monthlyRent: lease.rent ?? 0,
@@ -74,7 +74,7 @@ onMounted(async () => {
             updatedAt: now,
           };
           // upsert will add since year missing
-          await leasesStore.upsertChargesAdjustment(defaultRow as any);
+          await leasesStore.upsertChargesAdjustment(defaultRow);
         }
         // reload rows after creation
         rows.value = (await leasesStore.fetchChargesAdjustments(props.leaseId)) || [];
@@ -88,7 +88,7 @@ onMounted(async () => {
 // After initial load, compute provision sums from rents for each year and persist
 async function computeProvisions() {
   if (!props.leaseId) return;
-  let rents: any[] = [];
+  let rents: Rent[] = [];
   try {
     rents = await fetchRentsByLeaseId(props.leaseId);
   } catch (err) {
@@ -105,7 +105,7 @@ async function computeProvisions() {
           return false;
         }
       });
-      const sum = yearRents.reduce((s, rr) => s + (Number((rr as any).charges) || 0), 0);
+      const sum = yearRents.reduce((s, rr) => s + (Number(rr.charges) || 0), 0);
       if (r.chargesProvisionPaid !== sum) {
         r.chargesProvisionPaid = sum;
         // persist the computed provision for consistency

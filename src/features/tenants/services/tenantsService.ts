@@ -7,7 +7,8 @@ export type TenantStatusConfig = {
 
 export function computeTenantAge(birthDate: unknown, now = new Date()): number | null {
   if (!birthDate) return null;
-  const birth = birthDate instanceof Date ? birthDate : new Date(birthDate as any);
+  // The Date constructor coerces any value; unparsable input yields an invalid date.
+  const birth = birthDate instanceof Date ? birthDate : new Date(birthDate as string | number);
   if (Number.isNaN(birth.getTime())) return null;
 
   let years = now.getFullYear() - birth.getFullYear();
