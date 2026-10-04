@@ -13,9 +13,10 @@ import { useConfirm } from '@/shared/composables/useConfirm';
 import Button from '@/shared/components/Button.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Badge from '@/shared/components/Badge.vue';
-import RentPaymentModal from '../components/RentPaymentModal.vue';
-import RentFormModal from '../components/RentFormModal.vue';
+import RentPaymentModal, { type PaymentData } from '../components/RentPaymentModal.vue';
+import RentFormModal, { type RentFormData } from '../components/RentFormModal.vue';
 import type { Rent, Lease } from '../../../db/types';
+import type { RentListItem, VirtualRent } from '../services/rentsService';
 import {
   prepareRentReceiptData,
   generateRentReceipt,
@@ -52,7 +53,7 @@ const selectedRentForModal = ref<Rent | null>(null);
 
 // virtual rents are generated via the rents store helper
 
-const initialFormData = ref<any>(null);
+const initialFormData = ref<(Partial<RentFormData> & { id?: number }) | null>(null);
 
 // edit flow handled via RentFormModal when needed
 
@@ -77,7 +78,7 @@ function getLeaseById(id: number) {
   return leasesStore.leases.find(l => l.id === id) || null;
 }
 
-async function handleCreateAndOpenPayment(virtualRent: any) {
+async function handleCreateAndOpenPayment(virtualRent: VirtualRent) {
   try {
     // create actual rent
     const created = await rentsStore.createRentFromVirtual({
@@ -98,7 +99,7 @@ async function handleCreateAndOpenPayment(virtualRent: any) {
 
 // note: edit button removed; edit flow kept via RentFormModal where needed
 
-function handlePayClick(rent: any) {
+function handlePayClick(rent: RentListItem) {
   if (rent.isVirtual) {
     handleCreateAndOpenPayment(rent);
   } else {
@@ -106,7 +107,7 @@ function handlePayClick(rent: any) {
   }
 }
 
-async function handleUpdateRent(payload: any) {
+async function handleUpdateRent(payload: RentFormData & { id?: number }) {
   try {
     if (payload.id) {
       await rentsStore.updateRent(payload.id, {
@@ -134,7 +135,7 @@ async function handleUpdateRent(payload: any) {
   }
 }
 
-async function handlePayFromModal(data: any) {
+async function handlePayFromModal(data: PaymentData) {
   if (!selectedRentForModal.value?.id) return;
   try {
     await rentsStore.payRent(selectedRentForModal.value.id, new Date(data.paymentDate));
@@ -165,15 +166,15 @@ onMounted(async () => {
 
 // Combine real rents with virtual pending rents for display
 const displayedRents = computed(() => {
-  const realRents = rentsStore.rents.map(r => ({ ...r, isVirtual: false }) as any);
+  const realRents = rentsStore.rents.map((r): RentListItem => ({ ...r, isVirtual: false }));
   const virtual = rentsStore.generateVirtualRents(leasesStore.leases);
 
-  let rents = [...realRents, ...virtual];
+  let rents: RentListItem[] = [...realRents, ...virtual];
 
   // Filter by propertyId from route query if provided
   const propertyIdQuery = route.query.propertyId ? Number(route.query.propertyId) : null;
   if (propertyIdQuery) {
-    rents = rents.filter((r: any) => {
+    rents = rents.filter(r => {
       const lease = leasesStore.leases.find(l => l.id === r.leaseId);
       return lease && lease.propertyId === propertyIdQuery;
     });
@@ -182,7 +183,7 @@ const displayedRents = computed(() => {
   // Filter by tenantId from route query if provided
   const tenantIdQuery = route.query.tenantId ? Number(route.query.tenantId) : null;
   if (tenantIdQuery) {
-    rents = rents.filter((r: any) => {
+    rents = rents.filter(r => {
       const lease = leasesStore.leases.find(l => l.id === r.leaseId);
       return lease && Array.isArray(lease.tenantIds) && lease.tenantIds.includes(tenantIdQuery);
     });
@@ -190,12 +191,10 @@ const displayedRents = computed(() => {
 
   // Filter by status
   if (statusFilter.value !== 'all') {
-    rents = rents.filter((r: any) => r.status === statusFilter.value);
+    rents = rents.filter(r => r.status === statusFilter.value);
   }
 
-  return rents.sort(
-    (a: any, b: any) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-  );
+  return rents.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 });
 
 // Viewport virtualization: only mount visible rows once the list grows large.
@@ -209,7 +208,7 @@ const {
   topSpacerHeight: rentsTopSpacer,
   bottomSpacerHeight: rentsBottomSpacer,
   onScroll: onRentsScroll,
-} = useVirtualScroll<Rent & { isVirtual: boolean }>({
+} = useVirtualScroll<RentListItem>({
   items: displayedRents,
   itemHeight: RENT_ROW_HEIGHT,
   viewportHeight: RENT_VIEWPORT_HEIGHT,
@@ -489,7 +488,7 @@ const handleSendReminder = async (rent: Rent) => {
               </Badge>
             </td>
             <td class="payment-date-cell">
-              {{ rent.paidDate ? formatDate(rent.paidDate) : '-' }}
+              {{ !rent.isVirtual && rent.paidDate ? formatDate(rent.paidDate) : '-' }}
             </td>
             <td class="actions-cell">
               <div class="action-buttons">
@@ -510,7 +509,7 @@ const handleSendReminder = async (rent: Rent) => {
                   >Quittance</Button
                 >
                 <Button
-                  v-if="rent.id && pendingRemindersByRentId[rent.id]"
+                  v-if="!rent.isVirtual && rent.id && pendingRemindersByRentId[rent.id]"
                   variant="warning"
                   size="sm"
                   icon="bell-alert"

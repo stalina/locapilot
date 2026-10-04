@@ -147,7 +147,7 @@ interface Emits {
   (e: 'submit', data: PaymentData): void;
 }
 
-interface PaymentData {
+export interface PaymentData {
   paymentDate: string;
   amount: number;
   paymentMethod: string;

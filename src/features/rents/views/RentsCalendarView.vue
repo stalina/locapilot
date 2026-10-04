@@ -8,9 +8,16 @@ import { useTenantsStore } from '@/features/tenants/stores/tenantsStore';
 import Calendar from '@/shared/components/Calendar.vue';
 import StatCard from '@/shared/components/StatCard.vue';
 import Button from '@/shared/components/Button.vue';
-import RentPaymentModal from '../components/RentPaymentModal.vue';
-import RentFormModal from '../components/RentFormModal.vue';
+import RentPaymentModal, { type PaymentData } from '../components/RentPaymentModal.vue';
+import RentFormModal, { type RentFormData } from '../components/RentFormModal.vue';
 import { useNotification } from '@/shared/composables/useNotification';
+import type { RentCalendarEvent } from '../services/rentsService';
+
+/** A clicked calendar event, or a bare `{ id }` from the upcoming-rents list. */
+type RentEventClick = Omit<Partial<RentCalendarEvent>, 'id'> & {
+  id?: string | number;
+  dueDate?: Date;
+};
 
 const rentsStore = useRentsStore();
 const leasesStore = useLeasesStore();
@@ -51,7 +58,7 @@ function handleDateClick(date: Date) {
   console.log('Date clicked:', date);
 }
 
-function handleEventClick(event: any) {
+function handleEventClick(event: RentEventClick) {
   // Prefer explicit rentId when available (we add it on event objects)
   let rentId: number | undefined;
 
@@ -80,12 +87,13 @@ function handleEventClick(event: any) {
 
   // If no numeric rentId found, check for virtual event (we added isVirtual/leaseId)
   if (event && event.isVirtual && typeof event.leaseId === 'number') {
+    const leaseId = event.leaseId;
     // create a rent for that lease and open payment modal
     (async () => {
       try {
         const created = await rentsStore.createRent({
-          leaseId: event.leaseId,
-          dueDate: new Date(event.date || event.dueDate),
+          leaseId,
+          dueDate: new Date((event.date || event.dueDate)!),
           amount: event.amount || 0,
           charges: 0,
           status: 'pending',
@@ -104,7 +112,7 @@ function handleMonthChange(date: Date) {
   console.log('Month changed:', date);
 }
 
-async function handlePayRent(paymentData: any) {
+async function handlePayRent(paymentData: PaymentData) {
   if (!selectedRent.value?.id) return;
 
   try {
@@ -118,7 +126,7 @@ async function handlePayRent(paymentData: any) {
   }
 }
 
-async function handleCreateRent(rentData: any) {
+async function handleCreateRent(rentData: RentFormData & { id?: number }) {
   try {
     await rentsStore.createRent({
       leaseId: rentData.leaseId,

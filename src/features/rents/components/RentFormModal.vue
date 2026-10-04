@@ -106,15 +106,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import type { Lease } from '@/db/types';
+import type { Lease, Property, Tenant } from '@/db/types';
 
 interface Props {
   modelValue: boolean;
   leases: Lease[];
-  properties: any[];
-  tenants: any[];
+  properties: Property[];
+  tenants: Tenant[];
   // Optional initial data for editing an existing rent
-  initial?: Partial<RentFormData> & { id?: number };
+  initial?: (Partial<RentFormData> & { id?: number }) | null;
 }
 
 interface Emits {
@@ -122,7 +122,7 @@ interface Emits {
   (e: 'submit', data: RentFormData & { id?: number }): void;
 }
 
-interface RentFormData {
+export interface RentFormData {
   leaseId: number;
   dueDate: string;
   amount: number;

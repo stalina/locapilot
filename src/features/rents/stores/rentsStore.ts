@@ -196,7 +196,7 @@ export const useRentsStore = defineStore('rents', {
         leases,
         existingRents: this.rents,
         referenceDate,
-      }) as any;
+      });
     },
 
     // Build calendar event objects from real rents and virtual rents (leases required)
