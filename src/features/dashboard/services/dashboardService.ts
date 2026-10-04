@@ -34,13 +34,20 @@ type RawActivity = {
   date: Date | null;
   title: string;
   description: string;
-  meta?: unknown;
+  meta?: {
+    amount?: number;
+    status?: Rent['status'];
+    leaseId?: number;
+    inventoryId?: number;
+    communicationId?: number;
+  };
 };
 
 export function parseDate(input: unknown): Date | null {
   if (!input) return null;
   if (input instanceof Date) return input;
-  const parsed = new Date(input as any);
+  // The Date constructor coerces any value (ToPrimitive); invalid input yields NaN.
+  const parsed = new Date(input as string | number);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -110,17 +117,17 @@ export function buildRecentActivities(params: {
 
   const rentActivities: RawActivity[] = params.rents
     .map(r => {
-      const meta = { amount: (r as any).paidAmount ?? r.amount, status: r.status };
+      const meta = { amount: r.paidAmount ?? r.amount, status: r.status };
       return {
         id: `rent-${r.id}`,
-        type: r.status === 'paid' || (r as any).paidDate ? 'payment' : 'rent',
+        type: r.status === 'paid' || r.paidDate ? 'payment' : 'rent',
         date:
-          parseDate((r as any).paidDate ?? null) ??
-          parseDate((r as any).dueDate ?? null) ??
-          parseDate((r as any).updatedAt ?? null) ??
-          parseDate((r as any).createdAt ?? null) ??
+          parseDate(r.paidDate ?? null) ??
+          parseDate(r.dueDate ?? null) ??
+          parseDate(r.updatedAt ?? null) ??
+          parseDate(r.createdAt ?? null) ??
           null,
-        title: r.status === 'paid' || (r as any).paidDate ? 'Paiement reçu' : 'Échéance loyer',
+        title: r.status === 'paid' || r.paidDate ? 'Paiement reçu' : 'Échéance loyer',
         description: `Loyer - ${r.amount.toLocaleString('fr-FR')} €`,
         meta,
       };
@@ -130,8 +137,7 @@ export function buildRecentActivities(params: {
   const leaseActivities: RawActivity[] = params.leases.map(l => ({
     id: `lease-${l.id}`,
     type: 'lease',
-    date:
-      parseDate((l as any).createdAt ?? null) ?? parseDate((l as any).startDate ?? null) ?? null,
+    date: parseDate(l.createdAt ?? null) ?? parseDate(l.startDate ?? null) ?? null,
     title: 'Nouveau bail signé',
     description: `Propriété #${l.propertyId} - ${l.tenantIds?.length ?? 1} locataire(s)`,
     meta: { leaseId: l.id },
@@ -140,7 +146,7 @@ export function buildRecentActivities(params: {
   const inventoryActivities: RawActivity[] = params.inventories.map(inv => ({
     id: `inventory-${inv.id}`,
     type: 'inventory',
-    date: parseDate((inv as any).date ?? null) ?? parseDate((inv as any).createdAt ?? null) ?? null,
+    date: parseDate(inv.date ?? null) ?? parseDate(inv.createdAt ?? null) ?? null,
     title: inv.type === 'checkin' ? "État des lieux d'entrée" : 'État des lieux de sortie',
     description: `Lease #${inv.leaseId}`,
     meta: { inventoryId: inv.id },
@@ -149,10 +155,10 @@ export function buildRecentActivities(params: {
   const communicationActivities: RawActivity[] = params.communications.map(c => ({
     id: `comm-${c.id}`,
     type: 'message',
-    date: parseDate((c as any).date ?? null) ?? parseDate((c as any).createdAt ?? null) ?? null,
-    title: (c as any).subject ?? ((c as any).type === 'meeting' ? 'Rendez-vous' : 'Communication'),
-    description: (c as any).content ?? '',
-    meta: { communicationId: (c as any).id },
+    date: parseDate(c.date ?? null) ?? parseDate(c.createdAt ?? null) ?? null,
+    title: c.subject ?? (c.type === 'meeting' ? 'Rendez-vous' : 'Communication'),
+    description: c.content ?? '',
+    meta: { communicationId: c.id },
   }));
 
   const allActivities: RawActivity[] = [
@@ -181,9 +187,8 @@ export function buildRecentActivities(params: {
     };
 
     if (a.type === 'payment') {
-      const meta = a.meta as any;
       base.badge = {
-        label: `${(meta?.amount ?? 0).toLocaleString('fr-FR')} €`,
+        label: `${(a.meta?.amount ?? 0).toLocaleString('fr-FR')} €`,
         variant: 'success',
       };
       base.icon = 'currency-eur';
@@ -215,7 +220,7 @@ export function buildUpcomingEvents(params: {
   in30.setDate(now.getDate() + 30);
 
   const upcomingRents = params.rents
-    .map(r => ({ due: parseDate((r as any).dueDate ?? null), r }))
+    .map(r => ({ due: parseDate(r.dueDate ?? null), r }))
     .filter(x => x.due && x.due >= now && x.due <= in30)
     .map(x => ({
       id: `up-rent-${x.r.id}`,
@@ -225,7 +230,7 @@ export function buildUpcomingEvents(params: {
     }));
 
   const upcomingInventories = params.inventories
-    .map(i => ({ date: parseDate((i as any).date ?? null), i }))
+    .map(i => ({ date: parseDate(i.date ?? null), i }))
     .filter(x => x.date && x.date >= now)
     .map(x => ({
       id: `up-inv-${x.i.id}`,
@@ -235,13 +240,13 @@ export function buildUpcomingEvents(params: {
     }));
 
   const upcomingMeetings = params.communications
-    .map(c => ({ date: parseDate((c as any).date ?? null), c }))
-    .filter(x => (x.c as any).type === 'meeting' && x.date && x.date >= now)
+    .map(c => ({ date: parseDate(c.date ?? null), c }))
+    .filter(x => x.c.type === 'meeting' && x.date && x.date >= now)
     .map(x => ({
-      id: `up-comm-${(x.c as any).id}`,
+      id: `up-comm-${x.c.id}`,
       date: x.date as Date,
-      title: (x.c as any).subject ?? 'Visite appartement',
-      description: (x.c as any).content ?? '',
+      title: x.c.subject ?? 'Visite appartement',
+      description: x.c.content ?? '',
     }));
 
   const combinedUpcoming = [...upcomingRents, ...upcomingInventories, ...upcomingMeetings];
