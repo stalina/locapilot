@@ -25,8 +25,8 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     version: string
   ): Promise<{ json: string; data: ExportDataPayload }> {
     const raw = await fetchRawExportData();
-    const documents = await serializeDocuments(raw.documents as any);
-    const tenantDocuments = await serializeTenantDocuments(raw.tenantDocuments as any);
+    const documents = await serializeDocuments(raw.documents);
+    const tenantDocuments = await serializeTenantDocuments(raw.tenantDocuments);
 
     const data: ExportDataPayload = {
       properties: raw.properties,

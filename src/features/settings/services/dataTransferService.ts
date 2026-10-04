@@ -28,7 +28,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
   }
   return btoa(binary);
 }
@@ -52,13 +52,13 @@ export function tryParseDataUrl(input: string): { mime: string; b64: string } | 
 async function serializeBlobRecord(
   record: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
-  const copy: any = { ...record };
+  const copy: Record<string, unknown> = { ...record };
   try {
-    const data = (record as any).data;
+    const data = record.data;
     if (data instanceof Blob) {
       const ab = await data.arrayBuffer();
       const b64 = arrayBufferToBase64(ab);
-      copy.data = `data:${(record as any).mimeType};base64,${b64}`;
+      copy.data = `data:${record.mimeType};base64,${b64}`;
     } else if (typeof data === 'string') {
       copy.data = data;
     } else {
@@ -71,9 +71,9 @@ async function serializeBlobRecord(
 }
 
 function deserializeBlobRecord(record: Record<string, unknown>): Record<string, unknown> {
-  const copy: any = { ...record };
+  const copy: Record<string, unknown> = { ...record };
   try {
-    const data = (record as any).data;
+    const data = record.data;
     if (data instanceof Blob) {
       // P2P sync (issue #122): the content arrives already reassembled as a
       // Blob — keep it as is (never round-trip it through a string).

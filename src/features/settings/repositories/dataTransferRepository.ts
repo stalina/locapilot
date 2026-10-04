@@ -130,22 +130,27 @@ export async function importBusinessData(params: {
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map(table => table.clear()));
 
-    if (params.properties.length) await db.properties.bulkAdd(params.properties as any);
-    if (params.tenants.length) await db.tenants.bulkAdd(params.tenants as any);
-    if (params.leases?.length) await db.leases.bulkAdd(params.leases as any);
-    if (params.rents?.length) await db.rents.bulkAdd(params.rents as any);
-    if (params.documents?.length) await db.documents.bulkAdd(params.documents as any);
+    // Records were validated by importValidationService before reaching here;
+    // date fields may still be ISO strings (stored as-is, as before), so each
+    // array is asserted to its table's entity type at the Dexie boundary.
+    if (params.properties.length) await db.properties.bulkAdd(params.properties as Property[]);
+    if (params.tenants.length) await db.tenants.bulkAdd(params.tenants as Tenant[]);
+    if (params.leases?.length) await db.leases.bulkAdd(params.leases as Lease[]);
+    if (params.rents?.length) await db.rents.bulkAdd(params.rents as Rent[]);
+    if (params.documents?.length) await db.documents.bulkAdd(params.documents as Document[]);
     if (params.tenantDocuments?.length)
-      await db.tenantDocuments.bulkAdd(params.tenantDocuments as any);
-    if (params.tenantAudits?.length) await db.tenantAudits.bulkAdd(params.tenantAudits as any);
-    if (params.inventories?.length) await db.inventories.bulkAdd(params.inventories as any);
+      await db.tenantDocuments.bulkAdd(params.tenantDocuments as TenantDocument[]);
+    if (params.tenantAudits?.length)
+      await db.tenantAudits.bulkAdd(params.tenantAudits as TenantAudit[]);
+    if (params.inventories?.length) await db.inventories.bulkAdd(params.inventories as Inventory[]);
     if (params.communications?.length)
-      await db.communications.bulkAdd(params.communications as any);
+      await db.communications.bulkAdd(params.communications as Communication[]);
     if (params.chargesAdjustments?.length)
-      await db.chargesAdjustments.bulkAdd(params.chargesAdjustments as any);
-    if (params.irlIndices?.length) await db.irlIndices.bulkAdd(params.irlIndices as any);
-    if (params.rentRevisions?.length) await db.rentRevisions.bulkAdd(params.rentRevisions as any);
-    if (params.reminders?.length) await db.reminders.bulkAdd(params.reminders as any);
-    if (params.settings?.length) await db.settings.bulkAdd(params.settings as any);
+      await db.chargesAdjustments.bulkAdd(params.chargesAdjustments as ChargesAdjustmentRow[]);
+    if (params.irlIndices?.length) await db.irlIndices.bulkAdd(params.irlIndices as IrlIndex[]);
+    if (params.rentRevisions?.length)
+      await db.rentRevisions.bulkAdd(params.rentRevisions as RentRevision[]);
+    if (params.reminders?.length) await db.reminders.bulkAdd(params.reminders as Reminder[]);
+    if (params.settings?.length) await db.settings.bulkAdd(params.settings as Settings[]);
   });
 }

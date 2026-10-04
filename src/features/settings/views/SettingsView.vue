@@ -18,6 +18,7 @@ import {
   generatePairingQrDataUrl,
   parsePairingFragment,
 } from '../services/pairingLinkService';
+import type { BeforeInstallPromptEvent } from '@/before-install-prompt';
 // Version injected by Vite `define`; typed via the ImportMeta augmentation in
 // src/vite-env.d.ts, so no `@ts-ignore`/`as any` is needed.
 const rawAppVersion = import.meta.__APP_VERSION__ || '0.0.1';
@@ -28,7 +29,7 @@ const route = useRoute();
 // PWA Status
 const isPWAInstalled = ref(false);
 const canInstall = ref(false);
-let deferredPrompt: any = null;
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
 // Export/Import
 const dataTransferStore = useDataTransferStore();
@@ -607,7 +608,7 @@ const editingDefaultMsg = ref<string>('');
 onMounted(async () => {
   await settingsStore.loadSettings();
   // Use the store-computed string value to avoid pinia ref unwrapping issues
-  editingDefaultMsg.value = (unref(settingsStore.currentDefaultRejectionMessage) as any) || '';
+  editingDefaultMsg.value = unref(settingsStore.currentDefaultRejectionMessage) || '';
 });
 
 const saveDefaultRejectionMessage = async () => {
@@ -688,7 +689,7 @@ const saveSenderEmail = async () => {
 watch(
   () => unref(settingsStore.currentDefaultRejectionMessage),
   v => {
-    editingDefaultMsg.value = (v as any) || '';
+    editingDefaultMsg.value = v || '';
   }
 );
 
