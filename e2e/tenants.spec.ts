@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resetApp, navigateFromSidebar, withinModal } from './utils/app';
+import { createTenant } from './utils/flows';
 
 test.describe('Locataires - e2e', () => {
   test.beforeEach(async ({ page }) => {
@@ -75,5 +76,36 @@ test.describe('Locataires - e2e', () => {
     await expect(
       page.locator('.tenant-card', { hasText: `${updatedFirst} ${lastName}` })
     ).toHaveCount(0);
+  });
+});
+
+test.describe('Locataires - Refus de candidature en mode sombre', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+  });
+
+  test('Les champs de la modale de refus restent lisibles en mode sombre', async ({ page }) => {
+    const { fullName } = await createTenant(page);
+
+    await page.locator('.tenant-card', { hasText: fullName }).first().getByText(fullName).click();
+    await page.waitForURL(/\/tenants\/\d+/, { timeout: 10_000 });
+
+    await page.getByRole('button', { name: 'Refuser', exact: true }).click();
+    const modal = withinModal(page, /Refuser la candidature/i);
+    await modal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+
+    // --bg-primary (neutral-900) doit être accompagné de --text-primary (neutral-50),
+    // sinon le texte garde le noir par défaut du navigateur et devient illisible.
+    const textareas = modal.locator('textarea');
+    await expect(textareas).toHaveCount(2);
+    for (const textarea of await textareas.all()) {
+      await expect(textarea).toHaveCSS('background-color', 'rgb(23, 23, 23)');
+      await expect(textarea).toHaveCSS('color', 'rgb(250, 250, 250)');
+    }
+
+    await modal.getByRole('button', { name: 'Annuler' }).click();
+    await expect(modal).toBeHidden();
   });
 });
