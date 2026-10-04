@@ -385,13 +385,13 @@ function handleEventClick(event: any) {
 
 .alert-critical {
   background: var(--error-50, #fef2f2);
-  border-color: var(--error-200, #fecaca);
+  border-color: var(--error-100, #fecaca);
   color: var(--error-700, #b91c1c);
 }
 
 .alert-warning {
   background: var(--warning-50, #fffbeb);
-  border-color: var(--warning-200, #fde68a);
+  border-color: var(--warning-100, #fde68a);
   color: var(--warning-700, #b45309);
 }
 

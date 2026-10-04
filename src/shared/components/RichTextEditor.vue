@@ -112,10 +112,10 @@ onMounted(() => {
 
 <style scoped>
 .rich-text-editor {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--color-background);
+  background: var(--bg-primary);
 }
 
 /* Override PrimeVue Editor styles */
@@ -128,13 +128,13 @@ onMounted(() => {
 }
 
 .rich-text-editor :deep(.p-editor-content) {
-  background: var(--color-background);
+  background: var(--bg-primary);
 }
 
 /* Quill toolbar styles */
 .rich-text-editor :deep(.ql-toolbar) {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
   padding: 8px;
 }
 
@@ -143,8 +143,8 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   padding: 8px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
 }
 .editor-toolbar button {
   padding: 6px 10px;
@@ -156,14 +156,14 @@ onMounted(() => {
 .rich-text-editor :deep(.ql-editor) {
   min-height: 200px;
   padding: 16px;
-  font-family: var(--font-family);
+  font-family: var(--font-family-base);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 .rich-text-editor :deep(.ql-editor.ql-blank::before) {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   font-style: normal;
 }
 
@@ -172,7 +172,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   margin: 24px 0 12px;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -180,7 +180,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 20px 0 10px;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -220,29 +220,29 @@ onMounted(() => {
 }
 
 .rich-text-editor :deep(.ql-editor a) {
-  color: var(--color-primary);
+  color: var(--primary-600);
   text-decoration: underline;
   cursor: pointer;
 }
 
 .rich-text-editor :deep(.ql-editor a:hover) {
-  color: var(--color-primary-dark);
+  color: var(--primary-700);
 }
 
 /* Toolbar button styles */
 .rich-text-editor :deep(.ql-toolbar button) {
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .rich-text-editor :deep(.ql-toolbar button:hover) {
-  background-color: var(--color-surface-2);
+  background-color: var(--bg-tertiary);
 }
 
 .rich-text-editor :deep(.ql-toolbar button.ql-active) {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
+  background-color: var(--primary-100);
+  color: var(--primary-600);
 }
 
 .rich-text-editor :deep(.ql-toolbar .ql-stroke) {

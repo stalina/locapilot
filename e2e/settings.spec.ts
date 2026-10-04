@@ -498,3 +498,24 @@ test.describe('Settings - Import strict validation (#80 C2)', () => {
     });
   });
 });
+
+test.describe('Settings - Design tokens', () => {
+  test('Les cartes de paramètres sont stylées avec les tokens du design system', async ({
+    page,
+  }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+
+    const card = page.locator('.setting-card', { hasText: 'Mode hors ligne' }).first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    // --space-4 / --border-color / --bg-primary doivent être résolus (sinon 0px, none, transparent).
+    await expect(card).toHaveCSS('padding-top', '16px');
+    await expect(card).toHaveCSS('border-top-style', 'solid');
+    await expect(card).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+    const heading = page.locator('.settings-section h2').first();
+    await expect(heading).toHaveCSS('padding-bottom', '12px');
+    await expect(heading).toHaveCSS('border-bottom-style', 'solid');
+  });
+});

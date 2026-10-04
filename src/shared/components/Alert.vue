@@ -1,28 +1,28 @@
 <script setup lang="ts">
 interface Props {
-  variant?: 'success' | 'info' | 'warning' | 'error'
-  title?: string
-  dismissible?: boolean
-  icon?: string
+  variant?: 'success' | 'info' | 'warning' | 'error';
+  title?: string;
+  dismissible?: boolean;
+  icon?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'info',
   dismissible: false,
-})
+});
 
 const emit = defineEmits<{
-  dismiss: []
-}>()
+  dismiss: [];
+}>();
 
 const defaultIcons = {
   success: 'check-circle',
   info: 'information',
   warning: 'alert',
   error: 'alert-circle',
-}
+};
 
-const iconName = props.icon || defaultIcons[props.variant]
+const iconName = props.icon || defaultIcons[props.variant];
 </script>
 
 <template>
@@ -114,7 +114,7 @@ const iconName = props.icon || defaultIcons[props.variant]
 .alert-success {
   background: var(--success-50, #f0fdf4);
   border-left-color: var(--success-500, #22c55e);
-  color: var(--success-900, #14532d);
+  color: var(--success-700, #14532d);
 }
 
 .alert-success .alert-icon {
@@ -134,7 +134,7 @@ const iconName = props.icon || defaultIcons[props.variant]
 .alert-warning {
   background: var(--warning-50, #fffbeb);
   border-left-color: var(--warning-500, #f59e0b);
-  color: var(--warning-900, #78350f);
+  color: var(--warning-700, #78350f);
 }
 
 .alert-warning .alert-icon {
@@ -144,7 +144,7 @@ const iconName = props.icon || defaultIcons[props.variant]
 .alert-error {
   background: var(--error-50, #fef2f2);
   border-left-color: var(--error-500, #ef4444);
-  color: var(--error-900, #7f1d1d);
+  color: var(--error-700, #7f1d1d);
 }
 
 .alert-error .alert-icon {

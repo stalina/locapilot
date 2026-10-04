@@ -405,23 +405,23 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
 
 <style scoped>
 .info-th {
-  color: var(--text-muted, #8a99b3);
+  color: var(--text-tertiary, #8a99b3);
   font-weight: 400;
   font-style: italic;
 }
 .info-td {
-  color: var(--text-muted, #8a99b3);
+  color: var(--text-tertiary, #8a99b3);
   font-style: italic;
 }
 .total-th,
 .total-td {
   font-weight: 600;
-  color: var(--primary-color, #2563eb);
-  background: var(--surface-alt, #f3f6fa);
+  color: var(--primary-600, #2563eb);
+  background: var(--bg-secondary, #f3f6fa);
 }
 .reg-th {
   font-weight: 600;
-  color: var(--text-color, #222);
+  color: var(--text-primary, #222);
 }
 .reg-td {
   text-align: center;
@@ -454,7 +454,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
 .th-help {
   display: inline-block;
   margin-left: 4px;
-  color: var(--primary-color, #2563eb);
+  color: var(--primary-600, #2563eb);
   font-size: 0.9em;
   cursor: help;
   border-radius: 50%;
@@ -484,7 +484,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   border-collapse: collapse;
   min-width: 700px;
   font-size: 1rem;
-  background: var(--surface-color, #fff);
+  background: var(--bg-primary, #fff);
 }
 .charges-table th,
 .charges-table td {
@@ -500,14 +500,14 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
-  color: var(--primary-color, #2563eb);
+  color: var(--primary-600, #2563eb);
   transition: all 0.2s ease;
 }
 .icon-button:hover {
   background: rgba(37, 99, 235, 0.08);
 }
 .icon-button.icon-saved {
-  color: var(--success-color, #10b981);
+  color: var(--success-500, #10b981);
 }
 .icon-button.icon-saved:hover {
   background: rgba(16, 185, 129, 0.08);
@@ -518,7 +518,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
 .charges-table th {
   font-weight: 600;
   font-size: 1.05em;
-  background: var(--surface-alt, #f8fafc);
+  background: var(--bg-secondary, #f8fafc);
   max-width: 120px;
   min-width: 70px;
   white-space: pre-line;
@@ -543,7 +543,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   padding-bottom: 10px;
 }
 .custom-col {
-  background: var(--surface-alt, #f3f6fa);
+  background: var(--bg-secondary, #f3f6fa);
   font-variant: small-caps;
 }
 .charge-input {
@@ -552,14 +552,14 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 6px;
   font-size: 1em;
-  background: var(--input-bg, #fff);
-  color: var(--text-color, #222);
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #222);
   transition: border-color 0.2s;
   outline: none;
 }
 .charge-input:focus {
-  border-color: var(--primary-color, #3b82f6);
-  background: var(--input-focus-bg, #f0f6ff);
+  border-color: var(--primary-500, #3b82f6);
+  background: var(--bg-secondary, #f0f6ff);
 }
 .form-row {
   display: flex;
@@ -570,7 +570,7 @@ function handleInput(e: Event, r: ChargesAdjustmentRow, key: string) {
 .form-row label {
   font-weight: 500;
   margin-bottom: 2px;
-  color: var(--text-color, #222);
+  color: var(--text-primary, #222);
 }
 .form-row .charge-input {
   width: 100%;
