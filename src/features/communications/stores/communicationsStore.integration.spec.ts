@@ -37,7 +37,7 @@ describe('communicationsStore - integration', () => {
     const store = useCommunicationsStore();
     await store.fetchCommunications();
 
-    expect(store.communications[0].content).toBe('récent');
+    expect(store.communications[0]?.content).toBe('récent');
   });
 
   it('creates a manual communication and places it at the top', async () => {
@@ -55,7 +55,7 @@ describe('communicationsStore - integration', () => {
     });
 
     expect(created.id).toBeTypeOf('number');
-    expect(store.communications[0].id).toBe(created.id);
+    expect(store.communications[0]?.id).toBe(created.id);
   });
 
   it('rejects a manual communication with a future date', async () => {
@@ -171,7 +171,7 @@ describe('communicationsStore - integration', () => {
 
     store.filters.type = 'letter';
     expect(store.filteredCommunications).toHaveLength(1);
-    expect(store.filteredCommunications[0].content).toBe('courrier');
+    expect(store.filteredCommunications[0]?.content).toBe('courrier');
 
     store.resetFilters();
     expect(store.filteredCommunications).toHaveLength(2);

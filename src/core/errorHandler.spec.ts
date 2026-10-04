@@ -25,12 +25,12 @@ describe('errorHandler', () => {
 
       const entries = logger.getEntries();
       expect(entries).toHaveLength(1);
-      expect(entries[0].level).toBe('error');
-      expect(entries[0].context).toMatchObject({ source: 'vue', info: 'render' });
-      expect(entries[0].error?.message).toBe('render fail');
+      expect(entries[0]?.level).toBe('error');
+      expect(entries[0]?.context).toMatchObject({ source: 'vue', info: 'render' });
+      expect(entries[0]?.error?.message).toBe('render fail');
 
       expect(useNotification().notifications.value).toHaveLength(1);
-      expect(useNotification().notifications.value[0].type).toBe('error');
+      expect(useNotification().notifications.value[0]?.type).toBe('error');
     });
   });
 

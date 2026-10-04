@@ -49,7 +49,7 @@ describe('leasesStore - Charges Adjustments Integration', () => {
     // 5. Fetch via store and verify
     const fetchedRows = await store.fetchChargesAdjustments(leaseId);
     expect(fetchedRows).toHaveLength(1);
-    expect(fetchedRows[0].customCharges).toEqual({ Eau: 100, Ordures: 50, Electricité: 200 });
+    expect(fetchedRows[0]?.customCharges).toEqual({ Eau: 100, Ordures: 50, Electricité: 200 });
   });
 
   it('should handle adding a column to multiple rows', async () => {
@@ -76,7 +76,7 @@ describe('leasesStore - Charges Adjustments Integration', () => {
     // Verify DB
     const savedRows = await db.chargesAdjustments.where({ leaseId }).sortBy('year');
     expect(savedRows).toHaveLength(2);
-    expect(savedRows[0].customCharges).toEqual({ Eau: 0 });
-    expect(savedRows[1].customCharges).toEqual({ Eau: 0 });
+    expect(savedRows[0]?.customCharges).toEqual({ Eau: 0 });
+    expect(savedRows[1]?.customCharges).toEqual({ Eau: 0 });
   });
 });

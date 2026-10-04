@@ -73,9 +73,9 @@ describe('dashboardService', () => {
     expect(items.length).toBeLessThanOrEqual(6);
 
     // first item should be the most recent (paid rent)
-    expect(items[0].type).toBe('payment');
-    expect(items[0].title).toBe('Paiement reçu');
-    expect(items[0].badge?.label).toContain('€');
+    expect(items[0]?.type).toBe('payment');
+    expect(items[0]?.title).toBe('Paiement reçu');
+    expect(items[0]?.badge?.label).toContain('€');
   });
 
   it('buildUpcomingEvents includes rents due in next 30 days and meetings/inventories', () => {

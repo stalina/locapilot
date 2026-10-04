@@ -168,7 +168,7 @@ function bytes(n: number, seed = 1): Uint8Array<ArrayBuffer> {
 }
 
 function tables(overrides: Partial<SyncTables> = {}): SyncTables {
-  const empty = Object.fromEntries(SYNC_TABLES.map(t => [t, []])) as SyncTables;
+  const empty = Object.fromEntries(SYNC_TABLES.map(t => [t, [] as unknown[]])) as SyncTables;
   return { ...empty, ...overrides };
 }
 
@@ -468,9 +468,9 @@ describe('PeerSyncService', () => {
 
       const handshakes = conn.sentOfType('handshake');
       expect(handshakes).toHaveLength(1);
-      expect(typeof handshakes[0].salt).toBe('string');
-      expect((handshakes[0].salt as string).length).toBeGreaterThan(0);
-      expect(handshakes[0].protocolVersion).toBe(PROTOCOL_VERSION);
+      expect(typeof handshakes[0]?.salt).toBe('string');
+      expect((handshakes[0]?.salt as string).length).toBeGreaterThan(0);
+      expect(handshakes[0]?.protocolVersion).toBe(PROTOCOL_VERSION);
     });
 
     it('accepts the correct PIN, derives the session key and notifies auth-ok', async () => {
@@ -1177,7 +1177,7 @@ describe('PeerSyncService', () => {
         p.link.toClient = m => {
           if (m.type !== 'data' || m.seq !== 4) return [m];
           const tampered = new Uint8Array((m.ciphertext as ArrayBuffer).slice(0));
-          tampered[10] ^= 0xff;
+          tampered[10] = (tampered[10] ?? 0) ^ 0xff;
           return [{ ...m, ciphertext: tampered.buffer }];
         };
         await expectCorruptedAbort(p, p.host.streamTransfer(integritySource()));

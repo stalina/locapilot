@@ -56,7 +56,10 @@ describe('loadEntityOptions', () => {
   });
 
   it('skips unknown ids (undefined entries returned by bulkGet)', async () => {
-    bulkGet.tenants.mockResolvedValue([undefined, { id: 5, firstName: 'Jean', lastName: 'Dupont' }]);
+    bulkGet.tenants.mockResolvedValue([
+      undefined,
+      { id: 5, firstName: 'Jean', lastName: 'Dupont' },
+    ]);
     const result = await loadEntityOptions('tenant', [4, 5]);
     expect(result).toEqual([{ id: 5, label: 'Jean Dupont' }]);
   });
@@ -78,8 +81,8 @@ describe('loadEntityOptions', () => {
   it('labels rents with a formatted month/year period', async () => {
     bulkGet.rents.mockResolvedValue([{ id: 7, dueDate: new Date('2026-03-05') }]);
     const result = await loadEntityOptions('rent', [7]);
-    expect(result[0].id).toBe(7);
-    expect(result[0].label).toMatch(/^Loyer #7 — /);
+    expect(result[0]?.id).toBe(7);
+    expect(result[0]?.label).toMatch(/^Loyer #7 — /);
   });
 
   it('labels inventories by type (checkin/checkout)', async () => {

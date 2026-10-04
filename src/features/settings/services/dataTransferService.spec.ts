@@ -85,7 +85,7 @@ describe('dataTransferService', () => {
 
   describe('createSyncSource', () => {
     const tables = (): SyncTables =>
-      Object.fromEntries(SYNC_TABLES.map(table => [table, []])) as SyncTables;
+      Object.fromEntries(SYNC_TABLES.map(table => [table, [] as unknown[]])) as SyncTables;
 
     it('keeps the raw tables and Blobs, and computes counts and total bytes', () => {
       const a = new Blob([new Uint8Array(10)]);
