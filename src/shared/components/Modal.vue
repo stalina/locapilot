@@ -47,12 +47,22 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick" data-testid="modal-overlay">
+      <div
+        v-if="modelValue"
+        class="modal-overlay"
+        @click="handleOverlayClick"
+        data-testid="modal-overlay"
+      >
         <div class="modal" :class="`modal-${size}`" @click.stop data-testid="modal">
           <!-- Header -->
           <div class="modal-header">
             <h3 class="modal-title" data-testid="modal-title">{{ title }}</h3>
-            <button class="close-button" @click="handleClose" type="button" data-testid="modal-close">
+            <button
+              class="close-button"
+              @click="handleClose"
+              type="button"
+              data-testid="modal-close"
+            >
               <i class="mdi mdi-close"></i>
             </button>
           </div>
@@ -86,7 +96,7 @@ onUnmounted(() => {
 }
 
 .modal {
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-2xl, 1.5rem);
   box-shadow: var(--shadow-2xl, 0 25px 50px rgba(0, 0, 0, 0.25));
   width: 100%;
@@ -117,7 +127,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-6, 1.5rem);
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
@@ -125,7 +135,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: var(--text-2xl, 1.5rem);
   font-weight: var(--font-weight-bold, 700);
-  color: var(--text-primary, #0f172a);
+  color: var(--text-primary);
 }
 
 .close-button {
@@ -140,11 +150,11 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background var(--transition-base, 0.2s ease);
   font-size: 1.25rem;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
 }
 
 .close-button:hover {
-  background: var(--bg-secondary, #f1f5f9);
+  background: var(--bg-secondary);
 }
 
 .modal-body {
@@ -158,7 +168,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   gap: var(--space-3, 0.75rem);
   padding: var(--space-6, 1.5rem);
-  border-top: 1px solid var(--border-color, #e2e8f0);
+  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 

@@ -1,6 +1,36 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import Modal from '@/shared/components/Modal.vue';
+import { contrastRatio, readComponentStyles, themeColors } from '@/test/themeColors';
+
+const MODAL_PATH = 'src/shared/components/Modal.vue';
+
+describe('Modal theme colours', () => {
+  const resolve = themeColors(MODAL_PATH);
+
+  it.each(['light', 'dark'] as const)(
+    'keeps the title and close button readable on the dialog surface in %s mode',
+    theme => {
+      const surface = resolve('background', ['.modal'], theme);
+
+      expect(
+        contrastRatio(resolve('color', ['.modal-title'], theme), surface)
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrastRatio(resolve('color', ['.close-button'], theme), surface)
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  );
+
+  it('follows the theme surface: white in light mode, neutral-900 in dark mode', () => {
+    expect(resolve('background', ['.modal'], 'light')).toBe('#ffffff');
+    expect(resolve('background', ['.modal'], 'dark')).toBe('#171717');
+  });
+
+  it('does not hard-code colours that would ignore the dark theme', () => {
+    expect(readComponentStyles(MODAL_PATH)).not.toMatch(/\bwhite\b|#[0-9a-f]{3,8}\b/i);
+  });
+});
 
 describe('Modal', () => {
   afterEach(() => {
@@ -62,10 +92,10 @@ describe('Modal', () => {
       },
       attachTo: document.body,
     });
-    
+
     const overlay = document.body.querySelector('.modal-overlay') as HTMLElement;
     await overlay.click();
-    
+
     expect(wrapper.emitted('update:modelValue')).toBeTruthy();
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false]);
   });
@@ -78,10 +108,10 @@ describe('Modal', () => {
       },
       attachTo: document.body,
     });
-    
+
     const modalContent = document.body.querySelector('.modal') as HTMLElement;
     await modalContent.click();
-    
+
     expect(wrapper.emitted('update:modelValue')).toBeFalsy();
   });
 
