@@ -105,12 +105,12 @@ const isLink = computed(() => !!props.to && !props.disabled && !props.loading);
 }
 
 .btn-secondary {
-  background: var(--neutral-100);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--neutral-200);
+  background: var(--border-color);
 }
 
 .btn-outline {
@@ -161,16 +161,28 @@ const isLink = computed(() => !!props.to && !props.disabled && !props.loading);
 
 .btn-text:hover:not(:disabled),
 .btn-ghost:hover:not(:disabled) {
-  background: var(--neutral-100);
+  background: var(--bg-tertiary);
 }
 
 .btn-default {
-  background: var(--neutral-200);
+  background: var(--border-color);
   color: var(--text-primary);
 }
 
 .btn-default:hover:not(:disabled) {
   background: var(--neutral-300);
+}
+
+/*
+ * In dark mode --bg-tertiary and --border-color both resolve to neutral-700 and
+ * no semantic token sits one step above them, so the neutral variants step up
+ * the neutral scale here to keep a visible hover behind light --text-primary.
+ */
+@media (prefers-color-scheme: dark) {
+  .btn-secondary:hover:not(:disabled),
+  .btn-default:hover:not(:disabled) {
+    background: var(--neutral-600);
+  }
 }
 
 /* Sizes */

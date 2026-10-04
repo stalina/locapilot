@@ -19,6 +19,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Settings       | [settings.md](./settings.md)             | Application configuration                                |
 | Data Transfer  | [data-transfer.md](./data-transfer.md)   | Backup export/restore and P2P device synchronisation     |
 | Error Handling | [error-handling.md](./error-handling.md) | Global error capture, error boundary, structured logging |
+| Appearance     | [appearance.md](./appearance.md)         | Light/dark theme following the OS, semantic tokens       |
 
 ## Entity Relationships
 

@@ -1,5 +1,6 @@
 import { test, expect, type Locator } from '@playwright/test';
 import { resetApp, navigateFromSidebar, withinModal } from './utils/app';
+import { createTenant } from './utils/flows';
 
 /**
  * True when the element is the topmost hit target at its center and next to the middle
@@ -99,38 +100,50 @@ test.describe('Locataires - e2e', () => {
   });
 });
 
+test.describe('Locataires - Refus de candidature en mode sombre', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+  });
+
+  test('Les champs de la modale de refus restent lisibles en mode sombre', async ({ page }) => {
+    const { fullName } = await createTenant(page);
+
+    await page.locator('.tenant-card', { hasText: fullName }).first().getByText(fullName).click();
+    await page.waitForURL(/\/tenants\/\d+/, { timeout: 10_000 });
+
+    await page.getByRole('button', { name: 'Refuser', exact: true }).click();
+    const modal = withinModal(page, /Refuser la candidature/i);
+    await modal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+
+    // --bg-primary (neutral-900) doit être accompagné de --text-primary (neutral-50),
+    // sinon le texte garde le noir par défaut du navigateur et devient illisible.
+    const textareas = modal.locator('textarea');
+    await expect(textareas).toHaveCount(2);
+    for (const textarea of await textareas.all()) {
+      await expect(textarea).toHaveCSS('background-color', 'rgb(23, 23, 23)');
+      await expect(textarea).toHaveCSS('color', 'rgb(250, 250, 250)');
+    }
+
+    await modal.getByRole('button', { name: 'Annuler' }).click();
+    await expect(modal).toBeHidden();
+  });
+});
+
 test.describe('Locataires - modale de refus sur mobile', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-mobile', 'Vérifie la mise en page mobile');
     await resetApp(page);
-    await navigateFromSidebar(page, /Locataires|Tenants/i, /\/tenants/);
   });
 
   test('Les boutons du pied de modale restent visibles et au-dessus de la page', async ({
     page,
   }) => {
-    const firstName = `E2E_${Date.now()}`;
-    const fullName = `${firstName} Candidat`;
-
-    // Créer un candidat (statut par défaut du formulaire)
-    await page.locator('[data-testid="new-tenant-button"]').first().click();
-    const createModal = withinModal(page, /Locataire|Tenant/i);
-    await createModal.waitFor({ state: 'visible', timeout: 10_000 });
-    await createModal.locator('input[data-testid="tenant-firstName"]').fill(firstName);
-    await createModal.locator('input[data-testid="tenant-lastName"]').fill('Candidat');
-    await createModal
-      .locator('input[data-testid="tenant-email"]')
-      .fill(`e2e.refus.${Date.now()}@example.com`);
-    await createModal.locator('input[data-testid="tenant-phone"]').fill('0612345678');
-    await createModal.locator('input[data-testid="tenant-birthDate"]').fill('1990-01-01');
-    await createModal
-      .locator('[data-testid="modal-footer"]')
-      .getByRole('button', { name: /Cr[ée]er/i })
-      .click();
-
-    // Ouvrir la fiche du candidat puis la modale de refus
-    await page.locator('.tenant-card', { hasText: fullName }).first().click();
-    await page.waitForURL(/\/tenants\/\d+$/);
+    // Ouvrir la fiche d'un candidat puis la modale de refus
+    const { fullName } = await createTenant(page);
+    await page.locator('.tenant-card', { hasText: fullName }).first().getByText(fullName).click();
+    await page.waitForURL(/\/tenants\/\d+/, { timeout: 10_000 });
     const refuseButton = page.getByRole('button', { name: 'Refuser', exact: true });
     await refuseButton.click();
     const modal = withinModal(page, /Refuser la candidature/);
