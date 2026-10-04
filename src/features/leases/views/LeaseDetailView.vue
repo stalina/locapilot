@@ -646,9 +646,7 @@ const handleDownloadExistingDepositRestitution = async () => {
                   icon="cash-refund"
                   :disabled="!depositReceived"
                   :title="
-                    !depositReceived
-                      ? 'Le dépôt doit d’abord être marqué comme reçu'
-                      : undefined
+                    !depositReceived ? 'Le dépôt doit d’abord être marqué comme reçu' : undefined
                   "
                   data-testid="deposit-record-restitution"
                   @click="openRestitutionForm"
@@ -713,7 +711,12 @@ const handleDownloadExistingDepositRestitution = async () => {
                 </label>
                 <p class="deposit-hint">
                   Retenues estimées :
-                  {{ Math.max(0, lease.deposit - (Number(restitutionAmountInput) || 0)).toLocaleString('fr-FR') }}
+                  {{
+                    Math.max(
+                      0,
+                      lease.deposit - (Number(restitutionAmountInput) || 0)
+                    ).toLocaleString('fr-FR')
+                  }}
                   €
                 </p>
                 <div class="deposit-form-actions">
@@ -997,7 +1000,7 @@ const handleDownloadExistingDepositRestitution = async () => {
 .deposit-error {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--color-error, #dc2626);
+  color: var(--error-600, #dc2626);
 }
 
 .deposit-form {
@@ -1007,7 +1010,7 @@ const handleDownloadExistingDepositRestitution = async () => {
   padding: var(--space-3, 0.75rem);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-md, 0.5rem);
-  background: var(--surface-secondary, #f8fafc);
+  background: var(--bg-secondary, #f8fafc);
 }
 
 .deposit-field {
@@ -1024,7 +1027,7 @@ const handleDownloadExistingDepositRestitution = async () => {
   border-radius: var(--radius-sm, 0.375rem);
   font-size: 0.95rem;
   color: var(--text-primary, #0f172a);
-  background: var(--surface-primary, #ffffff);
+  background: var(--bg-primary, #ffffff);
 }
 
 .deposit-form-actions {

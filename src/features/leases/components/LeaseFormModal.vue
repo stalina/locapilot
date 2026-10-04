@@ -498,7 +498,7 @@ const toggleTenant = (tenantId: number) => {
   padding: var(--space-3, 0.75rem);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-xl, 1rem);
-  background: var(--surface-muted, #f8fafc);
+  background: var(--bg-secondary, #f8fafc);
   overflow-y: auto;
 }
 
@@ -515,7 +515,7 @@ const toggleTenant = (tenantId: number) => {
 }
 
 .tenant-card:hover {
-  border-color: var(--border-color-strong, #cbd5f5);
+  border-color: var(--primary-200, #cbd5f5);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 

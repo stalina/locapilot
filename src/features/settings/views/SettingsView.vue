@@ -980,7 +980,7 @@ const saveReminderThresholds = async () => {
               <p>
                 Code PIN : <strong class="peer-pin">{{ generatedPin }}</strong>
               </p>
-              <p style="font-size: 0.8em; color: var(--color-text-muted)">
+              <p style="font-size: 0.8em; color: var(--text-tertiary)">
                 Communiquez ce code PIN verbalement à l'autre appareil
               </p>
               <div v-if="qrDataUrl" class="peer-qr">
@@ -1006,13 +1006,13 @@ const saveReminderThresholds = async () => {
               <input
                 v-model="connectId"
                 placeholder="ID de session de l'hôte"
-                style="padding: 8px; border-radius: 6px; border: 1px solid var(--color-border)"
+                style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color)"
               />
               <input
                 v-model="pairingPin"
                 placeholder="Code PIN (6 chiffres)"
                 maxlength="6"
-                style="padding: 8px; border-radius: 6px; border: 1px solid var(--color-border)"
+                style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color)"
               />
               <Button @click="connectToHost" variant="secondary">Se connecter</Button>
             </div>
@@ -1059,39 +1059,39 @@ const saveReminderThresholds = async () => {
 .settings-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-8);
+  gap: var(--space-8);
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 }
 
 .settings-section h2 {
   font-size: var(--text-xl);
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding-bottom: var(--spacing-3);
-  border-bottom: 2px solid var(--color-border);
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .settings-section h2 i {
-  color: var(--color-primary);
+  color: var(--primary-600);
 }
 
 .setting-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   transition: all 0.2s ease;
 }
@@ -1112,19 +1112,19 @@ const saveReminderThresholds = async () => {
 .setting-info h3 {
   font-size: var(--text-base);
   font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-1) 0;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
 }
 
 .setting-info p {
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .status-text {
   font-weight: 500;
-  margin-top: var(--spacing-2) !important;
+  margin-top: var(--space-2) !important;
 }
 
 .status-text.success {
@@ -1136,7 +1136,7 @@ const saveReminderThresholds = async () => {
 }
 
 .about-text {
-  margin-top: var(--spacing-2) !important;
+  margin-top: var(--space-2) !important;
   line-height: 1.6;
 }
 
@@ -1154,16 +1154,16 @@ const saveReminderThresholds = async () => {
 }
 
 .experimental-warning {
-  margin-top: var(--spacing-2) !important;
+  margin-top: var(--space-2) !important;
   color: rgb(180, 120, 0) !important;
   font-size: 0.8em !important;
 }
 
 .peer-session-info {
-  margin-top: var(--spacing-3);
-  padding: var(--spacing-3);
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
@@ -1177,23 +1177,23 @@ const saveReminderThresholds = async () => {
 .peer-pin {
   font-size: 1.3em;
   letter-spacing: 0.15em;
-  color: var(--color-primary);
+  color: var(--primary-600);
   font-family: monospace;
 }
 
 .peer-transfer-progress {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
-  margin-top: var(--spacing-2);
+  gap: var(--space-1);
+  margin-top: var(--space-2);
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .peer-transfer-progress progress {
   width: 100%;
   height: 8px;
-  accent-color: var(--color-primary);
+  accent-color: var(--primary-600);
 }
 
 /* Uses the global design tokens (variables.css). */
@@ -1223,7 +1223,7 @@ const saveReminderThresholds = async () => {
 
 @media (max-width: 768px) {
   .settings-view {
-    padding: var(--spacing-4);
+    padding: var(--space-4);
   }
 
   .setting-card {

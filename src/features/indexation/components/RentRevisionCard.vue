@@ -344,8 +344,8 @@ async function downloadExistingLetter() {
   padding: 8px 10px;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 6px;
-  background: var(--input-bg, #fff);
-  color: var(--text-color, #222);
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #222);
 }
 .formula {
   font-style: italic;
