@@ -42,9 +42,11 @@ const LEGACY_UNDEFINED_TOKENS = new Set([
   '--warning-900',
 ]);
 
+// The lookbehind keeps BEM modifiers in selectors (e.g. `.btn--primary:hover`)
+// from being counted as `--primary` declarations.
 const declaredTokens = new Set(
   Object.values(sources).flatMap(source =>
-    Array.from(source.matchAll(/(--[\w-]+)\s*:/g), match => match[1])
+    Array.from(source.matchAll(/(?<![\w-])(--[\w-]+)\s*:/g), match => match[1])
   )
 );
 
