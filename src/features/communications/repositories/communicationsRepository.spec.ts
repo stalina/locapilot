@@ -85,7 +85,7 @@ describe('communicationsRepository', () => {
 
     const forTenant1 = await fetchCommunicationsByEntity('tenant', 1);
     expect(forTenant1).toHaveLength(1);
-    expect(forTenant1[0].content).toBe('pour tenant 1');
+    expect(forTenant1[0]?.content).toBe('pour tenant 1');
   });
 
   it('updates a communication', async () => {
@@ -215,9 +215,9 @@ describe('communicationsRepository', () => {
 
       expect(result).toHaveLength(2);
       // Most-recent-first: the historized reminder letter comes first
-      expect(result[0].type).toBe('letter');
-      expect(result[0].content).toContain('Relance amiable');
-      expect(result[1].content).toBe('visite du bail');
+      expect(result[0]?.type).toBe('letter');
+      expect(result[0]?.content).toContain('Relance amiable');
+      expect(result[1]?.content).toBe('visite du bail');
       // The other lease's reminder is excluded
       expect(result.some(c => c.content === 'relance autre bail')).toBe(false);
     });
@@ -235,7 +235,7 @@ describe('communicationsRepository', () => {
 
       const result = await fetchCommunicationsForLease(leaseId);
       expect(result).toHaveLength(1);
-      expect(result[0].content).toBe('appel bail');
+      expect(result[0]?.content).toBe('appel bail');
     });
   });
 });

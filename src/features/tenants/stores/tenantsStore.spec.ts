@@ -95,18 +95,17 @@ describe('tenantsStore', () => {
     });
 
     it('should create tenant successfully', async () => {
-      const newTenant = {
+      const newTenant: Omit<Tenant, 'id' | 'createdAt' | 'updatedAt'> = {
         civility: 'mme',
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane@example.com',
         phone: '0987654321',
-        status: 'active' as const,
+        status: 'active',
       };
 
-      const createdTenant = {
+      const createdTenant: Tenant = {
         id: 1,
-        civility: 'mme',
         ...newTenant,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -124,14 +123,14 @@ describe('tenantsStore', () => {
     });
 
     it('should update tenant successfully', async () => {
-      const existingTenant = {
+      const existingTenant: Tenant = {
         id: 1,
         civility: 'mr',
         firstName: 'Old Name',
         lastName: 'Doe',
         email: 'old@example.com',
         phone: '0123456789',
-        status: 'active' as const,
+        status: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

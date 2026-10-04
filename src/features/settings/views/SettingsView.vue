@@ -10,6 +10,8 @@ import PeerSyncService, {
   normalizeSessionId,
   SESSION_ID_PREFIX,
   type PeerStatus,
+  type ReceivedSyncPayload,
+  type TransferManifest,
 } from '../services/peerSyncService';
 import {
   buildPairingUrl,
@@ -42,6 +44,166 @@ const connectId = ref('');
 const pairingPin = ref('');
 let peerService: PeerSyncService | null = null;
 const p2pCard = ref<HTMLElement | null>(null);
+
+// Streamed P2P transfer (issue #122): progress of the document bytes and a
+// terminal outcome message that a later `stopped` status must not overwrite.
+type TransferDirection = 'send' | 'receive';
+const transferProgress = ref<{
+  direction: TransferDirection;
+  transferredBytes: number;
+  totalBytes: number;
+} | null>(null);
+let transferOutcomeShown = false;
+
+const TRANSFER_CORRUPTED_STATUS = 'Transfert interrompu — données corrompues';
+const TRANSFER_INTERRUPTED_STATUS = "Transfert interrompu — aucune donnée n'a été modifiée";
+const TRANSFER_TIMEOUT_STATUS =
+  "Transfert interrompu (aucune réponse depuis 60 s) — aucune donnée n'a été modifiée. Relancez la synchronisation.";
+const TRANSFER_REFUSED_STATUS = "Transfert refusé par l'appareil distant";
+const PROTOCOL_MISMATCH_STATUS =
+  'Version de synchronisation incompatible — mettez à jour les deux appareils';
+const SYNC_SUCCESS_MESSAGE = 'Données synchronisées avec succès !';
+const HOST_SESSION_COMPLETE_STATUS = 'Données envoyées — session de synchronisation terminée';
+
+/** Bytes → "Mo" for display (e.g. 612, 3,5, 0). */
+const formatMegabytes = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024);
+  return mb.toLocaleString('fr-FR', { maximumFractionDigits: mb < 10 ? 1 : 0 });
+};
+
+const transferPercent = computed(() => {
+  const p = transferProgress.value;
+  if (!p) return 0;
+  if (p.totalBytes <= 0) return 100;
+  return Math.min(100, Math.floor((p.transferredBytes / p.totalBytes) * 100));
+});
+
+const transferProgressLabel = computed(() => {
+  const p = transferProgress.value;
+  if (!p) return '';
+  const action = p.direction === 'send' ? 'Envoi des données…' : 'Réception des données…';
+  return `${action} ${transferPercent.value} % (${formatMegabytes(p.transferredBytes)} Mo / ${formatMegabytes(p.totalBytes)} Mo)`;
+});
+
+const readProgress = (info: unknown) => {
+  if (typeof info !== 'object' || info === null) return null;
+  const transferredBytes = 'transferredBytes' in info ? Number(info.transferredBytes) : NaN;
+  const totalBytes = 'totalBytes' in info ? Number(info.totalBytes) : NaN;
+  if (!Number.isFinite(transferredBytes) || !Number.isFinite(totalBytes)) return null;
+  return { transferredBytes, totalBytes };
+};
+
+const transferErrorStatus = (info: unknown): string => {
+  const reason = typeof info === 'object' && info !== null && 'reason' in info ? info.reason : '';
+  if (reason === 'corrupted') return TRANSFER_CORRUPTED_STATUS;
+  if (reason === 'timeout') return TRANSFER_TIMEOUT_STATUS;
+  return TRANSFER_INTERRUPTED_STATUS;
+};
+
+/**
+ * Show a final transfer message. It is not replaced by the teardown that
+ * follows: `client-disconnected` on the host, `stopped` on the client.
+ */
+const showTransferOutcome = (message: string) => {
+  peerStatus.value = message;
+  transferProgress.value = null;
+  transferOutcomeShown = true;
+};
+
+/**
+ * Handle the statuses shared by host and client for the streamed transfer.
+ * Returns true when the status was handled.
+ */
+const handleTransferStatus = (
+  status: PeerStatus,
+  info: unknown,
+  direction: TransferDirection
+): boolean => {
+  switch (status) {
+    case 'transfer-progress': {
+      const progress = readProgress(info);
+      if (progress) transferProgress.value = { direction, ...progress };
+      peerStatus.value = 'Synchronisation en cours — gardez cette page ouverte';
+      return true;
+    }
+    case 'transfer-error':
+      showTransferOutcome(transferErrorStatus(info));
+      return true;
+    case 'protocol-mismatch':
+      showTransferOutcome(PROTOCOL_MISMATCH_STATUS);
+      return true;
+    default:
+      return false;
+  }
+};
+
+/**
+ * Client consent on the manifest, BEFORE any bulk data is transferred: storage
+ * quota check, then confirmation with the announced size.
+ */
+const confirmIncomingTransfer = async (manifest: TransferManifest): Promise<boolean> => {
+  const sizeMo = formatMegabytes(manifest.totalBytes);
+  const storage = typeof navigator !== 'undefined' ? navigator.storage : undefined;
+
+  if (storage && typeof storage.estimate === 'function') {
+    try {
+      const { quota, usage } = await storage.estimate();
+      if (typeof quota === 'number' && quota - (usage ?? 0) < manifest.totalBytes) {
+        showTransferOutcome(
+          `Espace de stockage insuffisant sur cet appareil pour recevoir ${sizeMo} Mo`
+        );
+        return false;
+      }
+    } catch (e) {
+      console.warn('storage.estimate failed', e);
+    }
+  }
+
+  const ok = confirm(
+    `Recevoir des données depuis un autre appareil va remplacer vos données locales (≈ ${sizeMo} Mo, ${manifest.documents} document(s)). Continuer ?`
+  );
+  if (!ok) {
+    showTransferOutcome('Import annulé');
+    return false;
+  }
+
+  if (storage && typeof storage.persist === 'function') {
+    try {
+      await storage.persist();
+    } catch (e) {
+      console.warn('storage.persist failed', e);
+    }
+  }
+  transferProgress.value = {
+    direction: 'receive',
+    transferredBytes: 0,
+    totalBytes: manifest.totalBytes,
+  };
+  return true;
+};
+
+/** Client: import the reassembled data through the single validated path. */
+const importReceivedData = async (payload: ReceivedSyncPayload) => {
+  try {
+    peerStatus.value = 'Import des données…';
+    await dataTransferStore.importFromObject(payload);
+    await settingsStore.loadSettings();
+    await reloadSenderInfo();
+    showTransferOutcome('Synchronisation terminée');
+    alert(SYNC_SUCCESS_MESSAGE);
+    pairingPin.value = '';
+  } catch (err) {
+    console.error('Failed to process incoming data', err);
+    showTransferOutcome("Erreur lors de la réception des données — aucune donnée n'a été modifiée");
+    alert('Erreur lors de la réception des données');
+  } finally {
+    try {
+      peerService?.disconnect();
+    } catch (e) {
+      console.warn('disconnect failed', e);
+    }
+  }
+};
 
 // Pairing QR code (issue #118): generated locally while hosting. It encodes the
 // pairing link `<origin><BASE_URL>#p2p=<id>&pin=<pin>`, i.e. exactly the session
@@ -183,6 +345,8 @@ const startHosting = async () => {
   isHosting.value = true;
   peerStatus.value = 'Creating peer...';
   generatedPin.value = generatePin();
+  transferOutcomeShown = false;
+  transferProgress.value = null;
 
   // Create service with handlers
   peerService = new PeerSyncService(
@@ -190,7 +354,31 @@ const startHosting = async () => {
       // Host does not receive data payloads in the normal flow.
     },
     (status: PeerStatus, info?: unknown) => {
+      if (status === 'stopped') {
+        // Explicit stop ("Arrêter" or release): the Peer is destroyed.
+        transferProgress.value = null;
+        clearHostSession();
+        return;
+      }
+      if (handleTransferStatus(status, info, 'send')) return;
+      if (status === 'client-disconnected') {
+        // A device leaving (also after a refused or interrupted transfer) does
+        // not end the hosting session. A transfer outcome stays visible.
+        transferProgress.value = null;
+        if (transferOutcomeShown) {
+          transferOutcomeShown = false;
+        } else {
+          peerStatus.value = "Appareil déconnecté — en attente d'une nouvelle connexion";
+        }
+        return;
+      }
       peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
+      if (status === 'transfer-pending') {
+        peerStatus.value = "En attente de la confirmation de l'appareil distant…";
+      }
+      if (status === 'transfer-cancelled') {
+        showTransferOutcome(TRANSFER_REFUSED_STATUS);
+      }
       if (status === 'hosting') {
         hostId.value = typeof info === 'string' ? info : '';
         isHosting.value = true;
@@ -218,9 +406,10 @@ const startHosting = async () => {
               peerStatus.value = "Transfert annulé par l'hôte";
               return;
             }
-            peerStatus.value = 'Envoi des données en cours...';
-            const { json } = await dataTransferStore.exportData(rawAppVersion);
-            peerService?.sendExport(json);
+            peerStatus.value = 'Préparation des données…';
+            // Streamed transfer (issue #122): raw tables + Blobs, never one JSON.
+            const source = await dataTransferStore.buildSyncSource(rawAppVersion);
+            await peerService?.streamTransfer(source);
           } catch (e) {
             console.error('Failed to send export from host', e);
             peerStatus.value = "Échec de l'envoi";
@@ -233,16 +422,16 @@ const startHosting = async () => {
       if (status === 'auth-failed') {
         peerStatus.value = 'Connexion rejetée — PIN incorrect';
       }
-      if (status === 'client-disconnected') {
-        peerStatus.value = "Appareil déconnecté — en attente d'une nouvelle connexion";
+      if (status === 'client-connected') {
+        // A new attempt: the previous outcome no longer needs protecting.
+        transferOutcomeShown = false;
       }
       if (status === 'transfer-complete') {
-        peerStatus.value = 'Données envoyées — session de synchronisation terminée';
+        // The client acknowledged the end of the stream, then disconnected: the
+        // session is single-use and ends here (Peer destroyed by the service).
+        showTransferOutcome(HOST_SESSION_COMPLETE_STATUS);
         clearHostSession();
         peerService = null;
-      }
-      if (status === 'stopped') {
-        clearHostSession();
       }
     }
   );
@@ -267,6 +456,7 @@ const stopHosting = () => {
   peerService = null;
   clearHostSession();
   peerStatus.value = '';
+  transferProgress.value = null;
 };
 
 const connectToHost = async () => {
@@ -286,44 +476,22 @@ const connectToHost = async () => {
   releasePeerService();
   try {
     peerStatus.value = 'Connexion en cours...';
+    transferOutcomeShown = false;
+    transferProgress.value = null;
 
     peerService = new PeerSyncService(
-      async data => {
-        if (data.type !== 'export' || typeof data.payload !== 'string') return;
-        try {
-          const parsed: unknown = JSON.parse(data.payload);
-          // confirm with user before destructive import
-          const ok = confirm(
-            'Recevoir des données depuis un autre appareil va remplacer vos données locales. Continuer ?'
-          );
-          if (!ok) {
-            peerStatus.value = 'Import annulé';
-            return;
-          }
-
-          // perform import using existing logic
-          await dataTransferStore.importFromObject(parsed);
-          await settingsStore.loadSettings();
-          await reloadSenderInfo();
-          alert('Données synchronisées avec succès !');
-          peerStatus.value = 'Synchronisation terminée';
-          pairingPin.value = '';
-          // cleanup
-          try {
-            peerService?.disconnect();
-          } catch (e) {
-            console.warn('disconnect failed', e);
-          }
-        } catch (err) {
-          console.error('Failed to process incoming data', err);
-          alert('Erreur lors de la réception des données');
-        }
-      },
+      importReceivedData,
       (status: PeerStatus, info?: unknown) => {
         if (status === 'stopped') {
           // Local teardown after a sync, a rejected PIN or a release: keep the
           // last meaningful status instead of replacing it with "stopped".
+          transferProgress.value = null;
           peerService = null;
+          return;
+        }
+        if (handleTransferStatus(status, info, 'receive')) return;
+        if (status === 'transfer-cancelled' || status === 'importing') {
+          // Message already set by the consent prompt / the import handler.
           return;
         }
         peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
@@ -340,7 +508,8 @@ const connectToHost = async () => {
         if (status === 'error') {
           console.error('Peer error', info);
         }
-      }
+      },
+      confirmIncomingTransfer
     );
 
     await peerService.connect(normalizedId, pairingPin.value);
@@ -792,6 +961,18 @@ const saveReminderThresholds = async () => {
             <p v-if="peerStatus" style="margin-top: 8px">
               Statut : <strong>{{ peerStatus }}</strong>
             </p>
+            <div
+              v-if="transferProgress"
+              class="peer-transfer-progress"
+              data-testid="p2p-transfer-progress"
+            >
+              <progress
+                :value="transferPercent"
+                max="100"
+                :aria-label="transferProgressLabel"
+              ></progress>
+              <span>{{ transferProgressLabel }}</span>
+            </div>
             <div v-if="hostId" class="peer-session-info">
               <p>
                 ID de session : <code>{{ hostId }}</code>
@@ -998,6 +1179,21 @@ const saveReminderThresholds = async () => {
   letter-spacing: 0.15em;
   color: var(--primary-600);
   font-family: monospace;
+}
+
+.peer-transfer-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.peer-transfer-progress progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--color-primary);
 }
 
 /* Uses the global design tokens (variables.css). */

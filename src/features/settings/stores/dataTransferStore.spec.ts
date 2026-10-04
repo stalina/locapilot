@@ -11,7 +11,7 @@ vi.mock('../repositories/dataTransferRepository', () => ({
   clearBusinessData: vi.fn(),
 }));
 
-import { importBusinessData } from '../repositories/dataTransferRepository';
+import { fetchRawExportData, importBusinessData } from '../repositories/dataTransferRepository';
 
 const iso = '2026-01-01T00:00:00.000Z';
 
@@ -46,6 +46,33 @@ function validTenant(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function validDocument(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    name: 'photo.jpg',
+    type: 'photo',
+    mimeType: 'image/jpeg',
+    size: 0,
+    data: null,
+    createdAt: iso,
+    updatedAt: iso,
+    ...overrides,
+  };
+}
+
+function validTenantDocument(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    tenantId: 1,
+    name: 'cni.png',
+    mimeType: 'image/png',
+    size: 0,
+    uploadedAt: iso,
+    data: null,
+    ...overrides,
+  };
+}
+
 describe('dataTransferStore.importFromObject', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -64,7 +91,7 @@ describe('dataTransferStore.importFromObject', () => {
     expect(importBusinessData).toHaveBeenCalledTimes(1);
     expect(store.error).toBeNull();
     // Missing optional tables are defaulted to empty arrays before the write.
-    const arg = vi.mocked(importBusinessData).mock.calls[0][0];
+    const arg = vi.mocked(importBusinessData).mock.calls[0]![0];
     expect(arg.properties).toHaveLength(1);
     expect(arg.leases).toEqual([]);
     expect(arg.settings).toEqual([]);
@@ -110,5 +137,87 @@ describe('dataTransferStore.importFromObject', () => {
 
     expect(importBusinessData).not.toHaveBeenCalled();
     expect(store.error).toBe('Format de fichier invalide');
+  });
+
+  // Issue #122: P2P documents arrive as reassembled Blobs.
+  it('imports documents whose data is a Blob, keeping the Blob', async () => {
+    const store = useDataTransferStore();
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' });
+    const tenantBlob = new Blob([new Uint8Array([9])], { type: 'image/png' });
+
+    await store.importFromObject({
+      properties: [validProperty()],
+      tenants: [validTenant()],
+      documents: [validDocument({ data: blob })],
+      tenantDocuments: [validTenantDocument({ data: tenantBlob })],
+      version: '1.2.0',
+    });
+
+    expect(importBusinessData).toHaveBeenCalledTimes(1);
+    const arg = vi.mocked(importBusinessData).mock.calls[0]![0];
+    const [doc] = arg.documents as Array<Record<string, unknown>>;
+    const [tenantDoc] = arg.tenantDocuments as Array<Record<string, unknown>>;
+    expect(doc?.data).toBe(blob);
+    expect(doc?.size).toBe(3);
+    expect(doc?.mimeType).toBe('image/jpeg');
+    expect(tenantDoc?.data).toBe(tenantBlob);
+  });
+
+  it('leaves the DB untouched when a Blob payload fails validation', async () => {
+    const store = useDataTransferStore();
+
+    await expect(
+      store.importFromObject({
+        properties: [validProperty()],
+        tenants: [],
+        // Leftover protocol field → strict schema rejects the whole payload.
+        documents: [validDocument({ data: new Blob([new Uint8Array(1)]), blobRef: {} })],
+        version: '1.2.0',
+      })
+    ).rejects.toThrow(/documents\.0/);
+
+    expect(importBusinessData).not.toHaveBeenCalled();
+  });
+});
+
+describe('dataTransferStore.buildSyncSource', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it('returns the raw tables with Blobs untouched (no serialization) and the totals', async () => {
+    const blob = new Blob([new Uint8Array(100)], { type: 'image/jpeg' });
+    const tenantBlob = new Blob([new Uint8Array(20)], { type: 'image/png' });
+    const raw = {
+      properties: [validProperty()],
+      tenants: [validTenant()],
+      leases: [],
+      rents: [],
+      documents: [validDocument({ data: blob })],
+      tenantDocuments: [validTenantDocument({ data: tenantBlob })],
+      tenantAudits: [],
+      inventories: [],
+      communications: [],
+      chargesAdjustments: [],
+      irlIndices: [],
+      rentRevisions: [],
+      reminders: [],
+      settings: [],
+    };
+    vi.mocked(fetchRawExportData).mockResolvedValue(
+      raw as unknown as Awaited<ReturnType<typeof fetchRawExportData>>
+    );
+    const store = useDataTransferStore();
+
+    const source = await store.buildSyncSource('1.2.0');
+
+    expect(source.appVersion).toBe('1.2.0');
+    expect(source.tables.documents[0]).toBe(raw.documents[0]);
+    expect((source.tables.documents[0] as { data: unknown }).data).toBe(blob);
+    expect(source.counts.properties).toBe(1);
+    expect(source.counts.documents).toBe(1);
+    expect(source.documents).toBe(2);
+    expect(source.totalBytes).toBe(120);
   });
 });

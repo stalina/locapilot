@@ -341,4 +341,39 @@ describe('importValidationService', () => {
       expect(() => validateImportPayload(payload)).toThrow(/properties\.1\.surface/);
     });
   });
+
+  // Issue #122: the P2P streamed sync hands over document content as a Blob.
+  describe('validateImportPayload — Blob document data (P2P sync)', () => {
+    it('accepts a document and a tenant document whose data is a Blob', () => {
+      const payload = buildFullValidPayload();
+      const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'application/pdf' });
+      (payload.documents[0] as Record<string, unknown>).data = blob;
+      (payload.tenantDocuments[0] as Record<string, unknown>).data = blob;
+
+      const validated = validateImportPayload(payload);
+
+      expect(validated.documents[0]?.data).toBe(blob);
+      expect(validated.tenantDocuments[0]?.data).toBe(blob);
+    });
+
+    it('rejects an object that is not a Blob as document data', () => {
+      const payload = buildFullValidPayload();
+      (payload.documents[0] as Record<string, unknown>).data = { size: 3, type: 'fake' };
+      expect(() => validateImportPayload(payload)).toThrow(/documents\.0\.data/);
+    });
+
+    it('rejects an object that is not a Blob as tenant document data', () => {
+      const payload = buildFullValidPayload();
+      (payload.tenantDocuments[0] as Record<string, unknown>).data = new Uint8Array([1]);
+      expect(() => validateImportPayload(payload)).toThrow(/tenantDocuments\.0\.data/);
+    });
+
+    it('still rejects an unknown field on a document carrying a Blob', () => {
+      const payload = buildFullValidPayload();
+      const doc = payload.documents[0] as Record<string, unknown>;
+      doc.data = new Blob([new Uint8Array([1])]);
+      doc.blobRef = { size: 1, chunks: 1 };
+      expect(() => validateImportPayload(payload)).toThrow(/documents\.0/);
+    });
+  });
 });

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    /* Specs run on Node (jsdom), not in the browsers targeted by the app build. */
+    "lib": ["ES2022", "DOM"],
+    "types": ["vitest/globals", "vite/client"]
+  },
+  "include": ["src/**/*.spec.ts", "src/**/__tests__/**/*.ts", "src/**/*.d.ts"],
+  "exclude": []
+}

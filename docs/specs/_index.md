@@ -17,7 +17,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |
 | Dashboard      | [dashboard.md](./dashboard.md)           | Portfolio overview and activity summary                  |
 | Settings       | [settings.md](./settings.md)             | Application configuration                                |
-| Data Transfer  | [data-transfer.md](./data-transfer.md)   | Backup export and restore import                         |
+| Data Transfer  | [data-transfer.md](./data-transfer.md)   | Backup export/restore and P2P device synchronisation     |
 | Error Handling | [error-handling.md](./error-handling.md) | Global error capture, error boundary, structured logging |
 
 ## Entity Relationships

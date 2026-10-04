@@ -10,7 +10,9 @@ import {
   deserializeTenantDocuments,
   serializeDocuments,
   serializeTenantDocuments,
+  createSyncSource,
   type ExportDataPayload,
+  type SyncSource,
 } from '../services/dataTransferService';
 import { validateImportPayload } from '../services/importValidationService';
 
@@ -64,6 +66,34 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     }
   }
 
+  /**
+   * P2P sync source (issue #122): the raw tables WITHOUT serializeDocuments —
+   * document Blobs are kept as they are and streamed in chunks by
+   * PeerSyncService. Never builds the whole database as one JSON string.
+   */
+  async function buildSyncSource(version: string): Promise<SyncSource> {
+    const raw = await fetchRawExportData();
+    return createSyncSource(
+      {
+        properties: raw.properties,
+        tenants: raw.tenants,
+        leases: raw.leases,
+        rents: raw.rents,
+        documents: raw.documents,
+        tenantDocuments: raw.tenantDocuments,
+        tenantAudits: raw.tenantAudits,
+        inventories: raw.inventories,
+        communications: raw.communications,
+        chargesAdjustments: raw.chargesAdjustments,
+        irlIndices: raw.irlIndices,
+        rentRevisions: raw.rentRevisions,
+        reminders: raw.reminders,
+        settings: raw.settings,
+      },
+      version
+    );
+  }
+
   async function importFromObject(data: unknown): Promise<void> {
     isImporting.value = true;
     error.value = null;
@@ -106,5 +136,13 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     await clearBusinessData();
   }
 
-  return { isExporting, isImporting, error, exportData, importFromObject, clearAllBusinessData };
+  return {
+    isExporting,
+    isImporting,
+    error,
+    exportData,
+    buildSyncSource,
+    importFromObject,
+    clearAllBusinessData,
+  };
 });

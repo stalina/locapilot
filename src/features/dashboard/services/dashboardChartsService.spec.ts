@@ -63,8 +63,8 @@ describe('buildRevenueSeries', () => {
       now: NOW,
     });
     expect(series).toHaveLength(12);
-    expect(series[0].label).toBe('août 2025');
-    expect(series[11].label).toBe('juil. 2026');
+    expect(series[0]?.label).toBe('août 2025');
+    expect(series[11]?.label).toBe('juil. 2026');
   });
 
   it('sums paidAmount, falling back to amount, into the correct month', () => {
