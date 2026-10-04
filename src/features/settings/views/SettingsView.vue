@@ -1184,16 +1184,16 @@ const saveReminderThresholds = async () => {
 .peer-transfer-progress {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
-  margin-top: var(--spacing-2);
+  gap: var(--space-1);
+  margin-top: var(--space-2);
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .peer-transfer-progress progress {
   width: 100%;
   height: 8px;
-  accent-color: var(--color-primary);
+  accent-color: var(--primary-600);
 }
 
 /* Uses the global design tokens (variables.css). */
