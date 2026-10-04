@@ -84,6 +84,99 @@ test.describe('Settings - Synchronisation P2P', () => {
   });
 });
 
+test.describe("Settings - Session hôte P2P après la déconnexion d'un appareil", () => {
+  test("Golden path : un PIN incorrect ne met pas fin à la session de l'hôte", async ({
+    page,
+    browser,
+  }) => {
+    // Hôte (contexte par défaut) : démarrer une session.
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+    const hostCard = page.getByTestId('p2p-sync-card');
+    await hostCard.getByRole('button', { name: 'Héberger' }).click();
+    const sessionInfo = hostCard.locator('.peer-session-info');
+    await expect(sessionInfo).toBeVisible({ timeout: 15_000 });
+    const sessionId = (await sessionInfo.locator('code').first().innerText()).trim();
+    const pin = (await sessionInfo.locator('.peer-pin').first().innerText()).trim();
+
+    // Client (second navigateur isolé) : se connecter avec un PIN incorrect.
+    const clientContext = await browser.newContext();
+    try {
+      const client = await clientContext.newPage();
+      await resetApp(client);
+      await navigateFromSidebar(client, /Param[èe]tres|Settings/i, /\/settings/);
+      const clientCard = client.getByTestId('p2p-sync-card');
+      await clientCard.locator('input[placeholder*="ID de session"]').fill(sessionId);
+      await clientCard
+        .locator('input[placeholder*="Code PIN"]')
+        .fill(pin === '000000' ? '111111' : '000000');
+      await clientCard.getByRole('button', { name: 'Se connecter' }).click();
+
+      await expect(clientCard).toContainText('Authentification échouée — PIN incorrect', {
+        timeout: 20_000,
+      });
+
+      // L'hôte rejette la connexion mais garde sa session ouverte et visible.
+      await expect(hostCard).toContainText('Connexion rejetée — PIN incorrect');
+      await expect(sessionInfo.locator('code').first()).toHaveText(sessionId);
+      await expect(sessionInfo.locator('.peer-pin').first()).toHaveText(pin);
+      await expect(sessionInfo.getByTestId('p2p-qr-code')).toBeVisible();
+      await expect(hostCard.getByRole('button', { name: 'Arrêter' })).toBeVisible();
+      await expect(hostCard).not.toContainText('stopped');
+      await expect(clientCard).not.toContainText('stopped');
+    } finally {
+      await clientContext.close();
+    }
+  });
+});
+
+test.describe('Settings - QR code de synchronisation P2P', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+  });
+
+  test("Golden path : l'hôte affiche un QR code et le lien d'appairage pré-remplit l'ID et le PIN", async ({
+    page,
+  }) => {
+    const p2pCard = page.getByTestId('p2p-sync-card');
+    await expect(p2pCard).toBeVisible({ timeout: 10_000 });
+
+    // 1) Hôte : le QR code (généré localement) s'affiche à côté de l'ID et du PIN.
+    await p2pCard.getByRole('button', { name: 'Héberger' }).click();
+    const sessionInfo = p2pCard.locator('.peer-session-info');
+    await expect(sessionInfo).toBeVisible({ timeout: 15_000 });
+
+    const qrCode = sessionInfo.getByTestId('p2p-qr-code');
+    await expect(qrCode).toBeVisible();
+    await expect(qrCode).toHaveAttribute('alt', 'QR code de synchronisation');
+    await expect(qrCode).toHaveAttribute('src', /^data:image\//);
+
+    const sessionId = (await sessionInfo.locator('code').first().innerText()).trim();
+    const pin = (await sessionInfo.locator('.peer-pin').first().innerText()).trim();
+    expect(sessionId).toMatch(/^LP[23456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
+    expect(pin).toMatch(/^\d{6}$/);
+
+    // Arrêter l'hébergement : le QR code disparaît.
+    await p2pCard.getByRole('button', { name: 'Arrêter' }).click();
+    await expect(qrCode).toBeHidden();
+
+    // 2) Ouvrir le lien d'appairage encodé dans le QR code : racine de l'app
+    //    (base path Playwright, ex. /locapilot/) + identifiants dans le fragment.
+    const appRootUrl = new URL('./', page.url()).href;
+    await page.goto(`${appRootUrl}#p2p=${sessionId}&pin=${pin}`);
+
+    // 3) Redirigé vers Paramètres, fragment retiré, champs pré-remplis, pas de connexion auto.
+    await expect(page).toHaveURL(/\/settings$/, { timeout: 10_000 });
+    expect(new URL(page.url()).hash).toBe('');
+
+    const clientCard = page.getByTestId('p2p-sync-card');
+    await expect(clientCard.locator('input[placeholder*="ID de session"]')).toHaveValue(sessionId);
+    await expect(clientCard.locator('input[placeholder*="Code PIN"]')).toHaveValue(pin);
+    await expect(clientCard).toContainText('Session de synchronisation détectée');
+  });
+});
+
 test.describe('Settings - e2e', () => {
   test('Modifier et persister les paramètres', async ({ page }) => {
     await resetApp(page);

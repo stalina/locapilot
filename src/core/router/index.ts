@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { pairingLinkGuard } from './pairingLinkGuard';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -109,6 +110,9 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
+
+// P2P pairing links (`#p2p=…&pin=…`, issue #118) land on Settings, fragment kept.
+router.beforeEach(pairingLinkGuard);
 
 // Update page title on route change
 router.afterEach(to => {

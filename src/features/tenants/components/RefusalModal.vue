@@ -101,6 +101,7 @@ textarea {
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-md, 0.5rem);
   background: var(--bg-primary, #fff);
+  color: var(--text-primary, #0f172a);
   box-shadow: var(--shadow-sm, none);
 }
 
