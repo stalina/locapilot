@@ -88,12 +88,14 @@ function resolveValue(value: string, tokens: Record<string, string>): string {
   return resolveValue(next.trim(), tokens);
 }
 
-/** Raw content of a single-file component's `<style>` block. */
+/** Raw CSS of a stylesheet, or of a single-file component's `<style>` block. */
 export function readComponentStyles(path: string): string {
-  return readSource(path).match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? '';
+  const source = readSource(path);
+  if (path.endsWith('.css')) return source;
+  return source.match(/<style[^>]*>([\s\S]*?)<\/style>/)?.[1] ?? '';
 }
 
-/** Rules of a single-file component's `<style>` block, `@media` blocks flattened. */
+/** Rules of a stylesheet or of an SFC `<style>` block, `@media` blocks flattened. */
 export function readComponentRules(path: string): CssRule[] {
   return parseStylesheet(readComponentStyles(path));
 }
@@ -107,7 +109,7 @@ export function themeToken(token: string, theme: Theme): string {
 }
 
 /**
- * Returns a resolver for the value a component declares for `property` once
+ * Returns a resolver for the value a component (or stylesheet) declares for `property` once
  * `selectors` cascade in order (list the base class before its `:hover` rule),
  * with design tokens resolved for the given theme. Only theme media queries are
  * honoured, so the result matches a desktop viewport.
