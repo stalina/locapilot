@@ -54,8 +54,8 @@ describe('ErrorBoundary', () => {
 
     const entries = logger.getEntries();
     expect(entries).toHaveLength(1);
-    expect(entries[0].context).toMatchObject({ source: 'error-boundary', boundary: 'test-zone' });
-    expect(entries[0].error?.message).toBe('child exploded');
+    expect(entries[0]?.context).toMatchObject({ source: 'error-boundary', boundary: 'test-zone' });
+    expect(entries[0]?.error?.message).toBe('child exploded');
   });
 
   it('recovers and renders the slot again when retry is clicked', async () => {

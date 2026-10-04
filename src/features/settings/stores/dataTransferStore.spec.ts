@@ -91,7 +91,7 @@ describe('dataTransferStore.importFromObject', () => {
     expect(importBusinessData).toHaveBeenCalledTimes(1);
     expect(store.error).toBeNull();
     // Missing optional tables are defaulted to empty arrays before the write.
-    const arg = vi.mocked(importBusinessData).mock.calls[0][0];
+    const arg = vi.mocked(importBusinessData).mock.calls[0]![0];
     expect(arg.properties).toHaveLength(1);
     expect(arg.leases).toEqual([]);
     expect(arg.settings).toEqual([]);
@@ -154,7 +154,7 @@ describe('dataTransferStore.importFromObject', () => {
     });
 
     expect(importBusinessData).toHaveBeenCalledTimes(1);
-    const arg = vi.mocked(importBusinessData).mock.calls[0][0];
+    const arg = vi.mocked(importBusinessData).mock.calls[0]![0];
     const [doc] = arg.documents as Array<Record<string, unknown>>;
     const [tenantDoc] = arg.tenantDocuments as Array<Record<string, unknown>>;
     expect(doc?.data).toBe(blob);
