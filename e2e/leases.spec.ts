@@ -125,7 +125,9 @@ test.describe('Baux - dépôt de garantie', () => {
     // Générer le reçu de dépôt de garantie + 1er loyer (téléchargement)
     const receiptDownload = page.waitForEvent('download', { timeout: 15_000 });
     await page.locator('[data-testid="deposit-reception-doc"]').click();
-    const receiptDialog = page.locator('.confirm-dialog', { hasText: /reçu de dépôt de garantie/i });
+    const receiptDialog = page.locator('.confirm-dialog', {
+      hasText: /reçu de dépôt de garantie/i,
+    });
     await expect(receiptDialog).toBeVisible({ timeout: 10_000 });
     await receiptDialog.getByRole('button', { name: /Télécharger uniquement/i }).click();
     expect((await receiptDownload).suggestedFilename()).toMatch(/\.docx$/i);
@@ -152,6 +154,51 @@ test.describe('Baux - dépôt de garantie', () => {
     await expect(restitutionDialog).toBeVisible({ timeout: 10_000 });
     await restitutionDialog.getByRole('button', { name: /Télécharger uniquement/i }).click();
     expect((await restitutionDownload).suggestedFilename()).toMatch(/\.docx$/i);
+  });
+});
+
+test.describe('Baux - thème sombre', () => {
+  test.use({ colorScheme: 'dark' });
+
+  test('Le dépôt de garantie et la régularisation des charges suivent le thème sombre', async ({
+    page,
+  }) => {
+    await resetApp(page);
+
+    const { name: propertyName } = await createProperty(page);
+    const { fullName: tenantFullName } = await createTenant(page);
+    await createLease(page, {
+      startDate: '2025-12-01',
+      endDate: '2026-12-31',
+      propertyName,
+      tenantFullName,
+    });
+
+    const leaseCard = page.locator('.lease-card', { hasText: propertyName }).first();
+    await expect(leaseCard).toBeVisible({ timeout: 10_000 });
+    await leaseCard.click();
+    await expect(page).toHaveURL(/\/leases\/\d+/, { timeout: 10_000 });
+
+    // --bg-primary / --bg-secondary valent neutral-900 / neutral-800 en thème sombre
+    // (auparavant : fonds clairs figés via des tokens jamais déclarés).
+    const chargesTable = page.locator('.charges-table');
+    await expect(chargesTable).toHaveCSS('background-color', 'rgb(23, 23, 23)', {
+      timeout: 10_000,
+    });
+    await expect(chargesTable.locator('th').first()).toHaveCSS(
+      'background-color',
+      'rgb(38, 38, 38)'
+    );
+
+    await page.locator('[data-testid="deposit-mark-received"]').click();
+    await expect(page.locator('[data-testid="deposit-reception-form"]')).toHaveCSS(
+      'background-color',
+      'rgb(38, 38, 38)'
+    );
+    await expect(page.locator('[data-testid="deposit-reception-date"]')).toHaveCSS(
+      'background-color',
+      'rgb(23, 23, 23)'
+    );
   });
 });
 

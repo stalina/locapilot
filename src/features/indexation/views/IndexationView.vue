@@ -281,8 +281,8 @@ async function remove(index: IrlIndex) {
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 6px;
   font-size: 1em;
-  background: var(--input-bg, #fff);
-  color: var(--text-color, #222);
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #222);
 }
 .form-error {
   color: var(--error-600, #dc2626);
