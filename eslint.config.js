@@ -39,10 +39,9 @@ export default [
       },
     },
     rules: {
-      // Flag new explicit `any`. Kept at 'warn' (not 'error') because the
-      // codebase still carries a large amount of legacy `any` (issue #63);
-      // this guards against new occurrences without blocking CI on the backlog.
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Explicit `any` is banned (CLAUDE.md): use `unknown` + narrowing,
+      // generics or precise types. Spec files are relaxed to 'warn' below.
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
       'no-console': 'off',
@@ -69,10 +68,18 @@ export default [
     },
     rules: {
       'vue/multi-word-component-names': 'off',
-      // See the TS block above: 'warn' guards new `any` without failing CI on
-      // the existing legacy backlog (issue #63).
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // See the TS block above.
+      '@typescript-eslint/no-explicit-any': 'error',
       'no-unused-vars': 'off',
+    },
+  },
+
+  // Test files still carry legacy `any` in mocks/fixtures (issue #63): keep
+  // flagging them without failing CI until that backlog is cleared too.
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
 ];

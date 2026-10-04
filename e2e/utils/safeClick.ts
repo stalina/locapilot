@@ -69,7 +69,7 @@ export async function safeFill(
     // fallback: set value and dispatch events
     await locator.evaluate((el, v) => {
       try {
-        (el as HTMLInputElement).value = v as any;
+        (el as HTMLInputElement).value = v;
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
       } catch {
