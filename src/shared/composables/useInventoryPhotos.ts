@@ -82,7 +82,7 @@ export function useInventoryPhotos() {
       return createdDocument || null;
     } catch (err) {
       try {
-        const errorObj = err as any;
+        const errorObj = err as Partial<Error> | null | undefined;
         console.error(
           'Failed to add inventory photo:',
           errorObj && (errorObj.name || errorObj.message || String(err))
@@ -191,8 +191,7 @@ export function useInventoryPhotos() {
       }
 
       if (typeof data === 'object' && data !== null) {
-        // @ts-ignore
-        const maybeBuffer = (data as any).buffer;
+        const maybeBuffer = 'buffer' in data ? data.buffer : undefined;
         if (maybeBuffer instanceof ArrayBuffer) {
           const uint8 = new Uint8Array(maybeBuffer);
           const blob = new Blob([uint8], { type: 'application/octet-stream' });

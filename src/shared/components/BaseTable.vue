@@ -5,11 +5,7 @@
     </div>
 
     <div v-else-if="data.length === 0" class="table-empty">
-      <EmptyState
-        :icon="emptyIcon"
-        :message="emptyMessage"
-        :description="emptyDescription"
-      >
+      <EmptyState :icon="emptyIcon" :message="emptyMessage" :description="emptyDescription">
         <template v-if="$slots.emptyAction" #action>
           <slot name="emptyAction" />
         </template>
@@ -25,8 +21,8 @@
               :key="column.key"
               :class="[
                 'table-header',
-                { 'sortable': column.sortable },
-                { 'sorted': sortBy === column.key }
+                { sortable: column.sortable },
+                { sorted: sortBy === column.key },
               ]"
               :style="{ width: column.width }"
               @click="column.sortable ? handleSort(column.key) : null"
@@ -38,9 +34,7 @@
                 </span>
               </div>
             </th>
-            <th v-if="$slots.actions" class="table-header actions-header">
-              Actions
-            </th>
+            <th v-if="$slots.actions" class="table-header actions-header">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -48,15 +42,15 @@
             v-for="(item, index) in sortedData"
             :key="getRowKey(item, index)"
             class="table-row"
-            :class="{ 'clickable': clickable }"
+            :class="{ clickable: clickable }"
             @click="clickable ? $emit('row-click', item) : null"
           >
-            <td
-              v-for="column in columns"
-              :key="column.key"
-              class="table-cell"
-            >
-              <slot :name="`cell-${column.key}`" :item="item" :value="getNestedValue(item, column.key)">
+            <td v-for="column in columns" :key="column.key" class="table-cell">
+              <slot
+                :name="`cell-${column.key}`"
+                :item="item"
+                :value="getNestedValue(item, column.key)"
+              >
                 {{ formatCellValue(item, column) }}
               </slot>
             </td>
@@ -70,22 +64,22 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends object">
 import { computed, ref } from 'vue';
 import Spinner from './Spinner.vue';
 import EmptyState from './EmptyState.vue';
 
-export interface TableColumn {
+export interface TableColumn<Row = unknown> {
   key: string;
   label: string;
   sortable?: boolean;
   width?: string;
-  formatter?: (value: any, item: any) => string;
+  formatter?: (value: unknown, item: Row) => string;
 }
 
 interface Props {
-  columns: TableColumn[];
-  data: any[];
+  columns: TableColumn<T>[];
+  data: T[];
   loading?: boolean;
   clickable?: boolean;
   rowKey?: string;
@@ -102,12 +96,12 @@ const props = withDefaults(defineProps<Props>(), {
   rowKey: 'id',
   emptyIcon: '📋',
   emptyMessage: 'Aucune donnée',
-  emptyDescription: 'Il n\'y a aucune donnée à afficher pour le moment.',
-  defaultSortOrder: 'asc'
+  emptyDescription: "Il n'y a aucune donnée à afficher pour le moment.",
+  defaultSortOrder: 'asc',
 });
 
 defineEmits<{
-  (e: 'row-click', item: any): void;
+  (e: 'row-click', item: T): void;
 }>();
 
 const sortBy = ref<string>(props.defaultSort || '');
@@ -122,8 +116,13 @@ const handleSort = (columnKey: string) => {
   }
 };
 
-const getNestedValue = (obj: any, path: string): any => {
-  return path.split('.').reduce((value, key) => value?.[key], obj);
+const getNestedValue = (obj: unknown, path: string): unknown => {
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (value, key) => (value as Record<string, unknown> | null | undefined)?.[key],
+      obj
+    );
 };
 
 const sortedData = computed(() => {
@@ -132,8 +131,10 @@ const sortedData = computed(() => {
   }
 
   return [...props.data].sort((a, b) => {
-    const aValue = getNestedValue(a, sortBy.value);
-    const bValue = getNestedValue(b, sortBy.value);
+    // Cell values are heterogeneous (strings, numbers, dates…); `>` relies on
+    // JS's native relational comparison, exactly as before typing.
+    const aValue = getNestedValue(a, sortBy.value) as string | number;
+    const bValue = getNestedValue(b, sortBy.value) as string | number;
 
     if (aValue === bValue) return 0;
 
@@ -142,13 +143,13 @@ const sortedData = computed(() => {
   });
 });
 
-const getRowKey = (item: any, index: number): string | number => {
-  return getNestedValue(item, props.rowKey) ?? index;
+const getRowKey = (item: T, index: number): string | number => {
+  return (getNestedValue(item, props.rowKey) as string | number | null | undefined) ?? index;
 };
 
-const formatCellValue = (item: any, column: TableColumn): string => {
+const formatCellValue = (item: T, column: TableColumn<T>): string => {
   const value = getNestedValue(item, column.key);
-  
+
   if (column.formatter) {
     return column.formatter(value, item);
   }

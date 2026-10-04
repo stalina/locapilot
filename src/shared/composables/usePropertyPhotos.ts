@@ -194,8 +194,8 @@ export function usePropertyPhotos() {
 
       // TypedArray / { buffer: ArrayBuffer }
       if (typeof data === 'object' && data !== null) {
-        // @ts-ignore - try to detect ArrayBuffer-like
-        const maybeBuffer = (data as any).buffer;
+        // Try to detect ArrayBuffer-like
+        const maybeBuffer = 'buffer' in data ? data.buffer : undefined;
         if (maybeBuffer instanceof ArrayBuffer) {
           const uint8 = new Uint8Array(maybeBuffer);
           const blob = new Blob([uint8], { type: 'application/octet-stream' });

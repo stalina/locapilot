@@ -237,7 +237,7 @@ export function useDatabase() {
     get: (key: string) =>
       execute(() => db.settings.get({ key }), 'Erreur lors du chargement du paramètre'),
 
-    set: async (key: string, value: any) => {
+    set: async (key: string, value: unknown) => {
       const existing = await settings.get(key);
       if (existing) {
         return execute(
