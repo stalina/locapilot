@@ -16,22 +16,25 @@ describe('useExport', () => {
     document.body.removeChild = vi.fn();
 
     // Mock URL methods
-    (globalThis as any).URL.createObjectURL = vi.fn(() => 'blob:mock-url');
-    (globalThis as any).URL.revokeObjectURL = vi.fn();
+    URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    URL.revokeObjectURL = vi.fn();
 
     // Mock HTMLAnchorElement click
     HTMLAnchorElement.prototype.click = vi.fn();
 
     // Mock Blob constructor
-    (globalThis as any).Blob = class MockBlob {
-      content: any[];
-      options?: { type?: string };
+    vi.stubGlobal(
+      'Blob',
+      class MockBlob {
+        content: unknown[];
+        options?: { type?: string };
 
-      constructor(content: any[], options?: { type?: string }) {
-        this.content = content;
-        this.options = options;
+        constructor(content: unknown[], options?: { type?: string }) {
+          this.content = content;
+          this.options = options;
+        }
       }
-    };
+    );
   });
 
   describe('exportToJSON', () => {

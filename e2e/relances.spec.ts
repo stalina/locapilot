@@ -36,7 +36,7 @@ async function seedScenario(page: Page, opts: { suffix: string; daysLate: number
         req.onerror = () => reject(req.error);
       });
 
-      function add(store: string, obj: any): Promise<number> {
+      function add(store: string, obj: object): Promise<number> {
         return new Promise((resolve, reject) => {
           const tx = db.transaction(store, 'readwrite');
           let id: number | undefined;
@@ -140,7 +140,7 @@ test.describe('Relances des impayés - e2e', () => {
           req.onerror = () => reject(req.error);
         });
         const getAll = (s: string) =>
-          new Promise<any[]>((res, rej) => {
+          new Promise<Record<string, unknown>[]>((res, rej) => {
             const r = db.transaction(s, 'readonly').objectStore(s).getAll();
             r.onsuccess = () => res(r.result);
             r.onerror = () => rej(r.error);

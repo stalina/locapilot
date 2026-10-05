@@ -23,7 +23,7 @@ describe('dataTransferRepository (integration)', () => {
       status: 'vacant',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    });
 
     const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'application/octet-stream' });
     await db.documents.add({
@@ -34,9 +34,9 @@ describe('dataTransferRepository (integration)', () => {
       data: blob,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    });
 
-    await db.settings.add({ key: 'ownerName', value: 'Jean Dupont', updatedAt: new Date() } as any);
+    await db.settings.add({ key: 'ownerName', value: 'Jean Dupont', updatedAt: new Date() });
 
     const raw = await fetchRawExportData();
     expect(raw.properties.length).toBe(1);
@@ -55,9 +55,9 @@ describe('dataTransferRepository (integration)', () => {
       status: 'vacant',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    });
 
-    await db.settings.add({ key: 'ownerName', value: 'OldOwner', updatedAt: new Date() } as any);
+    await db.settings.add({ key: 'ownerName', value: 'OldOwner', updatedAt: new Date() });
 
     await importBusinessData({
       properties: [
@@ -104,7 +104,7 @@ describe('dataTransferRepository (integration)', () => {
       status: 'occupied',
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
     await db.tenants.add({
       firstName: 'Jean',
       lastName: 'Dupont',
@@ -113,7 +113,7 @@ describe('dataTransferRepository (integration)', () => {
       status: 'active',
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
     await db.leases.add({
       propertyId: 1,
       tenantIds: [1],
@@ -125,7 +125,7 @@ describe('dataTransferRepository (integration)', () => {
       status: 'active',
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
     await db.rents.add({
       leaseId: 1,
       dueDate: now,
@@ -134,7 +134,7 @@ describe('dataTransferRepository (integration)', () => {
       status: 'pending',
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
     await db.documents.add({
       name: 'doc',
       type: 'other',
@@ -143,7 +143,7 @@ describe('dataTransferRepository (integration)', () => {
       data: new Blob([new Uint8Array([1, 2, 3])]),
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
     await db.tenantDocuments.add({
       tenantId: 1,
       name: 'payslip',
@@ -151,13 +151,13 @@ describe('dataTransferRepository (integration)', () => {
       size: 2,
       uploadedAt: now,
       data: new Blob([new Uint8Array([4, 5])]),
-    } as any);
+    });
     await db.tenantAudits.add({
       tenantId: 1,
       action: 'validated',
       timestamp: now,
-    } as any);
-    await db.inventories.add({ leaseId: 1, type: 'checkin', date: now } as any);
+    });
+    await db.inventories.add({ leaseId: 1, type: 'checkin', date: now });
     await db.communications.add({
       relatedEntityType: 'tenant',
       relatedEntityId: 1,
@@ -166,7 +166,7 @@ describe('dataTransferRepository (integration)', () => {
       content: 'hello',
       date: now,
       createdAt: now,
-    } as any);
+    });
     await db.chargesAdjustments.add({
       leaseId: 1,
       year: 2025,
@@ -176,8 +176,8 @@ describe('dataTransferRepository (integration)', () => {
       rentsPaidTotal: 6000,
       createdAt: now,
       updatedAt: now,
-    } as any);
-    await db.settings.add({ key: 'ownerName', value: 'Jean', updatedAt: now } as any);
+    });
+    await db.settings.add({ key: 'ownerName', value: 'Jean', updatedAt: now });
 
     // Export must surface every table.
     const raw = await fetchRawExportData();
@@ -225,7 +225,7 @@ describe('dataTransferRepository (integration)', () => {
       content: 'x',
       date: now,
       createdAt: now,
-    } as any);
+    });
     await db.chargesAdjustments.add({
       leaseId: 1,
       year: 2025,
@@ -235,7 +235,7 @@ describe('dataTransferRepository (integration)', () => {
       rentsPaidTotal: 0,
       createdAt: now,
       updatedAt: now,
-    } as any);
+    });
 
     await clearBusinessData();
 

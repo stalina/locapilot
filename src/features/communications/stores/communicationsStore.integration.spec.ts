@@ -32,7 +32,7 @@ describe('communicationsStore - integration', () => {
         date: new Date('2026-06-01'),
         createdAt: new Date(),
       },
-    ] as any);
+    ]);
 
     const store = useCommunicationsStore();
     await store.fetchCommunications();
@@ -99,7 +99,7 @@ describe('communicationsStore - integration', () => {
       content: 'relance auto',
       date: new Date('2026-01-01'),
       createdAt: new Date(),
-    } as any)) as number;
+    })) as number;
 
     await db.reminders.add({
       rentId: 1,
@@ -109,7 +109,7 @@ describe('communicationsStore - integration', () => {
       documentId: 1,
       communicationId: commId,
       createdAt: new Date(),
-    } as any);
+    });
 
     const store = useCommunicationsStore();
     await store.fetchCommunications();
@@ -129,7 +129,7 @@ describe('communicationsStore - integration', () => {
       data: new Blob(['x']),
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any)) as number;
+    })) as number;
 
     const store = useCommunicationsStore();
     await store.fetchCommunications();

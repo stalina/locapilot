@@ -136,7 +136,7 @@ describe('documentsStore', () => {
         data: file.slice(),
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      });
       vi.mocked(createDocument).mockResolvedValue(mockDocument);
 
       const store = useDocumentsStore();

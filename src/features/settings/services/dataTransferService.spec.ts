@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Document } from '@/db/types';
 import {
   arrayBufferToBase64,
   base64ToBlob,
@@ -31,7 +32,7 @@ describe('dataTransferService', () => {
   it('serializeDocuments converts Blob to data URL and deserializeDocuments rebuilds Blob', async () => {
     const blob = new Blob([new Uint8Array([72, 105])], { type: 'text/plain' });
 
-    const docs: any[] = [
+    const docs: Document[] = [
       {
         id: 1,
         name: 'test.txt',
@@ -47,9 +48,9 @@ describe('dataTransferService', () => {
     const serialized = await serializeDocuments(docs);
     expect(serialized[0]?.data).toMatch(/^data:text\/plain;base64,/);
 
-    const rebuilt = deserializeDocuments(serialized as any);
-    const rebuiltBlob = (rebuilt[0] as any).data as Blob;
-    expect(rebuiltBlob).toBeInstanceOf(Blob);
+    const rebuilt = deserializeDocuments(serialized);
+    const rebuiltBlob = rebuilt[0]?.data;
+    if (!(rebuiltBlob instanceof Blob)) throw new Error('expected the data URL to become a Blob');
     expect(rebuiltBlob.type).toBe('text/plain');
     expect(new TextDecoder().decode(await rebuiltBlob.arrayBuffer())).toBe('Hi');
   });

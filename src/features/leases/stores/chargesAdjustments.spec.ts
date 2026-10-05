@@ -56,9 +56,17 @@ describe('leasesStore - Charges Adjustments', () => {
         customCharges: { Eau: 120 },
       };
 
-      const createdRow = { ...newRow, id: 2, createdAt: new Date(), updatedAt: new Date() };
-      vi.mocked(upsertChargesAdjustment).mockResolvedValue(createdRow as any);
-      vi.mocked(fetchChargesAdjustmentsByLeaseId).mockResolvedValue([createdRow] as any);
+      const createdRow: ChargesAdjustmentRow = {
+        ...newRow,
+        id: 2,
+        chargesProvisionPaid: 0,
+        rentsPaidCount: 0,
+        rentsPaidTotal: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(upsertChargesAdjustment).mockResolvedValue(createdRow);
+      vi.mocked(fetchChargesAdjustmentsByLeaseId).mockResolvedValue([createdRow]);
 
       const store = useLeasesStore();
       const result = await store.upsertChargesAdjustment(newRow);
@@ -74,15 +82,25 @@ describe('leasesStore - Charges Adjustments', () => {
         customCharges: { Eau: 150 },
       };
 
-      const existingRow = {
+      const existingRow: ChargesAdjustmentRow = {
         id: 1,
         leaseId: 1,
         year: 2023,
+        monthlyRent: 500,
+        chargesProvisionPaid: 50,
+        rentsPaidCount: 12,
+        rentsPaidTotal: 6000,
         customCharges: { Eau: 100 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
-      const updatedRow = { ...existingRow, ...updateRow, updatedAt: new Date() };
-      vi.mocked(upsertChargesAdjustment).mockResolvedValue(updatedRow as any);
-      vi.mocked(fetchChargesAdjustmentsByLeaseId).mockResolvedValue([updatedRow] as any);
+      const updatedRow: ChargesAdjustmentRow = {
+        ...existingRow,
+        ...updateRow,
+        updatedAt: new Date(),
+      };
+      vi.mocked(upsertChargesAdjustment).mockResolvedValue(updatedRow);
+      vi.mocked(fetchChargesAdjustmentsByLeaseId).mockResolvedValue([updatedRow]);
 
       const store = useLeasesStore();
       const result = await store.upsertChargesAdjustment(updateRow);

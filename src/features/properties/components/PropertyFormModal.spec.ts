@@ -37,10 +37,10 @@ describe('PropertyFormModal', () => {
     const wrapper = mount(PropertyFormModal, {
       props: { modelValue: true, property: null },
       global: { plugins: [pinia], stubs: ['Modal', 'RichTextEditor'] },
-    } as any);
+    });
 
-    // Access the component's vm to read reactive formData
-    const vm: any = wrapper.vm;
+    // Access the component's vm to read reactive formData (setup state, untyped on vm)
+    const vm = wrapper.vm as unknown as { formData: { annonce: string } };
     // Wait a tick for immediate watch
     await wrapper.vm.$nextTick();
     expect(vm.formData.annonce).toBe(defaultAnnonceTemplate());

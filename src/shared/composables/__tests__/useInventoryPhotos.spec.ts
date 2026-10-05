@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useInventoryPhotos } from '../useInventoryPhotos';
 import { db } from '@/db/database';
+import type { Document } from '@/db/types';
 
 // Mock IndexedDB
 vi.mock('@/db/database', () => ({
@@ -18,6 +19,19 @@ vi.mock('@/db/database', () => ({
   },
 }));
 
+function makePhoto(id: number, name: string): Document {
+  return {
+    id,
+    name,
+    type: 'photo',
+    mimeType: 'image/jpeg',
+    size: 0,
+    data: new Blob(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
 describe('useInventoryPhotos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,7 +47,7 @@ describe('useInventoryPhotos', () => {
         type: 'checkin',
         date: new Date(),
         photos: [],
-      } as any);
+      });
 
       const photos = await getInventoryPhotos(1);
       expect(photos).toEqual([]);
@@ -42,10 +56,7 @@ describe('useInventoryPhotos', () => {
     it('should return photos for inventory', async () => {
       const { getInventoryPhotos } = useInventoryPhotos();
 
-      const mockPhotos = [
-        { id: 1, name: 'photo1.jpg', type: 'photo', data: new Blob() },
-        { id: 2, name: 'photo2.jpg', type: 'photo', data: new Blob() },
-      ];
+      const mockPhotos = [makePhoto(1, 'photo1.jpg'), makePhoto(2, 'photo2.jpg')];
 
       vi.mocked(db.inventories.get).mockResolvedValue({
         id: 1,
@@ -53,9 +64,9 @@ describe('useInventoryPhotos', () => {
         type: 'checkin',
         date: new Date(),
         photos: [1, 2],
-      } as any);
+      });
 
-      vi.mocked(db.documents.bulkGet).mockResolvedValue(mockPhotos as any);
+      vi.mocked(db.documents.bulkGet).mockResolvedValue(mockPhotos);
 
       const photos = await getInventoryPhotos(1);
       expect(photos).toHaveLength(2);
@@ -84,15 +95,10 @@ describe('useInventoryPhotos', () => {
         type: 'checkin',
         date: new Date(),
         photos: [],
-      } as any);
+      });
 
       vi.mocked(db.documents.add).mockResolvedValue(10);
-      vi.mocked(db.documents.get).mockResolvedValue({
-        id: 10,
-        name: 'photo.jpg',
-        type: 'photo',
-        data: new Blob(),
-      } as any);
+      vi.mocked(db.documents.get).mockResolvedValue(makePhoto(10, 'photo.jpg'));
 
       const result = await addInventoryPhoto(1, file);
 
@@ -117,7 +123,7 @@ describe('useInventoryPhotos', () => {
         type: 'checkin',
         date: new Date(),
         photos: [1, 2, 3],
-      } as any);
+      });
 
       await setPrimaryPhoto(1, 3);
 
@@ -140,7 +146,7 @@ describe('useInventoryPhotos', () => {
         type: 'checkin',
         date: new Date(),
         photos: [1, 2, 3],
-      } as any);
+      });
 
       await removeInventoryPhoto(1, 2);
 

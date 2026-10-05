@@ -112,7 +112,7 @@ describe('communicationsRepository', () => {
       data: new Blob(['x']),
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any)) as number;
+    })) as number;
 
     const created = await createCommunication({
       relatedEntityType: 'rent',
@@ -140,7 +140,7 @@ describe('communicationsRepository', () => {
       content: 'relance auto',
       date: new Date('2026-01-01'),
       createdAt: new Date(),
-    } as any)) as number;
+    })) as number;
 
     await db.reminders.add({
       rentId: 1,
@@ -150,7 +150,7 @@ describe('communicationsRepository', () => {
       documentId: 1,
       communicationId: commId,
       createdAt: new Date(),
-    } as any);
+    });
 
     const linked = await fetchReminderLinkedCommunicationIds();
     expect(linked.has(commId)).toBe(true);
@@ -169,7 +169,7 @@ describe('communicationsRepository', () => {
         status: 'late',
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any)) as number;
+      })) as number;
 
       // Directly lease-scoped communication (older)
       await createCommunication({
@@ -201,7 +201,7 @@ describe('communicationsRepository', () => {
         status: 'late',
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any)) as number;
+      })) as number;
       await createCommunication({
         relatedEntityType: 'rent',
         relatedEntityId: otherRentId,

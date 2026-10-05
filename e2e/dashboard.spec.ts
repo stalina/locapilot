@@ -67,7 +67,7 @@ async function seedAlertsScenario(page: Page, propertyName: string) {
         req.onerror = () => reject(req.error);
       });
 
-      function add(store: string, obj: any): Promise<number> {
+      function add(store: string, obj: object): Promise<number> {
         return new Promise((resolve, reject) => {
           const tx = db.transaction(store, 'readwrite');
           let id: number | undefined;
