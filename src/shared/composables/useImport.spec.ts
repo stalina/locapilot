@@ -50,7 +50,8 @@ describe('useImport', () => {
       const { importFromJSON } = useImport();
       const jsonContent = JSON.stringify({ name: 'Test' });
       const file = new File([jsonContent], 'test.json', { type: 'application/json' });
-      const validator = (data: any) => !!data.age;
+      const validator = (data: unknown) =>
+        typeof data === 'object' && data !== null && 'age' in data && !!data.age;
 
       const result = await importFromJSON(file, { validate: validator });
 
@@ -62,7 +63,12 @@ describe('useImport', () => {
       const { importFromJSON } = useImport();
       const jsonContent = JSON.stringify({ name: 'test' });
       const file = new File([jsonContent], 'test.json', { type: 'application/json' });
-      const transformer = (data: any) => ({ ...data, name: data.name.toUpperCase() });
+      const transformer = (data: unknown) => {
+        if (typeof data !== 'object' || data === null || !('name' in data)) {
+          throw new Error('Unexpected JSON shape');
+        }
+        return { ...data, name: String(data.name).toUpperCase() };
+      };
 
       const result = await importFromJSON(file, { transform: transformer });
 
@@ -121,7 +127,7 @@ describe('useImport', () => {
       const { importFromCSV } = useImport();
       const csvContent = 'name\nJohn';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
-      const validator = (data: any) => data.every((row: any) => !!row.age);
+      const validator = (rows: Record<string, string>[]) => rows.every(row => !!row.age);
 
       const result = await importFromCSV(file, { validate: validator });
 
@@ -133,8 +139,8 @@ describe('useImport', () => {
       const { importFromCSV } = useImport();
       const csvContent = 'name\njohn';
       const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
-      const transformer = (data: any) =>
-        data.map((row: any) => ({ ...row, name: row.name.toUpperCase() }));
+      const transformer = (rows: Record<string, string>[]) =>
+        rows.map(row => ({ ...row, name: row.name?.toUpperCase() }));
 
       const result = await importFromCSV(file, { transform: transformer });
 

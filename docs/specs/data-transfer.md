@@ -1020,20 +1020,20 @@ And no unhandled exception is thrown
 ```gherkin
 Given the project enforces TypeScript strict mode
 And the application code (non-spec `.ts` and `.vue` files) contains no explicit `any`
-And the ESLint rule "@typescript-eslint/no-explicit-any" is configured as "error" for that code
+And the ESLint rule "@typescript-eslint/no-explicit-any" is configured as "error" for every linted file
 When a contributor introduces a new explicit `any` in a non-spec source file
 Then `npm run lint` reports it as an error
 And the CI lint job fails
 ```
 
-#### Scenario: An explicit `any` in a test file is only flagged
+#### Scenario: A new explicit `any` in a test file fails linting
 
 ```gherkin
-Given test files (`*.spec.ts`) still carry a legacy `any` backlog in mocks and fixtures (issue #63)
-And the ESLint rule "@typescript-eslint/no-explicit-any" is configured as "warn" for `*.spec.ts` files
-When a contributor introduces an explicit `any` in a spec file
-Then `npm run lint` reports it as a warning
-And the warning does not fail the build
+Given the unit and E2E test files (`*.spec.ts`, `e2e/**/*.ts`) contain no explicit `any`
+And no spec-specific override relaxes "@typescript-eslint/no-explicit-any" to "warn"
+When a contributor introduces an explicit `any` in a mock, fixture or spec helper
+Then `npm run lint` reports it as an error, exactly as for application code
+And the CI lint job fails
 ```
 
-> Note: the application-code backlog has been cleared, so the rule is an `error` there. Spec files stay at `warn` until their remaining `any` usages are typed too; the rule can then become an `error` everywhere.
+> Note: the legacy `any` backlog (issue #63) has been cleared in application code and test files alike, so the rule is an `error` everywhere. Tests type their fixtures with the entity types from `src/db/types` (`Partial<T>` factories, `vi.mocked(...)`), and deliberately malformed inputs are cast through `unknown` to the target type rather than `any`.

@@ -39,8 +39,8 @@ export default [
       },
     },
     rules: {
-      // Explicit `any` is banned (CLAUDE.md): use `unknown` + narrowing,
-      // generics or precise types. Spec files are relaxed to 'warn' below.
+      // Explicit `any` is banned (CLAUDE.md), spec files included: use
+      // `unknown` + narrowing, generics or precise types.
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
@@ -73,14 +73,4 @@ export default [
       'no-unused-vars': 'off',
     },
   },
-
-  // Test files still carry legacy `any` in mocks/fixtures (issue #63): keep
-  // flagging them without failing CI until that backlog is cleared too.
-  {
-    files: ['**/*.spec.ts'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
-    },
-  },
 ];
-

@@ -12,7 +12,6 @@ async function deleteAllIndexedDBDatabases(page: Page) {
 
     // Clear Cache Storage (best-effort)
     try {
-      // @ts-expect-error caches might not exist in some contexts
       if (typeof caches !== 'undefined' && caches?.keys) {
         const keys = await caches.keys();
         await Promise.all(keys.map((k: string) => caches.delete(k)));
@@ -23,7 +22,6 @@ async function deleteAllIndexedDBDatabases(page: Page) {
 
     // Clear IndexedDB databases (Chromium supports indexedDB.databases())
     try {
-      // @ts-expect-error databases is not in TS lib by default
       const dbs: Array<{ name?: string }> = (await indexedDB.databases?.()) ?? [];
       await Promise.all(
         dbs

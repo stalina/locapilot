@@ -32,7 +32,7 @@ describe('remindersStore - integration', () => {
       status: 'occupied',
       createdAt: now,
       updatedAt: now,
-    } as any)) as number;
+    })) as number;
 
     const tenantId = (await db.tenants.add({
       civility: 'mme',
@@ -43,7 +43,7 @@ describe('remindersStore - integration', () => {
       status: 'active',
       createdAt: now,
       updatedAt: now,
-    } as any)) as number;
+    })) as number;
 
     leaseId = (await db.leases.add({
       propertyId,
@@ -56,7 +56,7 @@ describe('remindersStore - integration', () => {
       status: 'active',
       createdAt: now,
       updatedAt: now,
-    } as any)) as number;
+    })) as number;
 
     rentId = (await db.rents.add({
       leaseId,
@@ -66,7 +66,7 @@ describe('remindersStore - integration', () => {
       status: 'late',
       createdAt: now,
       updatedAt: now,
-    } as any)) as number;
+    })) as number;
   });
 
   afterEach(async () => {
@@ -85,7 +85,7 @@ describe('remindersStore - integration', () => {
       data: new Blob([new Uint8Array([1, 2, 3])]),
       createdAt: now,
       updatedAt: now,
-    } as any)) as number;
+    })) as number;
   }
 
   it('recordReminderSent saves a communication and a reminder linked to the generated document', async () => {

@@ -94,7 +94,11 @@ describe('inventoriesStore', () => {
     vi.mocked(fetchAllInventories).mockResolvedValue([]);
 
     const store = useInventoriesStore();
-    const id = await store.createInventory({} as any);
+    const id = await store.createInventory({
+      leaseId: 10,
+      type: 'checkin',
+      date: new Date('2026-01-01'),
+    });
 
     expect(id).toBe(42);
     expect(createInventory).toHaveBeenCalled();
@@ -107,9 +111,9 @@ describe('inventoriesStore', () => {
     vi.mocked(fetchInventoryById).mockResolvedValue({ id: 1 } as Inventory);
 
     const store = useInventoriesStore();
-    store.currentInventory = { id: 1 } as any;
+    store.currentInventory = { id: 1 } as Inventory;
 
-    await store.updateInventory(1, { observations: 'x' } as any);
+    await store.updateInventory(1, { observations: 'x' });
 
     expect(updateInventory).toHaveBeenCalledWith(1, expect.objectContaining({ observations: 'x' }));
     expect(fetchAllInventories).toHaveBeenCalled();
@@ -121,7 +125,7 @@ describe('inventoriesStore', () => {
     vi.mocked(fetchAllInventories).mockResolvedValue([]);
 
     const store = useInventoriesStore();
-    store.currentInventory = { id: 1 } as any;
+    store.currentInventory = { id: 1 } as Inventory;
 
     await store.deleteInventory(1);
 
