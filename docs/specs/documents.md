@@ -8,20 +8,20 @@ A separate **TenantDocument** table handles files specifically attached to a ten
 
 ## Data Model
 
-| Field               | Type    | Description                                                               |
-| ------------------- | ------- | ------------------------------------------------------------------------- |
-| `id`                | number  | Auto-generated primary key                                                |
-| `name`              | string  | File name displayed to the user                                           |
-| `type`              | enum    | Document category (see types below)                                       |
-| `relatedEntityType` | enum?   | `property` \| `tenant` \| `lease` \| `rent` \| `applicant` \| `inventory` |
-| `relatedEntityId`   | number? | ID of the linked entity                                                   |
-| `mimeType`          | string  | MIME type (e.g. `application/pdf`, `image/jpeg`)                          |
-| `size`              | number  | File size in bytes                                                        |
-| `data`              | Blob    | Binary file content                                                       |
-| `description`       | string? | Optional description or notes                                             |
-| `expiresAt`         | Date?   | Optional validity end date (mainly for `diagnostic` documents)            |
-| `createdAt`         | Date    | Upload timestamp                                                          |
-| `updatedAt`         | Date    | Last update timestamp                                                     |
+| Field               | Type    | Description                                                                            |
+| ------------------- | ------- | -------------------------------------------------------------------------------------- |
+| `id`                | number  | Auto-generated primary key                                                             |
+| `name`              | string  | File name displayed to the user                                                        |
+| `type`              | enum    | Document category (see types below)                                                    |
+| `relatedEntityType` | enum?   | `property` \| `tenant` \| `lease` \| `rent` \| `applicant` \| `inventory` \| `expense` |
+| `relatedEntityId`   | number? | ID of the linked entity                                                                |
+| `mimeType`          | string  | MIME type (e.g. `application/pdf`, `image/jpeg`)                                       |
+| `size`              | number  | File size in bytes                                                                     |
+| `data`              | Blob    | Binary file content                                                                    |
+| `description`       | string? | Optional description or notes                                                          |
+| `expiresAt`         | Date?   | Optional validity end date (mainly for `diagnostic` documents)                         |
+| `createdAt`         | Date    | Upload timestamp                                                                       |
+| `updatedAt`         | Date    | Last update timestamp                                                                  |
 
 ### Document Types
 
@@ -46,6 +46,7 @@ A separate **TenantDocument** table handles files specifically attached to a ten
 - When a linked entity (property, lease, etc.) is deleted, associated documents should be cleaned up
 - Receipt documents (`type: receipt`) are linked to a specific `Rent` via `relatedEntityType: rent`
 - Photo documents (`type: photo`) linked to a property are referenced by `Property.photos[]` (array of IDs)
+- Supporting documents of an expense (invoice, tax notice, insurance certificate) are linked via `relatedEntityType: expense` and are deleted with the expense (see [Expenses spec](./expenses.md)); the related-entity filter of the Documents page offers "Dépense"
 - `expiresAt` is optional and mainly used for `diagnostic` documents (DPE, électricité, gaz…)
 - A document whose `expiresAt` is strictly in the past is considered **expired** — expired diagnostics are surfaced as alerts on the dashboard (see [Dashboard spec](./dashboard.md))
 - Documents without `expiresAt` never expire
@@ -58,6 +59,7 @@ erDiagram
     Document }o--o| Lease : "linked to"
     Document }o--o| Rent : "linked to (receipt)"
     Document }o--o| Inventory : "linked to"
+    Document }o--o| Expense : "linked to (supporting document)"
     Property ||--o{ Document : "photos[] reference IDs"
 ```
 

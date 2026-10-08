@@ -6,7 +6,8 @@ The **data transfer** module allows the landlord to export all application data 
 
 ## Domain Rules
 
-- **Export** serializes all tables (properties, tenants, leases, rents, documents, tenantDocuments, tenantAudits, inventories, communications, chargesAdjustments, settings) into a single file
+- **Export** serializes all tables (properties, tenants, leases, rents, documents, tenantDocuments, tenantAudits, inventories, communications, chargesAdjustments, irlIndices, rentRevisions, reminders, expenses, settings) into a single file
+- Tables added after a backup was produced (e.g. `expenses`) are optional on import and default to an empty array, so older backups stay importable
 - **Import** completely replaces the current database content — it is a destructive operation
 - The user must explicitly confirm before an import proceeds
 - Document `Blob` data is included in the export to preserve attached files
@@ -241,7 +242,7 @@ And the database is NOT modified
 Given I select a backup file produced by the Locapilot export feature
 And every record of every table conforms to its entity schema
 When I confirm the import
-Then validation succeeds for all 14 tables
+Then validation succeeds for all 15 tables (including expenses)
 And only then is the database cleared and repopulated in a single transaction
 And a success notification appears
 ```

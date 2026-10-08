@@ -501,6 +501,7 @@ function emptyTables(): SyncTables {
     irlIndices: [],
     rentRevisions: [],
     reminders: [],
+    expenses: [],
     settings: [],
   };
 }

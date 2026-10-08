@@ -42,6 +42,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
       irlIndices: raw.irlIndices,
       rentRevisions: raw.rentRevisions,
       reminders: raw.reminders,
+      expenses: raw.expenses,
       settings: raw.settings,
       exportedAt: new Date().toISOString(),
       version,
@@ -88,6 +89,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
         irlIndices: raw.irlIndices,
         rentRevisions: raw.rentRevisions,
         reminders: raw.reminders,
+        expenses: raw.expenses,
         settings: raw.settings,
       },
       version
@@ -121,6 +123,7 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
         irlIndices: validated.irlIndices,
         rentRevisions: validated.rentRevisions,
         reminders: validated.reminders,
+        expenses: validated.expenses,
         settings: validated.settings,
       });
     } catch (e) {

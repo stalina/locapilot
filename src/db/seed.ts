@@ -14,6 +14,8 @@ export async function seedDemoData(): Promise<void> {
     surface: 45,
     rooms: 2,
     rent: 1250,
+    purchasePrice: 210000,
+    acquisitionCosts: 16000,
     status: 'occupied',
     createdAt: now,
     updatedAt: now,
@@ -83,6 +85,27 @@ export async function seedDemoData(): Promise<void> {
     date: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 10, 0),
     createdAt: now,
   });
+
+  await db.expenses.bulkAdd([
+    {
+      propertyId: propId!,
+      category: 'property-tax',
+      label: `Taxe foncière ${now.getFullYear()}`,
+      amount: 1180,
+      date: new Date(now.getFullYear(), 9, 15, 12),
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      propertyId: propId!,
+      category: 'insurance',
+      label: 'Assurance PNO',
+      amount: 145.6,
+      date: new Date(now.getFullYear(), 0, 10, 12),
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
 
   console.log('✅ Demo data seeded');
 }

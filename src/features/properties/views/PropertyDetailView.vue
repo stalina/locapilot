@@ -16,6 +16,7 @@ import { useNotification } from '@/shared/composables/useNotification';
 import { getPropertyTypeLabel } from '@/shared/utils/constants';
 import PropertyFormModal from '../components/PropertyFormModal.vue';
 import PropertyDocumentsList from '../components/PropertyDocumentsList.vue';
+import PropertyExpensesSection from '@/features/expenses/components/PropertyExpensesSection.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -48,10 +49,17 @@ function handleEdit() {
   showEditModal.value = true;
 }
 
-function handleDelete() {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cette propriété ?')) {
-    propertiesStore.deleteProperty(propertyId.value);
+async function handleDelete() {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette propriété ?')) return;
+  try {
+    await propertiesStore.deleteProperty(propertyId.value);
     router.push('/properties');
+  } catch (err) {
+    // e.g. active lease: keep the detail page displayed and explain why.
+    propertiesStore.clearError();
+    notifyError(
+      err instanceof Error && err.message ? err.message : 'Échec de la suppression du bien'
+    );
   }
 }
 
@@ -271,6 +279,18 @@ async function copyAnnonce() {
                   {{ propertiesStore.currentProperty.charges.toLocaleString('fr-FR') }} €
                 </span>
               </div>
+              <div v-if="propertiesStore.currentProperty.purchasePrice" class="info-item">
+                <span class="info-label">Prix d'acquisition</span>
+                <span class="info-value">
+                  {{ propertiesStore.currentProperty.purchasePrice.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
+              <div v-if="propertiesStore.currentProperty.acquisitionCosts" class="info-item">
+                <span class="info-label">Frais d'acquisition</span>
+                <span class="info-value">
+                  {{ propertiesStore.currentProperty.acquisitionCosts.toLocaleString('fr-FR') }} €
+                </span>
+              </div>
               <div class="info-item">
                 <span class="info-label">Type</span>
                 <span class="info-value">
@@ -373,6 +393,11 @@ async function copyAnnonce() {
               </h2>
             </div>
             <PropertyDocumentsList :property-id="propertyId" />
+          </Card>
+
+          <!-- Expenses & profitability (issue #47) -->
+          <Card>
+            <PropertyExpensesSection :property="propertiesStore.currentProperty" />
           </Card>
         </div>
 

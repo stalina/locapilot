@@ -6,6 +6,7 @@ const bulkGet = {
   leases: vi.fn(),
   rents: vi.fn(),
   inventories: vi.fn(),
+  expenses: vi.fn(),
 };
 
 vi.mock('@/db/database', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/db/database', () => ({
     leases: { bulkGet: (ids: number[]) => bulkGet.leases(ids) },
     rents: { bulkGet: (ids: number[]) => bulkGet.rents(ids) },
     inventories: { bulkGet: (ids: number[]) => bulkGet.inventories(ids) },
+    expenses: { bulkGet: (ids: number[]) => bulkGet.expenses(ids) },
   },
 }));
 
@@ -94,5 +96,18 @@ describe('loadEntityOptions', () => {
     const labels = result.map(o => o.label);
     expect(labels.some(l => l.startsWith("État des lieux d'entrée"))).toBe(true);
     expect(labels.some(l => l.startsWith('État des lieux de sortie'))).toBe(true);
+  });
+
+  it('labels expenses with their label, falling back to a synthetic one (issue #47)', async () => {
+    bulkGet.expenses.mockResolvedValue([
+      { id: 3, label: 'Remplacement chaudière' },
+      { id: 4, label: '' },
+      undefined,
+    ]);
+    const result = await loadEntityOptions('expense', [3, 4, 5]);
+    expect(result).toEqual([
+      { id: 4, label: 'Dépense #4' },
+      { id: 3, label: 'Remplacement chaudière' },
+    ]);
   });
 });

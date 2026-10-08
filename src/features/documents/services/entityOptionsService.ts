@@ -1,7 +1,13 @@
 import { db } from '@/db/database';
 
 /** Entity types offered in the documents related-entity filter. */
-export type FilterableEntityType = 'property' | 'tenant' | 'lease' | 'rent' | 'inventory';
+export type FilterableEntityType =
+  | 'property'
+  | 'tenant'
+  | 'lease'
+  | 'rent'
+  | 'inventory'
+  | 'expense';
 
 export interface EntityOption {
   id: number;
@@ -80,6 +86,13 @@ export async function loadEntityOptions(
         const period = formatMonthYear(i.date);
         return [{ id: i.id, label: period ? `${kind} — ${period}` : `${kind} #${i.id}` }];
       });
+      break;
+    }
+    case 'expense': {
+      const expenses = await db.expenses.bulkGet(uniqueIds);
+      options = expenses.flatMap(e =>
+        e?.id ? [{ id: e.id, label: e.label || `Dépense #${e.id}` }] : []
+      );
       break;
     }
   }

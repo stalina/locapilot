@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/db/database';
+import type { Expense } from '@/db/types';
 import {
   clearBusinessData,
   fetchRawExportData,
@@ -213,6 +214,49 @@ describe('dataTransferRepository (integration)', () => {
     expect(await db.communications.count()).toBe(1);
     expect(await db.chargesAdjustments.count()).toBe(1);
     expect((await db.chargesAdjustments.toArray())[0]?.rentsPaidTotal).toBe(6000);
+  });
+
+  it('exports, clears and restores the expenses table (issue #47)', async () => {
+    const now = new Date('2026-03-10T10:00:00.000Z');
+    const expenses: Expense[] = [
+      {
+        propertyId: 1,
+        category: 'works',
+        label: 'Chaudière',
+        amount: 2000,
+        date: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        propertyId: 1,
+        category: 'insurance',
+        label: 'PNO',
+        amount: 145.6,
+        date: now,
+        notes: 'n°42',
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+    await db.expenses.bulkAdd(expenses);
+
+    const raw = await fetchRawExportData();
+    expect(raw.expenses).toHaveLength(2);
+
+    await clearBusinessData();
+    expect(await db.expenses.count()).toBe(0);
+
+    await importBusinessData({ properties: [], tenants: [], expenses: raw.expenses });
+    const restored = await db.expenses.toArray();
+    expect(restored.map(e => [e.label, e.amount, e.notes])).toEqual([
+      ['Chaudière', 2000, undefined],
+      ['PNO', 145.6, 'n°42'],
+    ]);
+
+    // A legacy import without expenses leaves the table empty.
+    await importBusinessData({ properties: [], tenants: [] });
+    expect(await db.expenses.count()).toBe(0);
   });
 
   it('clearBusinessData empties every table', async () => {

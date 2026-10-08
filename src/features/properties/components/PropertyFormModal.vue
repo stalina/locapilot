@@ -38,6 +38,8 @@ const formData = ref({
   rent: 0 as number,
   charges: 0 as number,
   deposit: null as number | null,
+  purchasePrice: null as number | null,
+  acquisitionCosts: null as number | null,
   status: 'vacant' as Property['status'],
   description: '',
   annonce: '',
@@ -67,6 +69,8 @@ watch(
         rent: newProperty.rent,
         charges: newProperty.charges ?? 0,
         deposit: newProperty.deposit ?? null,
+        purchasePrice: newProperty.purchasePrice ?? null,
+        acquisitionCosts: newProperty.acquisitionCosts ?? null,
         status: newProperty.status,
         description: newProperty.description || '',
         annonce: newProperty.annonce || '',
@@ -92,11 +96,22 @@ function resetForm() {
     rent: 0,
     charges: 0,
     deposit: null,
+    purchasePrice: null,
+    acquisitionCosts: null,
     status: 'vacant',
     description: '',
     annonce: defaultAnnonceTemplate(),
   };
   errors.value = {};
+}
+
+function isNegative(value: number | null): boolean {
+  return typeof value === 'number' && value < 0;
+}
+
+/** Optional amount: empty input → undefined (no value stored). */
+function optionalAmount(value: number | null): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function validateForm(): boolean {
@@ -116,6 +131,12 @@ function validateForm(): boolean {
   }
   if (!formData.value.rent || formData.value.rent <= 0) {
     errors.value.rent = 'Le loyer doit être supérieur à 0';
+  }
+  if (isNegative(formData.value.purchasePrice)) {
+    errors.value.purchasePrice = "Le prix d'acquisition ne peut pas être négatif";
+  }
+  if (isNegative(formData.value.acquisitionCosts)) {
+    errors.value.acquisitionCosts = "Les frais d'acquisition ne peuvent pas être négatifs";
   }
 
   return Object.keys(errors.value).length === 0;
@@ -141,6 +162,8 @@ async function handleSubmit() {
       rent: formData.value.rent || 0,
       charges: formData.value.charges || 0,
       deposit: formData.value.deposit || undefined,
+      purchasePrice: optionalAmount(formData.value.purchasePrice),
+      acquisitionCosts: optionalAmount(formData.value.acquisitionCosts),
       status: formData.value.status,
       description: formData.value.description,
       annonce: formData.value.annonce,
@@ -317,6 +340,27 @@ function handleClose() {
               type="number"
               placeholder="2400"
               test-id="property-deposit"
+            />
+          </div>
+
+          <div class="field-row">
+            <Input
+              v-model.number="formData.purchasePrice"
+              label="Prix d'acquisition (€)"
+              type="number"
+              placeholder="180000"
+              :error="errors.purchasePrice"
+              test-id="property-purchasePrice"
+            />
+
+            <Input
+              v-model.number="formData.acquisitionCosts"
+              label="Frais d'acquisition (€)"
+              type="number"
+              placeholder="15000"
+              hint="Notaire, agence, travaux initiaux"
+              :error="errors.acquisitionCosts"
+              test-id="property-acquisitionCosts"
             />
           </div>
         </div>

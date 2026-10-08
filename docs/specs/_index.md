@@ -12,6 +12,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Indexation     | [indexation.md](./indexation.md)         | Annual IRL rent revision, quarterly indices, letters     |
 | Rents          | [rents.md](./rents.md)                   | Monthly payments, auto-generation, overdue tracking      |
 | Reminders      | [reminders.md](./reminders.md)           | Automated rent-arrears follow-up letters and escalation  |
+| Expenses       | [expenses.md](./expenses.md)             | Landlord costs per property, receipts, net profitability |
 | Communications | [communications.md](./communications.md) | Journal of exchanges and generated letters per entity    |
 | Documents      | [documents.md](./documents.md)           | File attachments for all entities                        |
 | Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |
@@ -33,6 +34,8 @@ erDiagram
     Lease ||--o{ RentRevision : "has annual IRL revisions"
     IrlIndex ||--o{ RentRevision : "used to compute"
     Property ||--o{ Document : "has documents/photos"
+    Property ||--o{ Expense : "has expenses"
+    Expense ||--o{ Document : "has supporting documents"
     Tenant ||--o{ TenantDocument : "has attached files"
     Tenant ||--o{ TenantAudit : "has audit trail"
     Rent ||--o| Document : "has receipt"

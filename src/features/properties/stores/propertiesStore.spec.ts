@@ -248,6 +248,23 @@ describe('propertiesStore', () => {
       expect(store.error).toBe('Update failed');
     });
 
+    it('should keep the property when the repository refuses deletion (active lease)', async () => {
+      const prop1 = { id: 1, name: 'Property 1' } as Property;
+      const store = usePropertiesStore();
+      store.properties = [prop1];
+
+      vi.mocked(deleteProperty).mockRejectedValue(
+        new Error('Impossible de supprimer un bien ayant un bail actif')
+      );
+
+      await expect(store.deleteProperty(1)).rejects.toThrow(
+        'Impossible de supprimer un bien ayant un bail actif'
+      );
+      expect(fetchAllProperties).not.toHaveBeenCalled();
+      expect(store.properties).toEqual([prop1]);
+      expect(store.error).toBe('Impossible de supprimer un bien ayant un bail actif');
+    });
+
     it('should handle delete error', async () => {
       vi.mocked(deleteProperty).mockRejectedValue(new Error('Delete failed'));
 

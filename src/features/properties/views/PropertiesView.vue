@@ -92,7 +92,13 @@ async function handleDeleteProperty(id: number, event: Event) {
       await propertiesStore.deleteProperty(id);
     } catch (error) {
       console.error('Failed to delete property:', error);
-      alert('Erreur lors de la suppression de la propriété');
+      // Keep the list displayed: the failure is reported by the alert below.
+      propertiesStore.clearError();
+      alert(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Erreur lors de la suppression de la propriété'
+      );
     }
   }
 }
