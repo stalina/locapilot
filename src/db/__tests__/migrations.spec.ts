@@ -141,8 +141,8 @@ describe('Database Migrations', () => {
   });
 
   describe('Database version', () => {
-    it('should be at version 10', () => {
-      expect(db.verno).toBe(10);
+    it('should be at version 11', () => {
+      expect(db.verno).toBe(11);
     });
 
     it('should have all required tables', () => {
@@ -158,6 +158,7 @@ describe('Database Migrations', () => {
       expect(tableNames).toContain('tenantDocuments');
       expect(tableNames).toContain('tenantAudits');
       expect(tableNames).toContain('settings');
+      expect(tableNames).toContain('expenses');
     });
 
     it('should have correct indexes for properties', () => {

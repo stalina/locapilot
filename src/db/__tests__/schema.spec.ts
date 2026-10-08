@@ -23,7 +23,7 @@ describe('Database Schema', () => {
 
   describe('Database initialization', () => {
     it('should initialize database with correct version', async () => {
-      expect(db.verno).toBe(10);
+      expect(db.verno).toBe(11);
     });
 
     it('should have all required tables', async () => {
@@ -43,12 +43,25 @@ describe('Database Schema', () => {
       expect(tables).toContain('irlIndices');
       expect(tables).toContain('rentRevisions');
       expect(tables).toContain('reminders');
+      expect(tables).toContain('expenses');
 
-      expect(tables).toHaveLength(14);
+      expect(tables).toHaveLength(15);
     });
   });
 
   describe('Table structures', () => {
+    it('should have correct indexes for expenses table', () => {
+      const schema = db.expenses.schema;
+
+      expect(schema.primKey.name).toBe('id');
+      expect(schema.primKey.auto).toBe(true);
+      const indexNames = schema.indexes.map(i => i.name);
+      expect(indexNames).toContain('propertyId');
+      expect(indexNames).toContain('category');
+      expect(indexNames).toContain('date');
+      expect(indexNames).toContain('[propertyId+date]');
+    });
+
     it('should have correct indexes for properties table', () => {
       const schema = db.properties.schema;
 

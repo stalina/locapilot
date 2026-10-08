@@ -222,8 +222,9 @@ And its expenses and their supporting documents are removed
 ```gherkin
 Given a property has status "occupied" with an active lease
 When I attempt to delete the property
-Then the system shows an error: "Cannot delete a property with an active lease"
+Then the system shows an error: "Impossible de supprimer un bien ayant un bail actif"
 And the property remains in the list
+And its expenses and their supporting documents are kept
 ```
 
 ---

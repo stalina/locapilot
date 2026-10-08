@@ -20,6 +20,8 @@ export type {
   RentRevision,
   Reminder,
   ReminderLevel,
+  Expense,
+  ExpenseCategory,
 } from './schema';
 
 // Application-specific settings type

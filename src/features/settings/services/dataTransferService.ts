@@ -17,6 +17,7 @@ export type ExportDataPayload = {
   irlIndices: unknown[];
   rentRevisions: unknown[];
   reminders: unknown[];
+  expenses: unknown[];
   settings: unknown[];
   exportedAt: string;
   version: string;
@@ -148,6 +149,7 @@ export const SYNC_TABLES = [
   'irlIndices',
   'rentRevisions',
   'reminders',
+  'expenses',
   'settings',
 ] as const;
 

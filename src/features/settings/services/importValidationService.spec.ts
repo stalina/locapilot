@@ -34,6 +34,21 @@ function buildValidTenant(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function buildValidExpense(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    propertyId: 1,
+    category: 'property-tax',
+    label: 'Taxe foncière 2026',
+    amount: 1250,
+    date: iso,
+    notes: 'Avis n°42',
+    createdAt: iso,
+    updatedAt: iso,
+    ...overrides,
+  };
+}
+
 function buildFullValidPayload() {
   return {
     properties: [buildValidProperty()],
@@ -173,6 +188,7 @@ function buildFullValidPayload() {
         createdAt: iso,
       },
     ],
+    expenses: [buildValidExpense()],
     settings: [{ id: 1, key: 'ownerName', value: 'Jean Propriétaire', updatedAt: iso }],
     exportedAt: iso,
     version: '1.0.0',
@@ -198,6 +214,7 @@ describe('importValidationService', () => {
       expect(validated.irlIndices).toHaveLength(1);
       expect(validated.rentRevisions).toHaveLength(1);
       expect(validated.reminders).toHaveLength(1);
+      expect(validated.expenses).toHaveLength(1);
       expect(validated.settings).toHaveLength(1);
       expect(validated.version).toBe('1.0.0');
     });
@@ -223,6 +240,36 @@ describe('importValidationService', () => {
       expect(validated.documents).toEqual([]);
       expect(validated.tenantDocuments).toEqual([]);
       expect(validated.settings).toEqual([]);
+      // Legacy backup produced before the expenses module (issue #47).
+      expect(validated.expenses).toEqual([]);
+    });
+
+    it('accepts a property with purchase price and acquisition costs (issue #47)', () => {
+      const validated = validateImportPayload({
+        properties: [buildValidProperty({ purchasePrice: 180000, acquisitionCosts: 0 })],
+        tenants: [],
+        version: '1.2.0',
+      });
+      expect(validated.properties[0]).toMatchObject({ purchasePrice: 180000, acquisitionCosts: 0 });
+    });
+
+    it('accepts every expense category and expense supporting documents', () => {
+      const categories = [
+        'works',
+        'property-tax',
+        'insurance',
+        'maintenance',
+        'condo-fees',
+        'other',
+      ];
+      const payload = buildFullValidPayload();
+      const validated = validateImportPayload({
+        ...payload,
+        expenses: categories.map((category, i) => buildValidExpense({ id: i + 1, category })),
+        documents: [{ ...payload.documents[0], relatedEntityType: 'expense', relatedEntityId: 1 }],
+      });
+      expect(validated.expenses.map(e => e.category)).toEqual(categories);
+      expect(validated.documents[0]?.relatedEntityType).toBe('expense');
     });
 
     it('accepts Date objects as well as ISO strings for date fields', () => {
@@ -330,6 +377,33 @@ describe('importValidationService', () => {
       const payload = buildFullValidPayload();
       (payload.documents[0] as Record<string, unknown>).data = 123;
       expect(() => validateImportPayload(payload)).toThrow(/documents\.0\.data/);
+    });
+
+    it.each([
+      ['a zero amount', { amount: 0 }, /expenses\.0\.amount/],
+      ['a negative amount', { amount: -50 }, /expenses\.0\.amount/],
+      ['an unknown category', { category: 'loyer' }, /expenses\.0\.category/],
+      ['an unknown extra field', { supplier: 'ACME' }, /expenses\.0/],
+      ['a missing label', { label: undefined }, /expenses\.0\.label/],
+    ])('rejects an expense with %s', (_case, overrides, pattern) => {
+      expect(() =>
+        validateImportPayload({
+          properties: [],
+          tenants: [],
+          expenses: [buildValidExpense(overrides)],
+          version: '1.2.0',
+        })
+      ).toThrow(pattern);
+    });
+
+    it.each(['purchasePrice', 'acquisitionCosts'])('rejects a negative property %s', field => {
+      expect(() =>
+        validateImportPayload({
+          properties: [buildValidProperty({ [field]: -1 })],
+          tenants: [],
+          version: '1.2.0',
+        })
+      ).toThrow(new RegExp(`properties\\.0\\.${field}`));
     });
 
     it('rejects when a single record among many is invalid (whole import rejected)', () => {

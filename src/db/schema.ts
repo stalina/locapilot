@@ -16,6 +16,8 @@ export interface Property {
   rent: number; // base rent amount
   charges?: number;
   deposit?: number;
+  purchasePrice?: number; // acquisition price (€, ≥ 0) — used for yield computation
+  acquisitionCosts?: number; // notary, agency fees, initial works (€, ≥ 0)
   annonce?: string; // Default announcement HTML/text for listings
   description?: string;
   features?: string[];
@@ -92,7 +94,14 @@ export interface Document {
     | 'photo'
     | 'diagnostic'
     | 'other';
-  relatedEntityType?: 'property' | 'tenant' | 'lease' | 'rent' | 'applicant' | 'inventory';
+  relatedEntityType?:
+    | 'property'
+    | 'tenant'
+    | 'lease'
+    | 'rent'
+    | 'applicant'
+    | 'inventory'
+    | 'expense';
   relatedEntityId?: number;
   mimeType: string;
   size: number;
@@ -253,6 +262,27 @@ export interface Reminder {
   createdAt: Date;
 }
 
+// Catégorie d'une dépense supportée par le bailleur — issue #47
+export type ExpenseCategory =
+  | 'works'
+  | 'property-tax'
+  | 'insurance'
+  | 'maintenance'
+  | 'condo-fees'
+  | 'other';
+
+export interface Expense {
+  id?: number;
+  propertyId: number;
+  category: ExpenseCategory;
+  label: string;
+  amount: number; // € payés par le bailleur (> 0)
+  date: Date; // date de paiement (ou prévue)
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ========== Database Class ==========
 
 export class LocapilotDB extends Dexie {
@@ -270,6 +300,7 @@ export class LocapilotDB extends Dexie {
   irlIndices!: EntityTable<IrlIndex, 'id'>;
   rentRevisions!: EntityTable<RentRevision, 'id'>;
   reminders!: EntityTable<Reminder, 'id'>;
+  expenses!: EntityTable<Expense, 'id'>;
 
   constructor() {
     super('locapilot');
@@ -450,6 +481,26 @@ export class LocapilotDB extends Dexie {
       rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
       reminders: '++id, rentId, level, [rentId+level]',
     });
+
+    // Version 11: Add expenses table (landlord costs per property) — issue #47.
+    // Property gains optional non-indexed purchasePrice / acquisitionCosts (no migration needed).
+    this.version(11).stores({
+      properties: '++id, name, address, type, surface, status, createdAt',
+      tenants: '++id, firstName, lastName, email, phone, status, createdAt',
+      leases: '++id, propertyId, startDate, endDate, status, createdAt',
+      rents: '++id, leaseId, dueDate, paidDate, status, month, year',
+      documents: '++id, type, relatedEntityType, relatedEntityId, createdAt',
+      inventories: '++id, leaseId, type, date',
+      communications: '++id, relatedEntityType, relatedEntityId, date, type',
+      tenantDocuments: '++id, tenantId, uploadedAt, name',
+      tenantAudits: '++id, tenantId, action, timestamp',
+      settings: '++id, &key',
+      chargesAdjustments: '++id, leaseId, year, [leaseId+year]',
+      irlIndices: '++id, year, quarter, [year+quarter]',
+      rentRevisions: '++id, leaseId, year, status, [leaseId+year]',
+      reminders: '++id, rentId, level, [rentId+level]',
+      expenses: '++id, propertyId, category, date, [propertyId+date]',
+    });
   }
 }
 
@@ -493,6 +544,7 @@ export async function exportData(): Promise<string> {
     irlIndices: await db.irlIndices.toArray(),
     rentRevisions: await db.rentRevisions.toArray(),
     reminders: await db.reminders.toArray(),
+    expenses: await db.expenses.toArray(),
     settings: await db.settings.toArray(),
   };
 
@@ -524,6 +576,7 @@ export async function importData(jsonData: string): Promise<void> {
     db.irlIndices,
     db.rentRevisions,
     db.reminders,
+    db.expenses,
     db.settings,
   ];
 
@@ -545,6 +598,7 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.irlIndices) await db.irlIndices.bulkAdd(data.irlIndices);
     if (data.rentRevisions) await db.rentRevisions.bulkAdd(data.rentRevisions);
     if (data.reminders) await db.reminders.bulkAdd(data.reminders);
+    if (data.expenses) await db.expenses.bulkAdd(data.expenses);
     if (data.settings) await db.settings.bulkAdd(data.settings);
   });
 

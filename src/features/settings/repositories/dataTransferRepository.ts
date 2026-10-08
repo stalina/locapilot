@@ -3,6 +3,7 @@ import type {
   ChargesAdjustmentRow,
   Communication,
   Document,
+  Expense,
   Inventory,
   IrlIndex,
   Lease,
@@ -30,6 +31,7 @@ export type RawExportData = {
   irlIndices: IrlIndex[];
   rentRevisions: RentRevision[];
   reminders: Reminder[];
+  expenses: Expense[];
   settings: Settings[];
 };
 
@@ -49,6 +51,7 @@ const businessTables = () => [
   db.irlIndices,
   db.rentRevisions,
   db.reminders,
+  db.expenses,
   db.settings,
 ];
 
@@ -67,6 +70,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     irlIndices,
     rentRevisions,
     reminders,
+    expenses,
     settings,
   ] = await Promise.all([
     db.properties.toArray(),
@@ -82,6 +86,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     db.irlIndices.toArray(),
     db.rentRevisions.toArray(),
     db.reminders.toArray(),
+    db.expenses.toArray(),
     db.settings.toArray(),
   ]);
 
@@ -99,6 +104,7 @@ export async function fetchRawExportData(): Promise<RawExportData> {
     irlIndices,
     rentRevisions,
     reminders,
+    expenses,
     settings,
   };
 }
@@ -124,6 +130,7 @@ export async function importBusinessData(params: {
   irlIndices?: unknown[];
   rentRevisions?: unknown[];
   reminders?: unknown[];
+  expenses?: unknown[];
   settings?: unknown[];
 }): Promise<void> {
   const tables = businessTables();
@@ -151,6 +158,7 @@ export async function importBusinessData(params: {
     if (params.rentRevisions?.length)
       await db.rentRevisions.bulkAdd(params.rentRevisions as RentRevision[]);
     if (params.reminders?.length) await db.reminders.bulkAdd(params.reminders as Reminder[]);
+    if (params.expenses?.length) await db.expenses.bulkAdd(params.expenses as Expense[]);
     if (params.settings?.length) await db.settings.bulkAdd(params.settings as Settings[]);
   });
 }

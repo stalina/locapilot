@@ -43,6 +43,8 @@ export const propertySchema = z.strictObject({
   rent: z.number(),
   charges: z.number().optional(),
   deposit: z.number().optional(),
+  purchasePrice: z.number().nonnegative().optional(),
+  acquisitionCosts: z.number().nonnegative().optional(),
   annonce: z.string().optional(),
   description: z.string().optional(),
   features: z.array(z.string()).optional(),
@@ -126,7 +128,7 @@ export const serializedDocumentSchema = z.strictObject({
     'other',
   ]),
   relatedEntityType: z
-    .enum(['property', 'tenant', 'lease', 'rent', 'applicant', 'inventory'])
+    .enum(['property', 'tenant', 'lease', 'rent', 'applicant', 'inventory', 'expense'])
     .optional(),
   relatedEntityId: z.number().optional(),
   mimeType: z.string(),
@@ -263,6 +265,18 @@ export const reminderSchema = z.strictObject({
   createdAt: dateLike,
 });
 
+export const expenseSchema = z.strictObject({
+  id: idField,
+  propertyId: z.number(),
+  category: z.enum(['works', 'property-tax', 'insurance', 'maintenance', 'condo-fees', 'other']),
+  label: z.string(),
+  amount: z.number().positive(),
+  date: dateLike,
+  notes: z.string().optional(),
+  createdAt: dateLike,
+  updatedAt: dateLike,
+});
+
 export const settingsSchema = z.strictObject({
   id: idField,
   key: z.string(),
@@ -289,6 +303,8 @@ export const importPayloadSchema = z.strictObject({
   irlIndices: z.array(irlIndexSchema).default([]),
   rentRevisions: z.array(rentRevisionSchema).default([]),
   reminders: z.array(reminderSchema).default([]),
+  // Added with the expenses module (issue #47): older backups have no key.
+  expenses: z.array(expenseSchema).default([]),
   settings: z.array(settingsSchema).default([]),
   exportedAt: z.string().optional(),
   version: z.string(),

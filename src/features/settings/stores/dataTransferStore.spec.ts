@@ -60,6 +60,20 @@ function validDocument(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function validExpense(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    propertyId: 1,
+    category: 'works',
+    label: 'Remplacement chaudière',
+    amount: 2000,
+    date: iso,
+    createdAt: iso,
+    updatedAt: iso,
+    ...overrides,
+  };
+}
+
 function validTenantDocument(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -95,6 +109,41 @@ describe('dataTransferStore.importFromObject', () => {
     expect(arg.properties).toHaveLength(1);
     expect(arg.leases).toEqual([]);
     expect(arg.settings).toEqual([]);
+    // Legacy backup produced before the expenses module (issue #47).
+    expect(arg.expenses).toEqual([]);
+  });
+
+  it('passes the validated expenses and their documents to the repository', async () => {
+    const store = useDataTransferStore();
+
+    await store.importFromObject({
+      properties: [validProperty()],
+      tenants: [],
+      expenses: [validExpense(), validExpense({ id: 2, category: 'insurance', amount: 145.6 })],
+      documents: [
+        validDocument({ type: 'invoice', relatedEntityType: 'expense', relatedEntityId: 1 }),
+      ],
+      version: '1.2.0',
+    });
+
+    const arg = vi.mocked(importBusinessData).mock.calls[0]![0];
+    expect(arg.expenses).toHaveLength(2);
+    expect(arg.documents?.[0]).toMatchObject({ relatedEntityType: 'expense', relatedEntityId: 1 });
+  });
+
+  it('rejects an invalid expense before any DB mutation', async () => {
+    const store = useDataTransferStore();
+
+    await expect(
+      store.importFromObject({
+        properties: [validProperty()],
+        tenants: [],
+        expenses: [validExpense({ amount: -10 })],
+        version: '1.2.0',
+      })
+    ).rejects.toThrow(/expenses\.0\.amount/);
+
+    expect(importBusinessData).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid record: importBusinessData is NEVER called and error is set', async () => {
@@ -203,6 +252,7 @@ describe('dataTransferStore.buildSyncSource', () => {
       irlIndices: [],
       rentRevisions: [],
       reminders: [],
+      expenses: [validExpense()],
       settings: [],
     };
     vi.mocked(fetchRawExportData).mockResolvedValue(
@@ -217,6 +267,8 @@ describe('dataTransferStore.buildSyncSource', () => {
     expect((source.tables.documents[0] as { data: unknown }).data).toBe(blob);
     expect(source.counts.properties).toBe(1);
     expect(source.counts.documents).toBe(1);
+    expect(source.tables.expenses).toBe(raw.expenses);
+    expect(source.counts.expenses).toBe(1);
     expect(source.documents).toBe(2);
     expect(source.totalBytes).toBe(120);
   });

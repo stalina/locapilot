@@ -31,6 +31,7 @@ const ENTITY_TYPE_LABELS: Array<{ value: FilterableEntityType; label: string }> 
   { value: 'lease', label: 'Bail' },
   { value: 'rent', label: 'Loyer' },
   { value: 'inventory', label: 'État des lieux' },
+  { value: 'expense', label: 'Dépense' },
 ];
 
 // Preview modal
