@@ -39,14 +39,22 @@ entity-linked documents, see [Documents spec](./documents.md)).
 
 ### Expense Categories
 
-| Value          | UI label (FR)          | Default document type of a receipt |
-| -------------- | ---------------------- | ---------------------------------- |
-| `works`        | Travaux                | `invoice`                          |
-| `property-tax` | Taxe foncière          | `invoice`                          |
-| `insurance`    | Assurance (PNO)        | `insurance`                        |
-| `maintenance`  | Entretien              | `invoice`                          |
-| `condo-fees`   | Charges de copropriété | `invoice`                          |
-| `other`        | Autre                  | `other`                            |
+| Value             | UI label (FR)          | Default document type of a receipt | CERFA 2044 line ([Fiscal spec](./fiscal.md)) |
+| ----------------- | ---------------------- | ---------------------------------- | -------------------------------------------- |
+| `works`           | Travaux                | `invoice`                          | 224                                          |
+| `property-tax`    | Taxe foncière          | `invoice`                          | 227                                          |
+| `insurance`       | Assurance (PNO)        | `insurance`                        | 223                                          |
+| `maintenance`     | Entretien              | `invoice`                          | 224                                          |
+| `condo-fees`      | Charges de copropriété | `invoice`                          | 229                                          |
+| `management-fees` | Frais de gestion       | `invoice`                          | 221                                          |
+| `loan-interest`   | Intérêts d'emprunt     | `other`                            | 250                                          |
+| `other`           | Autre                  | `other`                            | — (not deducted)                             |
+
+Categories are offered in the order of this table, `other` always last. `management-fees` (agency
+management fees, legal / procedure fees) and `loan-interest` (interest of the acquisition or works
+loan, borrower insurance, loan fees) were added for the fiscal summary (issue #48); they need no
+Dexie schema change (the `category` index already exists), but the strict import validation must
+accept them.
 
 ### Property fields used for profitability
 
@@ -109,7 +117,8 @@ property, plus the current year.
   - rents with status `pending` or `late` count 0.
   - charges provisions are **excluded** from income because they offset recoverable charges.
 - **Total expenses** — `expenses(Y)`: sum of `amount` of the property's expenses whose `date` falls in
-  year `Y`, all categories included. The total per category is also shown.
+  year `Y`, all categories included (including `loan-interest` and `other`). The total per category
+  is also shown.
 - **Net result** — `income(Y) − expenses(Y)`, in €. Can be negative.
 - **Total investment** — `purchasePrice + (acquisitionCosts ?? 0)`.
 - **Gross yield** — `income(Y) / investment × 100`, rounded to 2 decimals and displayed as a percentage.
@@ -161,9 +170,29 @@ And a success notification appears
 
 ```gherkin
 Given a property exists
-When I record one expense for each category "Travaux", "Taxe foncière", "Assurance (PNO)", "Entretien", "Charges de copropriété" and "Autre"
-Then the six expenses are created with categories "works", "property-tax", "insurance", "maintenance", "condo-fees" and "other"
+When I record one expense for each category "Travaux", "Taxe foncière", "Assurance (PNO)", "Entretien", "Charges de copropriété", "Frais de gestion", "Intérêts d'emprunt" and "Autre"
+Then the eight expenses are created with categories "works", "property-tax", "insurance", "maintenance", "condo-fees", "management-fees", "loan-interest" and "other"
 And the per-category breakdown shows one line per category with its total
+```
+
+#### Scenario: Record a loan interest expense
+
+```gherkin
+Given a property "Appart Gambetta T2" exists
+When I record an expense of category "Intérêts d'emprunt", label "Intérêts prêt 2025" and amount 2100 dated 2025-12-31
+Then an expense of category "loan-interest" is created
+And it is counted in the 2025 total expenses and net result of the property
+And it is reported on line 250 of the 2025 fiscal summary
+```
+
+#### Scenario: Record a management fee expense
+
+```gherkin
+Given a property "Appart Gambetta T2" exists
+When I record an expense of category "Frais de gestion", label "Honoraires agence 2025" and amount 480
+Then an expense of category "management-fees" is created
+And a document attached to it defaults to type "invoice"
+And it is reported on line 221 of the fiscal summary of its year
 ```
 
 #### Scenario: Attempt to create an expense with a zero or negative amount
@@ -586,6 +615,15 @@ Given a backup file produced before the expenses module (no "expenses" key)
 When I import it
 Then the import succeeds
 And the expenses table is empty
+```
+
+#### Scenario: Backup with the new expense categories is accepted
+
+```gherkin
+Given a backup file contains expenses of categories "management-fees" and "loan-interest"
+When I import it
+Then the strict validation succeeds
+And the expenses are restored with their categories
 ```
 
 #### Scenario: Backup with an invalid expense is rejected
