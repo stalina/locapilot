@@ -6,28 +6,33 @@ A **property** is the central entity of Locapilot. It represents a real estate a
 
 ## Data Model
 
-| Field         | Type      | Description                                                                |
-| ------------- | --------- | -------------------------------------------------------------------------- |
-| `id`          | number    | Auto-generated primary key                                                 |
-| `name`        | string    | Display name (e.g. "Appart Gambetta T2")                                   |
-| `address`     | string    | Street address                                                             |
-| `postalCode`  | string?   | Postal code                                                                |
-| `town`        | string?   | City/town                                                                  |
-| `type`        | enum      | `apartment` \| `house` \| `studio` \| `commercial` \| `parking` \| `other` |
-| `surface`     | number    | Living area in m²                                                          |
-| `rooms`       | number    | Total number of rooms                                                      |
-| `bedrooms`    | number?   | Number of bedrooms                                                         |
-| `bathrooms`   | number?   | Number of bathrooms                                                        |
-| `rent`        | number    | Base monthly rent amount (€)                                               |
-| `charges`     | number?   | Monthly charges amount (€)                                                 |
-| `deposit`     | number?   | Security deposit amount (€)                                                |
-| `annonce`     | string?   | Rich-text rental listing announcement                                      |
-| `description` | string?   | Internal notes/description                                                 |
-| `features`    | string[]? | List of features (e.g. "parking", "balcony")                               |
-| `photos`      | number[]? | Array of Document IDs (photo type)                                         |
-| `status`      | enum      | `vacant` \| `occupied` \| `maintenance`                                    |
-| `createdAt`   | Date      | Creation timestamp                                                         |
-| `updatedAt`   | Date      | Last update timestamp                                                      |
+| Field              | Type      | Description                                                                              |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------- |
+| `id`               | number    | Auto-generated primary key                                                               |
+| `name`             | string    | Display name (e.g. "Appart Gambetta T2")                                                 |
+| `address`          | string    | Street address                                                                           |
+| `postalCode`       | string?   | Postal code                                                                              |
+| `town`             | string?   | City/town                                                                                |
+| `type`             | enum      | `apartment` \| `house` \| `studio` \| `commercial` \| `parking` \| `other`               |
+| `surface`          | number    | Living area in m²                                                                        |
+| `rooms`            | number    | Total number of rooms                                                                    |
+| `bedrooms`         | number?   | Number of bedrooms                                                                       |
+| `bathrooms`        | number?   | Number of bathrooms                                                                      |
+| `rent`             | number    | Base monthly rent amount (€)                                                             |
+| `charges`          | number?   | Monthly charges amount (€)                                                               |
+| `deposit`          | number?   | Security deposit amount (€)                                                              |
+| `purchasePrice`    | number?   | Acquisition price (€, ≥ 0) — used for yield computation ([Expenses spec](./expenses.md)) |
+| `acquisitionCosts` | number?   | Acquisition costs: notary, agency fees, initial works (€, ≥ 0)                           |
+| `annonce`          | string?   | Rich-text rental listing announcement                                                    |
+| `description`      | string?   | Internal notes/description                                                               |
+| `features`         | string[]? | List of features (e.g. "parking", "balcony")                                             |
+| `photos`           | number[]? | Array of Document IDs (photo type)                                                       |
+| `status`           | enum      | `vacant` \| `occupied` \| `maintenance`                                                  |
+| `createdAt`        | Date      | Creation timestamp                                                                       |
+| `updatedAt`        | Date      | Last update timestamp                                                                    |
+
+`purchasePrice` and `acquisitionCosts` are optional, non-indexed fields: existing properties keep
+working without them (no data migration needed).
 
 ## Status Lifecycle
 
@@ -57,6 +62,8 @@ stateDiagram-v2
 - `surface` must be strictly greater than 0
 - `rooms` must be at least 1
 - A property with an active lease cannot be deleted
+- Deleting a property also deletes its expenses and their supporting documents (see [Expenses spec](./expenses.md))
+- `purchasePrice` and `acquisitionCosts` are optional; when provided they must be ≥ 0
 - Photos are stored as Document records with type `photo` linked to this property
 
 ## Relationships
@@ -65,6 +72,8 @@ stateDiagram-v2
 erDiagram
     Property ||--o{ Lease : "has"
     Property ||--o{ Document : "has photos"
+    Property ||--o{ Expense : "has expenses"
+    Expense ||--o{ Document : "has supporting documents"
     Lease ||--o{ Rent : "generates"
     Lease }o--|{ Tenant : "signed by"
 ```
@@ -128,6 +137,38 @@ Then a validation error appears indicating surface must be positive
 And no property is created
 ```
 
+#### Scenario: Create a property with purchase price and acquisition costs
+
+```gherkin
+Given I am on the "Add property" form
+When I fill in all required fields
+And I fill in purchasePrice "180000"
+And I fill in acquisitionCosts "15000"
+And I click "Save"
+Then the property is created with purchasePrice 180000 and acquisitionCosts 15000
+And its detail page uses them to compute the yields (see Expenses spec)
+```
+
+#### Scenario: Create a property without purchase price
+
+```gherkin
+Given I am on the "Add property" form
+When I fill in all required fields and leave purchasePrice and acquisitionCosts empty
+And I click "Save"
+Then the property is created without purchasePrice nor acquisitionCosts
+And no validation error is shown
+```
+
+#### Scenario: Attempt to create with a negative purchase price or acquisition costs
+
+```gherkin
+Given I am on the "Add property" form
+When I fill in purchasePrice "-1000" or acquisitionCosts "-500"
+And I submit the form
+Then a validation error appears indicating the amount cannot be negative
+And no property is created
+```
+
 ---
 
 ### Story: Edit a property
@@ -173,6 +214,7 @@ When I click "Delete" on the property
 And I confirm the deletion dialog
 Then "Parking Oberkampf" disappears from the properties list
 And its associated documents are removed
+And its expenses and their supporting documents are removed
 ```
 
 #### Scenario: Attempt to delete a property with an active lease
