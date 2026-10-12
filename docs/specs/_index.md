@@ -13,6 +13,7 @@ This directory contains the functional specifications for all domains of the Loc
 | Rents          | [rents.md](./rents.md)                   | Monthly payments, auto-generation, overdue tracking      |
 | Reminders      | [reminders.md](./reminders.md)           | Automated rent-arrears follow-up letters and escalation  |
 | Expenses       | [expenses.md](./expenses.md)             | Landlord costs per property, receipts, net profitability |
+| Fiscal         | [fiscal.md](./fiscal.md)                 | Yearly rental income summary and CERFA 2044 export       |
 | Communications | [communications.md](./communications.md) | Journal of exchanges and generated letters per entity    |
 | Documents      | [documents.md](./documents.md)           | File attachments for all entities                        |
 | Inventories    | [inventories.md](./inventories.md)       | Check-in / check-out property inspections                |

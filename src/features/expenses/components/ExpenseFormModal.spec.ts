@@ -79,7 +79,7 @@ describe('ExpenseFormModal', () => {
     propertyId = await createProperty();
   });
 
-  it('offers the six categories with their FR labels and defaults the date to today', () => {
+  it('offers the eight categories with their FR labels and defaults the date to today', () => {
     const wrapper = mountModal(propertyId);
     const options = wrapper.findAll('[data-testid="expense-category"] option').map(o => o.text());
     expect(options).toEqual([
@@ -89,6 +89,8 @@ describe('ExpenseFormModal', () => {
       'Assurance (PNO)',
       'Entretien',
       'Charges de copropriété',
+      'Frais de gestion',
+      "Intérêts d'emprunt",
       'Autre',
     ]);
     const date = wrapper.find('[data-testid="expense-date"]').element;

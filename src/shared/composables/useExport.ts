@@ -128,9 +128,41 @@ export function useExport() {
     }
   };
 
+  /**
+   * Download an already-built CSV content (any separator) as a UTF-8 file with BOM.
+   */
+  const exportCSVContent = async (content: string, filename: string): Promise<void> => {
+    isExporting.value = true;
+
+    try {
+      // BOM for Excel compatibility
+      const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showSuccess(`Fichier ${filename} téléchargé avec succès`);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      showError(error instanceof Error ? error.message : "Erreur lors de l'export CSV");
+      throw error;
+    } finally {
+      isExporting.value = false;
+    }
+  };
+
   return {
     isExporting,
     exportToJSON,
     exportToCSV,
+    exportCSVContent,
   };
 }

@@ -269,6 +269,8 @@ export type ExpenseCategory =
   | 'insurance'
   | 'maintenance'
   | 'condo-fees'
+  | 'management-fees' // frais de gestion — ligne 221 de la 2044 (issue #48)
+  | 'loan-interest' // intérêts d'emprunt — ligne 250 de la 2044 (issue #48)
   | 'other';
 
 export interface Expense {

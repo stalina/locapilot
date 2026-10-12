@@ -260,6 +260,8 @@ describe('importValidationService', () => {
         'insurance',
         'maintenance',
         'condo-fees',
+        'management-fees',
+        'loan-interest',
         'other',
       ];
       const payload = buildFullValidPayload();

@@ -93,6 +93,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Détail État des lieux' },
   },
   {
+    path: '/fiscal',
+    name: 'fiscal',
+    component: () => import('@features/fiscal/views/FiscalView.vue'),
+    meta: { title: 'Récapitulatif fiscal' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/features/settings/views/SettingsView.vue'),

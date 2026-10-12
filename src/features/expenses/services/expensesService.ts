@@ -17,6 +17,8 @@ export const EXPENSE_CATEGORIES: readonly ExpenseCategoryOption[] = [
   { value: 'insurance', label: 'Assurance (PNO)', documentType: 'insurance' },
   { value: 'maintenance', label: 'Entretien', documentType: 'invoice' },
   { value: 'condo-fees', label: 'Charges de copropriété', documentType: 'invoice' },
+  { value: 'management-fees', label: 'Frais de gestion', documentType: 'invoice' },
+  { value: 'loan-interest', label: "Intérêts d'emprunt", documentType: 'other' },
   { value: 'other', label: 'Autre', documentType: 'other' },
 ];
 
