@@ -79,6 +79,10 @@
           <i class="mdi mdi-chart-line"></i>
           <span>Indexation IRL</span>
         </RouterLink>
+        <RouterLink to="/fiscal" class="nav-item" @click="closeSidebar">
+          <i class="mdi mdi-calculator-variant"></i>
+          <span>Fiscalité</span>
+        </RouterLink>
         <RouterLink to="/settings" class="nav-item" @click="closeSidebar">
           <i class="mdi mdi-cog"></i>
           <span>Paramètres</span>
@@ -367,6 +371,19 @@ const closeSidebar = () => {
   .main-wrapper {
     margin-left: 0;
     padding-top: 60px;
+  }
+}
+
+/* Printed pages (fiscal summary, wear report…) show the content only. */
+@media print {
+  .mobile-header,
+  .sidebar,
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    padding-top: 0;
   }
 }
 </style>

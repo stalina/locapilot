@@ -83,13 +83,15 @@ function draft(overrides: Partial<ExpenseDraft> = {}): ExpenseDraft {
 
 describe('expensesService', () => {
   describe('categories', () => {
-    it('lists the six categories with their FR labels', () => {
+    it('lists the eight categories with their FR labels, "Autre" last', () => {
       expect(EXPENSE_CATEGORIES.map(c => [c.value, c.label])).toEqual([
         ['works', 'Travaux'],
         ['property-tax', 'Taxe foncière'],
         ['insurance', 'Assurance (PNO)'],
         ['maintenance', 'Entretien'],
         ['condo-fees', 'Charges de copropriété'],
+        ['management-fees', 'Frais de gestion'],
+        ['loan-interest', "Intérêts d'emprunt"],
         ['other', 'Autre'],
       ]);
     });
@@ -100,12 +102,18 @@ describe('expensesService', () => {
       expect(documentTypeForCategory('maintenance')).toBe('invoice');
       expect(documentTypeForCategory('condo-fees')).toBe('invoice');
       expect(documentTypeForCategory('insurance')).toBe('insurance');
+      expect(documentTypeForCategory('management-fees')).toBe('invoice');
+      expect(documentTypeForCategory('loan-interest')).toBe('other');
       expect(documentTypeForCategory('other')).toBe('other');
     });
 
     it('resolves labels and recognises valid categories', () => {
       expect(getExpenseCategoryLabel('insurance')).toBe('Assurance (PNO)');
       expect(isExpenseCategory('condo-fees')).toBe(true);
+      expect(getExpenseCategoryLabel('management-fees')).toBe('Frais de gestion');
+      expect(getExpenseCategoryLabel('loan-interest')).toBe("Intérêts d'emprunt");
+      expect(isExpenseCategory('management-fees')).toBe(true);
+      expect(isExpenseCategory('loan-interest')).toBe(true);
       expect(isExpenseCategory('rent')).toBe(false);
       expect(isExpenseCategory('')).toBe(false);
     });
@@ -295,6 +303,22 @@ describe('expensesService', () => {
           { category: 'works', label: 'Travaux', total: 2000 },
           { category: 'property-tax', label: 'Taxe foncière', total: 1250 },
           { category: 'maintenance', label: 'Entretien', total: 150 },
+        ],
+      });
+    });
+
+    it('counts management fees and loan interest in the total, in category order (issue #48)', () => {
+      const expenses = [
+        expense({ id: 1, category: 'loan-interest', amount: 2100 }),
+        expense({ id: 2, category: 'other', amount: 75 }),
+        expense({ id: 3, category: 'management-fees', amount: 480 }),
+      ];
+      expect(computeExpenses(expenses, 1, 2026)).toEqual({
+        total: 2655,
+        byCategory: [
+          { category: 'management-fees', label: 'Frais de gestion', total: 480 },
+          { category: 'loan-interest', label: "Intérêts d'emprunt", total: 2100 },
+          { category: 'other', label: 'Autre', total: 75 },
         ],
       });
     });

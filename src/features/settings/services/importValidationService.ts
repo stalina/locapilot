@@ -268,7 +268,16 @@ export const reminderSchema = z.strictObject({
 export const expenseSchema = z.strictObject({
   id: idField,
   propertyId: z.number(),
-  category: z.enum(['works', 'property-tax', 'insurance', 'maintenance', 'condo-fees', 'other']),
+  category: z.enum([
+    'works',
+    'property-tax',
+    'insurance',
+    'maintenance',
+    'condo-fees',
+    'management-fees',
+    'loan-interest',
+    'other',
+  ]),
   label: z.string(),
   amount: z.number().positive(),
   date: dateLike,

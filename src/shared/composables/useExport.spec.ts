@@ -82,4 +82,40 @@ describe('useExport', () => {
       expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     });
   });
+
+  describe('exportCSVContent', () => {
+    it('downloads the given content as is, with a UTF-8 BOM and the given filename', async () => {
+      const createObjectURL = vi.spyOn(URL, 'createObjectURL');
+      const { exportCSVContent, isExporting } = useExport();
+      let downloaded = '';
+      vi.mocked(HTMLAnchorElement.prototype.click).mockImplementation(function (
+        this: HTMLAnchorElement
+      ) {
+        downloaded = this.download;
+      });
+
+      await exportCSVContent('Ligne;Total\r\n211;9600', 'recapitulatif-fiscal-2025.csv');
+
+      expect(downloaded).toBe('recapitulatif-fiscal-2025.csv');
+      const blob = createObjectURL.mock.calls[0]?.[0] as unknown as {
+        content: string[];
+        options?: { type?: string };
+      };
+      expect(blob.content).toEqual(['﻿Ligne;Total\r\n211;9600']);
+      expect(blob.options?.type).toBe('text/csv;charset=utf-8;');
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      expect(isExporting.value).toBe(false);
+    });
+
+    it('rethrows a download failure and resets the exporting flag', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(() => {
+        throw new Error('quota');
+      });
+      const { exportCSVContent, isExporting } = useExport();
+
+      await expect(exportCSVContent('a;b', 'x.csv')).rejects.toThrow('quota');
+      expect(isExporting.value).toBe(false);
+    });
+  });
 });
