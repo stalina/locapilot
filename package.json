@@ -23,7 +23,7 @@
     "dayjs": "1.11.19",
     "dexie": "4.2.1",
     "docxtemplater": "3.67.5",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "file-saver": "2.0.5",
     "pdfjs-dist": "^6.2.108",
     "peerjs": "1.5.5",
