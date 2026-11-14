@@ -15,6 +15,23 @@ import {
   type SyncSource,
 } from '../services/dataTransferService';
 import { validateImportPayload } from '../services/importValidationService';
+import type { BackupTrigger } from '../services/backupService';
+import { useBackupStore } from './backupStore';
+
+/**
+ * Restore point taken before a destructive operation (issue #59): after the
+ * user confirmed and the data passed validation, before the first clear().
+ * `skipSnapshot` is set when the user chose to continue without one.
+ * `keepSnapshotIds` are never rotated out by that restore point (the restore
+ * point being restored must survive until the import succeeded).
+ */
+export interface RestorePointOptions {
+  snapshotTrigger?: BackupTrigger;
+  skipSnapshot?: boolean;
+  keepSnapshotIds?: ReadonlyArray<number>;
+}
+
+export type ClearResult = 'restore-point-created' | 'no-restore-point';
 
 export const useDataTransferStore = defineStore('dataTransfer', () => {
   const isExporting = ref(false);
@@ -96,15 +113,24 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     );
   }
 
-  async function importFromObject(data: unknown): Promise<void> {
+  async function importFromObject(data: unknown, options: RestorePointOptions = {}): Promise<void> {
     isImporting.value = true;
     error.value = null;
     try {
       // Strict per-record validation of every table (issue #80, C2). This MUST
       // happen — and throw — BEFORE any clear()/bulkAdd() reaches the database.
-      // Both import channels (JSON file and P2P sync) go through this method,
-      // so they share this single validated path.
+      // Every import channel (JSON file, P2P sync, restore point) goes through
+      // this method, so they share this single validated path.
       const validated = validateImportPayload(data);
+
+      // Restore point of the current data (issue #59), only once the incoming
+      // data is known to be valid. Throws BackupFailedError when it fails, so
+      // nothing is cleared unless the caller retries with skipSnapshot.
+      if (options.snapshotTrigger && !options.skipSnapshot) {
+        await useBackupStore().createSnapshot(options.snapshotTrigger, {
+          keepIds: options.keepSnapshotIds,
+        });
+      }
 
       const docsToAdd = deserializeDocuments(validated.documents);
       const tenantDocsToAdd = deserializeTenantDocuments(validated.tenantDocuments);
@@ -135,8 +161,21 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
     }
   }
 
-  async function clearAllBusinessData(): Promise<void> {
+  /**
+   * "Tout effacer": take a `pre-clear` restore point first (issue #59), unless
+   * the user chose to continue without one. Throws BackupFailedError — before
+   * anything is cleared — when that restore point cannot be created.
+   */
+  async function clearAllBusinessData(
+    options: Pick<RestorePointOptions, 'skipSnapshot'> = {}
+  ): Promise<ClearResult> {
+    let result: ClearResult = 'no-restore-point';
+    if (!options.skipSnapshot) {
+      const snapshot = await useBackupStore().createSnapshot('pre-clear');
+      if (snapshot === 'created') result = 'restore-point-created';
+    }
     await clearBusinessData();
+    return result;
   }
 
   return {

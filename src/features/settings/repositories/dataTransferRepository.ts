@@ -109,6 +109,20 @@ export async function fetchRawExportData(): Promise<RawExportData> {
   };
 }
 
+/**
+ * Same as fetchRawExportData, but every table is read inside ONE read-only
+ * transaction: a consistent snapshot that never mixes the state before and
+ * after a concurrent write (restore points, issue #59).
+ */
+export async function fetchRawExportDataConsistent(): Promise<RawExportData> {
+  return db.transaction('r', businessTables(), () => fetchRawExportData());
+}
+
+/** Dexie schema version of the main database. */
+export function currentSchemaVersion(): number {
+  return db.verno;
+}
+
 export async function clearBusinessData(): Promise<void> {
   const tables = businessTables();
   await db.transaction('rw', tables, async () => {

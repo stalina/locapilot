@@ -461,6 +461,82 @@ test.describe('Settings - e2e', () => {
   });
 });
 
+test.describe('Settings - Points de restauration (#59)', () => {
+  test.beforeEach(async ({ page }) => {
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+  });
+
+  test('Golden path : créer un point de restauration, tout effacer, puis restaurer', async ({
+    page,
+  }) => {
+    const villaName = `E2E Restore Villa ${Date.now()}`;
+
+    // Seed one property straight into the main database.
+    await page.evaluate(async name => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('locapilot');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('properties', 'readwrite');
+        const now = new Date();
+        tx.objectStore('properties').add({
+          name,
+          address: '1 rue de la Restauration',
+          type: 'house',
+          surface: 120,
+          rooms: 5,
+          rent: 1500,
+          status: 'vacant',
+          createdAt: now,
+          updatedAt: now,
+        });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    }, villaName);
+
+    // Confirmations ("Tout effacer", "Restaurer") and alerts are accepted.
+    page.on('dialog', dialog => dialog.accept().catch(() => {}));
+
+    // 1) Manual restore point.
+    const card = page.getByTestId('restore-points-card');
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    await card.getByRole('button', { name: 'Créer un point de restauration' }).click();
+    await expect(card.getByTestId('restore-points-message')).toHaveText(
+      'Point de restauration créé'
+    );
+    await expect(
+      card.getByTestId('restore-point').filter({ hasText: 'Manuel' }).first()
+    ).toBeVisible();
+
+    // 2) "Tout effacer" (a "pre-clear" restore point is taken first).
+    await page.getByRole('button', { name: 'Tout effacer' }).click();
+    await page.waitForURL(/\/$|\/dashboard/, { timeout: 10_000 });
+
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+    await expect(page.locator('.property-card', { hasText: villaName })).toHaveCount(0);
+
+    // 3) Restore the newest restore point ("Avant effacement").
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+    const newest = page.getByTestId('restore-points-card').getByTestId('restore-point').first();
+    await expect(newest).toContainText('Avant effacement', { timeout: 10_000 });
+    await newest.getByRole('button', { name: 'Restaurer' }).click();
+    await expect(
+      page.getByTestId('restore-points-card').getByTestId('restore-points-message')
+    ).toHaveText('Données restaurées avec succès', { timeout: 10_000 });
+
+    // The property is back.
+    await navigateFromSidebar(page, /Propri[ée]t[ée]s|Properties/i, /\/properties/);
+    await expect(page.locator('.property-card', { hasText: villaName }).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+});
+
 test.describe('Settings - Import strict validation (#80 C2)', () => {
   const iso = '2026-01-01T00:00:00.000Z';
 

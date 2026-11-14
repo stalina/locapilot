@@ -17,10 +17,11 @@ The **settings** module allows the landlord to configure application-wide prefer
 
 ### Known Settings Keys
 
-| Key                  | Type                        | Description                                                                 |
-| -------------------- | --------------------------- | --------------------------------------------------------------------------- |
-| `ownerName`          | string                      | Landlord's full name — used in rent receipts                                |
-| `reminderThresholds` | `ReminderThresholdConfig[]` | Rent-arrears reminder day thresholds — see [Reminders spec](./reminders.md) |
+| Key                  | Type                        | Description                                                                                                       |
+| -------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `ownerName`          | string                      | Landlord's full name — used in rent receipts                                                                      |
+| `reminderThresholds` | `ReminderThresholdConfig[]` | Rent-arrears reminder day thresholds — see [Reminders spec](./reminders.md)                                       |
+| `autoBackupEnabled`  | boolean                     | Daily automatic restore points on/off (default `true` when absent) — see [Data Transfer spec](./data-transfer.md) |
 
 ## Domain Rules
 
