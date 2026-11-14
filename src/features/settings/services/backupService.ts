@@ -131,12 +131,20 @@ export function isAutoBackupDue(lastAutoCreatedAt: Date | null | undefined, now:
 /**
  * Rotation: keep the 7 most recent `auto` restore points and the 5 most recent
  * of the other triggers (one shared pool). Returns the ids to delete; the
- * restore point that was just created (`newId`) is never among them.
+ * restore point that was just created (`newId`) and the protected ones
+ * (`keepIds`, e.g. the restore point being restored) are never among them.
+ * Protected restore points count as kept, so the next-oldest ones of their
+ * pool are deleted instead and each pool still ends at its limit.
  */
 export function selectSnapshotsToDelete(
   snapshots: ReadonlyArray<Pick<BackupSnapshot, 'id' | 'createdAt' | 'trigger'>>,
-  newId: number
+  newId: number,
+  keepIds: ReadonlyArray<number> = []
 ): number[] {
+  const protectedIds = new Set<number>([newId, ...keepIds]);
+  const isProtected = (s: Pick<BackupSnapshot, 'id'>) =>
+    typeof s.id === 'number' && protectedIds.has(s.id);
+
   const newestFirst = (
     a: Pick<BackupSnapshot, 'id' | 'createdAt'>,
     b: Pick<BackupSnapshot, 'id' | 'createdAt'>
@@ -144,18 +152,17 @@ export function selectSnapshotsToDelete(
 
   const excess = (pool: Array<Pick<BackupSnapshot, 'id' | 'createdAt'>>, kept: number) => {
     const sorted = [...pool].sort(newestFirst);
-    const newest = sorted.find(s => s.id === newId);
-    // The new restore point always counts as one of the kept ones.
-    const others = sorted.filter(s => s.id !== newId);
-    const keptOthers = newest ? kept - 1 : kept;
-    return others.slice(Math.max(0, keptOthers)).map(s => s.id);
+    // The new and protected restore points always count as kept ones.
+    const protectedCount = sorted.filter(isProtected).length;
+    const others = sorted.filter(s => !isProtected(s));
+    return others.slice(Math.max(0, kept - protectedCount)).map(s => s.id);
   };
 
   const auto = snapshots.filter(s => s.trigger === 'auto');
   const other = snapshots.filter(s => s.trigger !== 'auto');
 
   return [...excess(auto, AUTO_SNAPSHOTS_KEPT), ...excess(other, OTHER_SNAPSHOTS_KEPT)].filter(
-    (id): id is number => typeof id === 'number' && id !== newId
+    (id): id is number => typeof id === 'number' && !protectedIds.has(id)
   );
 }
 

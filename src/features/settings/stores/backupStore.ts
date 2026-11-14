@@ -126,8 +126,12 @@ export const useBackupStore = defineStore('backup', () => {
    * `locapilot-backups` (one read-write transaction, rotation included).
    * Never snapshots an empty database. Throws BackupFailedError on a quota or
    * database failure; nothing is written and no restore point is deleted then.
+   * The rotation never deletes `keepIds` (e.g. the restore point being restored).
    */
-  async function createSnapshot(trigger: BackupTrigger): Promise<CreateSnapshotResult> {
+  async function createSnapshot(
+    trigger: BackupTrigger,
+    options: { keepIds?: ReadonlyArray<number> } = {}
+  ): Promise<CreateSnapshotResult> {
     isCreating.value = true;
     try {
       await ensureAvailable();
@@ -156,7 +160,8 @@ export const useBackupStore = defineStore('backup', () => {
             counts: source.counts,
             totalBytes: source.totalBytes,
           },
-          source.tables
+          source.tables,
+          options.keepIds
         );
       } catch (error) {
         throw new BackupFailedError(isQuotaError(error) ? 'quota' : 'failed', { cause: error });
@@ -269,6 +274,9 @@ export const useBackupStore = defineStore('backup', () => {
       await useDataTransferStore().importFromObject(payload, {
         snapshotTrigger: 'pre-restore',
         skipSnapshot: options.skipSnapshot,
+        // The "pre-restore" restore point must not rotate out the one being
+        // restored: if the import then fails, it is still available.
+        keepSnapshotIds: [id],
       });
       await loadSnapshots();
     } finally {

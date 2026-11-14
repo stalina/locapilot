@@ -22,10 +22,13 @@ import { useBackupStore } from './backupStore';
  * Restore point taken before a destructive operation (issue #59): after the
  * user confirmed and the data passed validation, before the first clear().
  * `skipSnapshot` is set when the user chose to continue without one.
+ * `keepSnapshotIds` are never rotated out by that restore point (the restore
+ * point being restored must survive until the import succeeded).
  */
 export interface RestorePointOptions {
   snapshotTrigger?: BackupTrigger;
   skipSnapshot?: boolean;
+  keepSnapshotIds?: ReadonlyArray<number>;
 }
 
 export type ClearResult = 'restore-point-created' | 'no-restore-point';
@@ -124,7 +127,9 @@ export const useDataTransferStore = defineStore('dataTransfer', () => {
       // data is known to be valid. Throws BackupFailedError when it fails, so
       // nothing is cleared unless the caller retries with skipSnapshot.
       if (options.snapshotTrigger && !options.skipSnapshot) {
-        await useBackupStore().createSnapshot(options.snapshotTrigger);
+        await useBackupStore().createSnapshot(options.snapshotTrigger, {
+          keepIds: options.keepSnapshotIds,
+        });
       }
 
       const docsToAdd = deserializeDocuments(validated.documents);

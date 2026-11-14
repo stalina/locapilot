@@ -315,6 +315,17 @@ describe('dataTransferStore — restore point before a destructive operation (#5
     expect(order).toEqual(['snapshot:pre-import', 'import']);
   });
 
+  it('forwards the protected restore point ids to the snapshot rotation', async () => {
+    const store = useDataTransferStore();
+
+    await store.importFromObject(validPayload(), {
+      snapshotTrigger: 'pre-restore',
+      keepSnapshotIds: [2],
+    });
+
+    expect(backupStore.createSnapshot).toHaveBeenCalledWith('pre-restore', { keepIds: [2] });
+  });
+
   it('takes no snapshot when the validation fails', async () => {
     const store = useDataTransferStore();
 

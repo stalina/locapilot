@@ -115,6 +115,7 @@ The manual file export only protects the landlord if they remember to run it. **
 - **Failure of a pre-operation restore point**: if the restore point cannot be created (quota exceeded, `locapilot-backups` cannot be opened, e.g. in private browsing), the destructive operation does **not** start silently. The user is asked "Impossible de créer un point de restauration avant cette opération. Continuer sans point de restauration ?". If they decline, the database is left unchanged.
 - **Failure of an automatic restore point**: it is logged through the structured logger (`source: 'backup'`). The Restore points card shows a non-blocking warning. The previous restore points are kept, and rotation is not applied.
 - **Rotation**: rotation runs only after a new restore point was written successfully, and never deletes the restore point that was just created.
+  - **Protected restore points**: the caller can protect restore points from a rotation. The `pre-restore` restore point protects the restore point being restored, so that point is still available if the restore then fails. A protected restore point counts as one of the kept ones: the next-oldest restore point of its pool is deleted instead, and the pool still ends at its limit.
   - The **7** most recent `auto` restore points are kept: about one week of daily snapshots.
   - The **5** most recent restore points of the other triggers (`manual`, `pre-import`, `pre-sync`, `pre-clear`, `pre-restore`) are kept, as one shared pool.
   - Older ones are deleted, together with their stored tables, in the same transaction as the write.
@@ -748,6 +749,19 @@ Given my database contains data
 When I restore an older restore point and confirm
 Then a "pre-restore" restore point holding my current data is created first
 And restoring that "pre-restore" restore point brings my data back to its state before the restore
+```
+
+#### Scenario: Restore the oldest non-automatic restore point when 5 already exist
+
+```gherkin
+Given my database contains data
+And 5 non-automatic restore points exist: "Manuel", "Avant effacement", "Avant restauration", "Manuel", "Manuel", from oldest to newest
+When I restore the oldest one ("Manuel") and confirm
+Then a "pre-restore" restore point holding my current data is created first
+And the restored restore point is not rotated out by that "pre-restore" restore point
+And the next-oldest one ("Avant effacement") is deleted instead
+And 5 non-automatic restore points remain: the restored one, the new "pre-restore" one and the 3 others
+And if the restore then fails while writing, the restored restore point is still available
 ```
 
 #### Scenario: Restore cancelled

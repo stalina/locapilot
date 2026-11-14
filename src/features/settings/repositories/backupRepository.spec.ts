@@ -166,6 +166,35 @@ describe('backupRepository (integration, fake-indexeddb)', () => {
     expect(await getSnapshotTables(ids[0] as number)).toEqual([]);
   });
 
+  it('never rotates out a protected restore point: the next-oldest one goes', async () => {
+    const now = Date.now();
+    const ids: number[] = [];
+    const triggers: BackupTrigger[] = ['manual', 'pre-clear', 'pre-restore', 'manual', 'manual'];
+    for (const [i, trigger] of triggers.entries()) {
+      const { id } = await writeSnapshot(
+        meta(trigger, new Date(now - (5 - i) * HOUR)),
+        emptyTables()
+      );
+      ids.push(id);
+    }
+    const [oldest, nextOldest] = ids as [number, number];
+
+    // Restoring the oldest: the "pre-restore" point must not delete it.
+    const { id: newId, deletedIds } = await writeSnapshot(
+      meta('pre-restore', new Date(now)),
+      emptyTables(),
+      [oldest]
+    );
+
+    expect(deletedIds).toEqual([nextOldest]);
+    const remaining = (await listSnapshots()).map(s => s.id);
+    expect(remaining).toHaveLength(5);
+    expect(remaining).toContain(oldest);
+    expect(remaining).toContain(newId);
+    expect((await getSnapshotTables(oldest)).length).toBe(SYNC_TABLES.length);
+    expect(await getSnapshotTables(nextOldest)).toEqual([]);
+  });
+
   it('deleteSnapshot removes the restore point and all its stored tables', async () => {
     const { id: keep } = await writeSnapshot(meta('manual', new Date()), emptyTables());
     const { id: drop } = await writeSnapshot(meta('manual', new Date()), emptyTables());

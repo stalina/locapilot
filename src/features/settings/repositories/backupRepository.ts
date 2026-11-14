@@ -69,10 +69,12 @@ export async function getSnapshotTables(snapshotId: number): Promise<BackupSnaps
  * Write a restore point — metadata, one row per business table and the
  * rotation deletions — in a single read-write transaction: it is either
  * complete or absent, and rotation only happens when the write succeeded.
+ * `keepIds` are never rotated out (e.g. the restore point being restored).
  */
 export async function writeSnapshot(
   meta: Omit<BackupSnapshot, 'id'>,
-  tables: SyncTables
+  tables: SyncTables,
+  keepIds: ReadonlyArray<number> = []
 ): Promise<{ id: number; deletedIds: number[] }> {
   return backupDb.transaction('rw', backupDb.snapshots, backupDb.snapshotTables, async () => {
     const id = await backupDb.snapshots.add({ ...meta });
@@ -81,7 +83,7 @@ export async function writeSnapshot(
     );
 
     const all = await backupDb.snapshots.toArray();
-    const deletedIds = selectSnapshotsToDelete(all, id);
+    const deletedIds = selectSnapshotsToDelete(all, id, keepIds);
     if (deletedIds.length > 0) {
       await backupDb.snapshots.bulkDelete(deletedIds);
       await backupDb.snapshotTables.where('snapshotId').anyOf(deletedIds).delete();

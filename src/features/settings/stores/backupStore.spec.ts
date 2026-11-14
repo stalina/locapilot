@@ -11,6 +11,7 @@ import {
   AUTO_BACKUP_CHECK_INTERVAL_MS,
   BackupFailedError,
   InvalidSnapshotError,
+  selectSnapshotsToDelete,
   type BackupSnapshot,
   type BackupSnapshotTable,
   type StoredBackupSnapshot,
@@ -448,7 +449,7 @@ describe('backupStore', () => {
 
       expect(importSpy).toHaveBeenCalledWith(
         expect.objectContaining({ properties: [property('Restaurée')], expenses: [] }),
-        { snapshotTrigger: 'pre-restore', skipSnapshot: undefined }
+        { snapshotTrigger: 'pre-restore', skipSnapshot: undefined, keepSnapshotIds: [5] }
       );
       expect(importBusinessData).toHaveBeenCalledWith(
         expect.objectContaining({ properties: [property('Restaurée')] })
@@ -470,6 +471,46 @@ describe('backupStore', () => {
       await store.restoreSnapshot(5);
 
       expect(order).toEqual(['snapshot:pre-restore', 'import']);
+    });
+
+    it('protects the restore point being restored from the pre-restore rotation', async () => {
+      const store = useBackupStore();
+
+      await store.restoreSnapshot(5);
+
+      expect(writeSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({ trigger: 'pre-restore' }),
+        expect.anything(),
+        [5]
+      );
+    });
+
+    it('keeps the oldest of 5 non-automatic restore points when restoring it, even if the import fails', async () => {
+      const at = (hoursAgo: number) => new Date(Date.UTC(2026, 10, 14) - hoursAgo * HOUR);
+      let pool: StoredBackupSnapshot[] = [
+        stored(2, { trigger: 'manual', createdAt: at(50) }),
+        stored(3, { trigger: 'pre-clear', createdAt: at(40) }),
+        stored(4, { trigger: 'pre-restore', createdAt: at(30) }),
+        stored(5, { trigger: 'manual', createdAt: at(20) }),
+        stored(6, { trigger: 'manual', createdAt: at(10) }),
+      ];
+      vi.mocked(getSnapshot).mockResolvedValue(pool[0]);
+      vi.mocked(getSnapshotTables).mockResolvedValue(
+        rowsFor(2, { properties: [property('Restaurée')] })
+      );
+      // Same rotation as the real repository, on an in-memory pool.
+      vi.mocked(writeSnapshot).mockImplementation(async (meta, _tables, keepIds) => {
+        pool = [...pool, { ...meta, id: 7 }];
+        const deletedIds = selectSnapshotsToDelete(pool, 7, keepIds);
+        pool = pool.filter(s => !deletedIds.includes(s.id));
+        return { id: 7, deletedIds };
+      });
+      vi.mocked(importBusinessData).mockRejectedValue(new Error('write failed'));
+      const store = useBackupStore();
+
+      await expect(store.restoreSnapshot(2)).rejects.toThrow();
+
+      expect(pool.map(s => s.id).sort((a, b) => a - b)).toEqual([2, 4, 5, 6, 7]);
     });
 
     it('creates no pre-restore restore point on an empty database', async () => {

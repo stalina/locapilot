@@ -168,6 +168,48 @@ describe('backupService', () => {
 
       expect(selectSnapshotsToDelete([...autos, ...others, created], 99)).toEqual([24]);
     });
+
+    it('never deletes a protected id and still shrinks the pool to 5', () => {
+      // The restore point being restored (id 2) is the oldest non-automatic one.
+      const others = [
+        snap(2, 'manual', 50),
+        snap(3, 'pre-clear', 40),
+        snap(4, 'pre-restore', 30),
+        snap(5, 'manual', 20),
+        snap(6, 'manual', 10),
+      ];
+      const created = snap(7, 'pre-restore', 0);
+      const all = [...others, created];
+
+      const deleted = selectSnapshotsToDelete(all, 7, [2]);
+
+      // The next-oldest one goes instead.
+      expect(deleted).toEqual([3]);
+      const remaining = all.map(s => s.id).filter(id => !deleted.includes(id));
+      expect(remaining.sort((a, b) => a - b)).toEqual([2, 4, 5, 6, 7]);
+    });
+
+    it('counts several protected ids as kept ones', () => {
+      const others = Array.from({ length: 5 }, (_, i) => snap(i + 1, 'manual', 50 - i));
+      const created = snap(99, 'pre-restore', 0);
+
+      // Ids 1 and 2 are the two oldest: 3 goes, the pool ends at 5.
+      expect(selectSnapshotsToDelete([...others, created], 99, [1, 2])).toEqual([3]);
+    });
+
+    it('protects an automatic restore point without rotating the other pool', () => {
+      const autos = Array.from({ length: 7 }, (_, i) => snap(i + 1, 'auto', 100 + i));
+      const others = Array.from({ length: 5 }, (_, i) => snap(i + 20, 'manual', i + 1));
+      const created = snap(99, 'pre-restore', 0);
+
+      // Restoring the oldest auto point (id 7): only the other pool rotates.
+      expect(selectSnapshotsToDelete([...autos, ...others, created], 99, [7])).toEqual([24]);
+    });
+
+    it('ignores protected ids that do not exist', () => {
+      const all = [snap(1, 'manual', 2), snap(2, 'manual', 1), snap(3, 'manual', 0)];
+      expect(selectSnapshotsToDelete(all, 3, [42])).toEqual([]);
+    });
   });
 
   describe('estimateSnapshotBytes', () => {
