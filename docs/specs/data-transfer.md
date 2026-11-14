@@ -40,6 +40,20 @@ The **data transfer** module allows the landlord to export all application data 
   - **Host side:** "Appareil déconnecté — en attente d'une nouvelle connexion" when a client leaves, "Connexion rejetée — PIN incorrect" after a wrong PIN, and "Données envoyées — session de synchronisation terminée" once the transfer is complete. When a transfer was refused ("Transfert refusé par l'appareil distant") or interrupted ("Transfert interrompu — …"), that outcome stays displayed when the client's connection then closes; it is not replaced by "Appareil déconnecté…".
   - **Client side:** tearing down the local `Peer` never replaces the last meaningful status, such as "Synchronisation terminée" or "Authentification échouée — PIN incorrect", with a raw "stopped".
 
+### P2P connection establishment
+
+- Reaching the PeerJS **signaling broker** is not being connected to the other device. The broker only relays the connection request; the encrypted data channel between the two devices is established afterwards by WebRTC (ICE) and can fail when no network route exists between them. The interface MUST NOT claim that the devices are connected before the data channel is actually open:
+  - **Client side:** "Connexion à l'appareil hôte en cours…" from the click on "Se connecter" until the data channel opens (then "Authentification en cours...").
+  - **Host side:** "Appareil détecté — établissement de la connexion…" from the reception of a connection request until the data channel opens.
+- **Bounded establishment**: the data channel MUST open within **30 seconds** (`CONNECT_TIMEOUT_MS`) — counted, on the client, from the click on "Se connecter" (it therefore also covers a broker that never answers) and, on the host, from the reception of the connection request. Past this delay, or as soon as the WebRTC negotiation reports a failure or the connection closes before it ever opened, the attempt fails explicitly (`connection-failed`). The devices never wait indefinitely on a connection that is not established.
+- **On failure**:
+  - **Client side:** the local `Peer` is released and the status shows "Connexion impossible avec l'appareil hôte. Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez."
+  - **Host side:** only that client attempt is released. The hosting session is **not** ended (see "P2P host session lifecycle"): the session ID, PIN, QR code and "Arrêter" stay displayed, the failed-PIN counter is unchanged, and the status shows "Connexion impossible avec l'autre appareil — en attente d'une nouvelle tentative. Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez." It is not reported as "Appareil déconnecté…", and a late opening of the released connection is ignored.
+  - A broker-level error on the client (unknown session ID, broker unreachable) keeps its own status and is not replaced later by the timeout message.
+- **Explicit ICE servers**: the application MUST NOT rely on the default ICE configuration bundled with PeerJS (its public TURN relays no longer exist). Every `Peer`, host and client, is created with an explicit list: several public **STUN** servers, plus the optional servers of the deployment.
+- **Optional TURN relay**: two devices that cannot reach each other directly (mobile data / carrier-grade NAT, a browser that hides local addresses, a router without NAT loopback) need a TURN relay. A deployment can supply one at build time with the `VITE_P2P_ICE_SERVERS` environment variable: a JSON array of `RTCIceServer` objects (`{ "urls": "turn:host:3478", "username": "…", "credential": "…" }`, `urls` being one or several `stun:`/`stuns:`/`turn:`/`turns:` URLs). These servers are appended to the default STUN servers. An absent value adds nothing; an invalid value or entry is ignored with a console warning and never prevents a direct connection. Like everything shipped in the public bundle, these credentials are not secret. A relay only forwards the WebRTC traffic, which stays encrypted end to end by the per-pairing session key.
+- Without a TURN relay, the synchronisation is only guaranteed between devices that can reach each other directly (typically the same local network).
+
 ### P2P pairing QR code
 
 - While hosting, the host displays a **QR code** next to the session ID and PIN. Scanning it with the native camera of another device opens Locapilot on that device with the session ID and PIN pre-filled, so the user does not have to type them.
@@ -542,6 +556,113 @@ When I click "Héberger" or "Se connecter"
 Then the previous Peer is destroyed before the new one is created
 And if the previous Peer was hosting, its session ID, PIN and QR code are no longer displayed
 And no Peer keeps listening without being shown in the interface
+```
+
+---
+
+### Story: Report a P2P connection that cannot be established
+
+**As a** landlord  
+**I want to** be told when my two devices cannot reach each other  
+**So that** I am not left waiting on devices that claim to be connected while nothing happens
+
+> Being registered with the signaling broker is not being connected to the other device (see "P2P connection establishment" in Domain Rules).
+
+#### Scenario: The connection is shown as in progress until the data channel opens
+
+```gherkin
+Given device A is hosting
+When I enter its session ID and PIN on device B and click "Se connecter"
+Then device B shows status: "Connexion à l'appareil hôte en cours…"
+And device A shows status: "Appareil détecté — établissement de la connexion…" once it receives the connection request
+And neither device shows "connected" or "client-connected"
+And once the data channel is open, device B shows "Authentification en cours..."
+```
+
+#### Scenario: The data channel never opens (no network route between the devices)
+
+```gherkin
+Given device A is hosting
+And no network route exists between device A and device B (e.g. device B is on mobile data and no TURN relay is configured)
+When I enter the session ID and PIN on device B and click "Se connecter"
+And 30 seconds elapse without the data channel opening
+Then device B shows status: "Connexion impossible avec l'appareil hôte. Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez."
+And device B's Peer is released
+And device A shows status: "Connexion impossible avec l'autre appareil — en attente d'une nouvelle tentative. Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez."
+And device A keeps displaying its session ID, PIN, QR code and the "Arrêter" button
+And no PIN attempt is counted
+And no data is transferred
+```
+
+#### Scenario: The WebRTC negotiation fails before the timeout
+
+```gherkin
+Given device B is connecting to device A and the data channel is not open yet
+When the WebRTC negotiation reports a failure, or the connection closes before it ever opened
+Then both devices show their "Connexion impossible…" status right away, without waiting for the 30 seconds
+And the status never shows a raw "error"
+And device A keeps its hosting session open
+```
+
+#### Scenario: A new attempt succeeds on the same session after a failed connection
+
+```gherkin
+Given device A is hosting and a connection attempt from device B could not be established
+When device B, now on the same Wi-Fi network, connects again with the same session ID and PIN
+Then the data channel opens and device A sends a fresh handshake
+And the synchronisation proceeds normally
+```
+
+#### Scenario: An established connection is never timed out
+
+```gherkin
+Given the data channel between device A and device B is open
+When more than 30 seconds elapse while I read a confirmation dialog
+Then the connection is not reported as failed
+```
+
+#### Scenario: An unknown session ID keeps its own error
+
+```gherkin
+Given no device is hosting the session ID I typed
+When I click "Se connecter" on device B
+Then the broker error is reported
+And it is not replaced 30 seconds later by "Connexion impossible avec l'appareil hôte…"
+```
+
+#### Scenario: Stopping while a connection is being established
+
+```gherkin
+Given a connection is being established
+When the host clicks "Arrêter" (or the client starts another role)
+Then the establishment timer is cancelled
+And no "Connexion impossible…" status appears afterwards
+```
+
+#### Scenario: Every Peer uses explicit ICE servers
+
+```gherkin
+Given the application is built without VITE_P2P_ICE_SERVERS
+When a device starts hosting or connects to a host
+Then its Peer is created with the explicit default STUN servers
+And the ICE configuration contains no PeerJS default TURN relay
+```
+
+#### Scenario: A deployment supplies a TURN relay
+
+```gherkin
+Given the application is built with VITE_P2P_ICE_SERVERS='[{"urls":"turn:turn.example.org:3478","username":"u","credential":"c"}]'
+When a device starts hosting or connects to a host
+Then its Peer is created with the default STUN servers followed by that TURN server
+```
+
+#### Scenario: An invalid ICE server configuration is ignored
+
+```gherkin
+Given VITE_P2P_ICE_SERVERS is not a JSON array, or contains an entry without valid stun:/turn: urls
+When a device starts hosting or connects to a host
+Then the invalid value or entry is ignored with a console warning
+And the valid entries and the default STUN servers are still used
 ```
 
 ---

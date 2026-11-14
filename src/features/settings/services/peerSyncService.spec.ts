@@ -18,6 +18,10 @@ import {
   CHUNK_BYTES,
   FLOW_WINDOW_BYTES,
   INACTIVITY_TIMEOUT_MS,
+  CONNECT_TIMEOUT_MS,
+  DEFAULT_ICE_SERVERS,
+  parseIceServers,
+  resolveIceServers,
 } from './peerSyncService';
 import type {
   PeerStatus,
@@ -80,6 +84,8 @@ const mocks = vi.hoisted(() => {
     destroyed = false;
     latestConn: MockDataConn | null = null;
     connectOptions: unknown = undefined;
+    /** Options passed to the Peer constructor (ICE configuration…). */
+    options: unknown = undefined;
 
     on(evt: string, fn: Handler) {
       (this.handlers[evt] ??= []).push(fn);
@@ -100,8 +106,9 @@ const mocks = vi.hoisted(() => {
   const instances: MockPeer[] = [];
 
   class PeerConstructor extends MockPeer {
-    constructor(_id?: string, _opts?: unknown) {
+    constructor(_id?: string, opts?: unknown) {
       super();
+      this.options = opts;
       instances.push(this);
     }
   }
@@ -889,6 +896,283 @@ describe('PeerSyncService', () => {
 
       expect(statuses).toContain('auth-failed');
       expect(peer.destroyed).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('connection establishment (issue #140)', () => {
+    const FAKE_TIMERS = {
+      toFake: ['setTimeout', 'clearTimeout'] as ('setTimeout' | 'clearTimeout')[],
+    };
+    const failures = (events: StatusEvent[]) =>
+      events
+        .filter(e => e.status === 'connection-failed')
+        .map(e => (e.info as { reason?: string } | undefined)?.reason);
+
+    /** A client whose peer reached the broker but whose channel is not open. */
+    async function connectingClient() {
+      const events: StatusEvent[] = [];
+      const client = new PeerSyncService(undefined, (status, info) =>
+        events.push({ status, info })
+      );
+      await client.connect('host-peer', PIN);
+      const peer = mocks.last()!;
+      peer.emit('open', 'client-id');
+      return { client, peer, conn: peer.latestConn!, events };
+    }
+
+    /** A host that received a connection request whose channel is not open. */
+    async function hostWithPendingClient() {
+      const events: StatusEvent[] = [];
+      const host = new PeerSyncService(undefined, (status, info) => events.push({ status, info }));
+      await host.startHosting('host-peer', PIN);
+      const peer = mocks.last()!;
+      peer.emit('open', 'host-peer');
+      const conn = new mocks.MockDataConn();
+      peer.emit('connection', conn);
+      return { host, peer, conn, events };
+    }
+
+    describe('client', () => {
+      it('reports connecting — never connected — while only the broker is reached', async () => {
+        const { events } = await connectingClient();
+
+        expect(events.map(e => e.status)).toEqual(['connecting']);
+      });
+
+      it('fails with a timeout when the data channel never opens, then stops', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { peer, conn, events } = await connectingClient();
+
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS - 1);
+        expect(failures(events)).toEqual([]);
+        vi.advanceTimersByTime(1);
+
+        expect(failures(events)).toEqual(['timeout']);
+        expect(events.map(e => e.status)).toEqual(['connecting', 'connection-failed', 'stopped']);
+        expect(conn.closed).toBe(true);
+        expect(peer.destroyed).toBe(true);
+      });
+
+      it('fails with a timeout when the signaling broker never answers', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const events: StatusEvent[] = [];
+        const client = new PeerSyncService(undefined, (status, info) =>
+          events.push({ status, info })
+        );
+        await client.connect('host-peer', PIN);
+
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        expect(failures(events)).toEqual(['timeout']);
+        expect(mocks.last()!.destroyed).toBe(true);
+      });
+
+      it('does not time out once the data channel is open', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { peer, conn, events } = await connectingClient();
+        conn.emit('open');
+
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS * 2);
+
+        expect(failures(events)).toEqual([]);
+        expect(has(events, 'connection-open')).toBe(true);
+        expect(peer.destroyed).toBe(false);
+      });
+
+      it('fails right away when the WebRTC negotiation errors before the channel opens', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { peer, conn, events } = await connectingClient();
+
+        conn.emit('error', new Error('Negotiation of connection failed.'));
+        conn.close(); // PeerJS emits 'error' then closes the connection
+
+        expect(failures(events)).toEqual(['negotiation']);
+        expect(has(events, 'error')).toBe(false);
+        expect(events.filter(e => e.status === 'stopped')).toHaveLength(1);
+        expect(peer.destroyed).toBe(true);
+        warn.mockRestore();
+      });
+
+      it('fails when the connection closes before the channel ever opened', async () => {
+        const { peer, conn, events } = await connectingClient();
+
+        conn.close();
+
+        expect(failures(events)).toEqual(['negotiation']);
+        expect(peer.destroyed).toBe(true);
+      });
+
+      it('keeps a broker error (e.g. unknown session ID) as the outcome, without a later timeout', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { peer, events } = await connectingClient();
+
+        peer.emit('error', new Error('Could not connect to peer host-peer'));
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        expect(has(events, 'error')).toBe(true);
+        expect(failures(events)).toEqual([]);
+      });
+
+      it('cancels the timeout when the client disconnects first', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { client, events } = await connectingClient();
+
+        client.disconnect();
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        expect(failures(events)).toEqual([]);
+      });
+    });
+
+    describe('host', () => {
+      it('releases a client whose data channel never opens and keeps hosting', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { peer, conn, events } = await hostWithPendingClient();
+
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        expect(failures(events)).toEqual(['timeout']);
+        expect(conn.closed).toBe(true);
+        expect(peer.destroyed).toBe(false);
+        // Not reported as a device leaving, and the session is not stopped.
+        expect(has(events, 'client-disconnected')).toBe(false);
+        expect(has(events, 'stopped')).toBe(false);
+      });
+
+      it('accepts a new connection on the same session after a failed attempt', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { peer, events } = await hostWithPendingClient();
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        const retry = new mocks.MockDataConn();
+        peer.emit('connection', retry);
+        retry.emit('open');
+
+        expect(retry.closed).toBe(false);
+        expect(retry.sentOfType('handshake')).toHaveLength(1);
+        expect(events.at(-1)?.status).toBe('auth-pending');
+      });
+
+      it('does not time out once the data channel is open', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { conn, events } = await hostWithPendingClient();
+        conn.emit('open');
+
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS * 2);
+
+        expect(failures(events)).toEqual([]);
+        expect(conn.closed).toBe(false);
+      });
+
+      it('fails right away when the WebRTC negotiation errors before the channel opens', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { peer, conn, events } = await hostWithPendingClient();
+
+        conn.emit('error', new Error('Negotiation of connection failed.'));
+
+        expect(failures(events)).toEqual(['negotiation']);
+        expect(has(events, 'error')).toBe(false);
+        expect(has(events, 'client-disconnected')).toBe(false);
+        expect(conn.closed).toBe(true);
+        expect(peer.destroyed).toBe(false);
+        warn.mockRestore();
+      });
+
+      it('ignores a late open of a client it already gave up on', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { conn, events } = await hostWithPendingClient();
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        conn.emit('open');
+
+        expect(conn.sentOfType('handshake')).toHaveLength(0);
+        expect(has(events, 'connection-open')).toBe(false);
+      });
+
+      it('cancels the timeout when hosting is stopped', async () => {
+        vi.useFakeTimers(FAKE_TIMERS);
+        const { host, events } = await hostWithPendingClient();
+
+        host.stopHosting();
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+
+        expect(failures(events)).toEqual([]);
+      });
+    });
+
+    describe('ICE servers', () => {
+      const TURN = { urls: 'turn:turn.example.org:3478', username: 'u', credential: 'c' };
+
+      it('gives both the host and the client an explicit ICE configuration', async () => {
+        const host = new PeerSyncService();
+        await host.startHosting('host-peer', PIN);
+        const hostOptions = mocks.last()!.options;
+        const client = new PeerSyncService();
+        await client.connect('host-peer', PIN);
+        const clientOptions = mocks.last()!.options;
+
+        const expected = expect.objectContaining({
+          config: { iceServers: [...DEFAULT_ICE_SERVERS] },
+        });
+        expect(hostOptions).toEqual(expected);
+        expect(clientOptions).toEqual(expected);
+      });
+
+      it('only relies on STUN servers by default (no dead PeerJS TURN relay)', () => {
+        const urls = DEFAULT_ICE_SERVERS.flatMap(server => server.urls);
+
+        expect(urls.length).toBeGreaterThan(1);
+        expect(urls.every(url => url.startsWith('stun:'))).toBe(true);
+        expect(urls.some(url => url.includes('peerjs.com'))).toBe(false);
+      });
+
+      it("appends the deployment's ICE servers to the defaults", () => {
+        expect(resolveIceServers(JSON.stringify([TURN]))).toEqual([...DEFAULT_ICE_SERVERS, TURN]);
+        expect(resolveIceServers(undefined)).toEqual([...DEFAULT_ICE_SERVERS]);
+      });
+
+      it('parses single and multiple urls, with or without credentials', () => {
+        const stun = { urls: ['stun:a.example.org:3478', 'stuns:b.example.org:5349'] };
+
+        expect(parseIceServers(JSON.stringify([TURN, stun]))).toEqual([TURN, stun]);
+      });
+
+      it.each([undefined, '', '   '])('returns no extra server for an absent value (%j)', raw => {
+        expect(parseIceServers(raw)).toEqual([]);
+      });
+
+      it.each(['not json', '{"urls":"turn:x.example.org"}', '42'])(
+        'ignores a value that is not a JSON array (%s)',
+        raw => {
+          const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+          expect(parseIceServers(raw)).toEqual([]);
+          expect(warn).toHaveBeenCalled();
+          warn.mockRestore();
+        }
+      );
+
+      it('skips invalid entries and keeps the valid ones', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const raw = JSON.stringify([
+          'turn:x.example.org',
+          { urls: 'https://example.org' },
+          { urls: [] },
+          { urls: ['turn:ok.example.org', 42] },
+          { username: 'u' },
+          TURN,
+        ]);
+
+        expect(parseIceServers(raw)).toEqual([TURN]);
+        warn.mockRestore();
+      });
+
+      it('drops non-string credentials instead of forwarding them', () => {
+        const raw = JSON.stringify([{ urls: 'turn:t.example.org', username: 1, credential: {} }]);
+
+        expect(parseIceServers(raw)).toEqual([{ urls: 'turn:t.example.org' }]);
+      });
     });
   });
 

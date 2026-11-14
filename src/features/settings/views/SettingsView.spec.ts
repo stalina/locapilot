@@ -352,6 +352,59 @@ describe('SettingsView — P2P host session lifecycle', () => {
     return { w, service: lastPeerService() };
   }
 
+  describe('connection establishment (issue #140)', () => {
+    const ADVICE = 'Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez.';
+
+    it('host: shows the connection as being established, not as connected', async () => {
+      const { w, service } = await host();
+
+      service.onStatus('client-connected');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain('Appareil détecté — établissement de la connexion…');
+      expect(p2pCard(w).text()).not.toContain('client-connected');
+    });
+
+    it('host: explains a connection that could not be established and keeps the session', async () => {
+      const { w, service } = await host();
+
+      service.onStatus('client-connected');
+      service.onStatus('connection-failed', { reason: 'timeout' });
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain(
+        "Connexion impossible avec l'autre appareil — en attente d'une nouvelle tentative."
+      );
+      expect(p2pCard(w).text()).toContain(ADVICE);
+      expect(hasHostSession(w)).toBe(true);
+      expect(service.stopHosting).not.toHaveBeenCalled();
+    });
+
+    it('client: shows the connection to the host as in progress, not as connected', async () => {
+      const w = await mountView();
+      const service = await connectAsClient(w);
+
+      service.onStatus('connecting');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain("Connexion à l'appareil hôte en cours…");
+      expect(p2pCard(w).text()).not.toContain('connected');
+    });
+
+    it('client: keeps the failure message after the service stops', async () => {
+      const w = await mountView();
+      const service = await connectAsClient(w);
+
+      service.onStatus('connecting');
+      service.onStatus('connection-failed', { reason: 'timeout' });
+      service.onStatus('stopped');
+      await flushPromises();
+
+      expect(p2pCard(w).text()).toContain("Connexion impossible avec l'appareil hôte.");
+      expect(p2pCard(w).text()).toContain(ADVICE);
+    });
+  });
+
   async function connectAsClient(w: VueWrapper) {
     await sessionInput(w).setValue('LP7K4MQ2XB');
     await pinInput(w).setValue('482913');

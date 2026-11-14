@@ -63,6 +63,14 @@ const TRANSFER_TIMEOUT_STATUS =
 const TRANSFER_REFUSED_STATUS = "Transfert refusé par l'appareil distant";
 const PROTOCOL_MISMATCH_STATUS =
   'Version de synchronisation incompatible — mettez à jour les deux appareils';
+// Connection establishment (issue #140): reaching the signaling broker is not
+// being connected to the other device — say so, and say when it fails.
+const CLIENT_CONNECTING_STATUS = "Connexion à l'appareil hôte en cours…";
+const HOST_CONNECTING_STATUS = 'Appareil détecté — établissement de la connexion…';
+const CONNECTION_FAILED_ADVICE =
+  'Placez les deux appareils sur le même réseau Wi-Fi (sans VPN) puis réessayez.';
+const CLIENT_CONNECTION_FAILED_STATUS = `Connexion impossible avec l'appareil hôte. ${CONNECTION_FAILED_ADVICE}`;
+const HOST_CONNECTION_FAILED_STATUS = `Connexion impossible avec l'autre appareil — en attente d'une nouvelle tentative. ${CONNECTION_FAILED_ADVICE}`;
 const SYNC_SUCCESS_MESSAGE = 'Données synchronisées avec succès !';
 const HOST_SESSION_COMPLETE_STATUS = 'Données envoyées — session de synchronisation terminée';
 
@@ -426,6 +434,11 @@ const startHosting = async () => {
       if (status === 'client-connected') {
         // A new attempt: the previous outcome no longer needs protecting.
         transferOutcomeShown = false;
+        peerStatus.value = HOST_CONNECTING_STATUS;
+      }
+      if (status === 'connection-failed') {
+        // The data channel never opened: the session keeps listening.
+        peerStatus.value = HOST_CONNECTION_FAILED_STATUS;
       }
       if (status === 'transfer-complete') {
         // The client acknowledged the end of the stream, then disconnected: the
@@ -496,6 +509,12 @@ const connectToHost = async () => {
           return;
         }
         peerStatus.value = String(status) + (typeof info === 'string' ? ` - ${info}` : '');
+        if (status === 'connecting') {
+          peerStatus.value = CLIENT_CONNECTING_STATUS;
+        }
+        if (status === 'connection-failed') {
+          peerStatus.value = CLIENT_CONNECTION_FAILED_STATUS;
+        }
         if (status === 'auth-pending') {
           peerStatus.value = 'Authentification en cours...';
         }
