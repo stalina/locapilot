@@ -1124,7 +1124,11 @@ describe('PeerSyncService', () => {
 
         expect(urls.length).toBeGreaterThan(1);
         expect(urls.every(url => url.startsWith('stun:'))).toBe(true);
-        expect(urls.some(url => url.includes('peerjs.com'))).toBe(false);
+        // `stun:<host>:<port>` — compare the exact host, not a URL substring.
+        const hosts = urls.map(url => url.split(':')[1] ?? '');
+        expect(hosts.some(host => host === 'peerjs.com' || host.endsWith('.peerjs.com'))).toBe(
+          false
+        );
       });
 
       it("appends the deployment's ICE servers to the defaults", () => {
