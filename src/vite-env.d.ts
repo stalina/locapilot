@@ -13,3 +13,11 @@
 interface ImportMeta {
   readonly __APP_VERSION__: string | undefined;
 }
+
+interface ImportMetaEnv {
+  /**
+   * Optional extra WebRTC ICE servers for the P2P sync (issue #140): a JSON
+   * array of RTCIceServer, typically a TURN relay. See docs/specs/data-transfer.md.
+   */
+  readonly VITE_P2P_ICE_SERVERS?: string;
+}

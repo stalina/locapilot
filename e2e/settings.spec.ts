@@ -130,6 +130,65 @@ test.describe("Settings - Session hôte P2P après la déconnexion d'un appareil
   });
 });
 
+test.describe('Settings - Connexion P2P impossible à établir', () => {
+  test("Golden path : un canal WebRTC qui ne s'ouvre pas est signalé des deux côtés", async ({
+    page,
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+
+    // Hôte (contexte par défaut) : démarrer une session.
+    await resetApp(page);
+    await navigateFromSidebar(page, /Param[èe]tres|Settings/i, /\/settings/);
+    const hostCard = page.getByTestId('p2p-sync-card');
+    await hostCard.getByRole('button', { name: 'Héberger' }).click();
+    const sessionInfo = hostCard.locator('.peer-session-info');
+    await expect(sessionInfo).toBeVisible({ timeout: 15_000 });
+    const sessionId = (await sessionInfo.locator('code').first().innerText()).trim();
+    const pin = (await sessionInfo.locator('.peer-pin').first().innerText()).trim();
+
+    // Client : aucun candidat ICE utilisable (relais imposé, sans serveur TURN),
+    // comme deux appareils sans route réseau directe.
+    const clientContext = await browser.newContext();
+    try {
+      await clientContext.addInitScript(() => {
+        const Native = window.RTCPeerConnection;
+        window.RTCPeerConnection = class extends Native {
+          constructor(config?: ConstructorParameters<typeof Native>[0]) {
+            super({ ...config, iceServers: [], iceTransportPolicy: 'relay' });
+          }
+        };
+      });
+      const client = await clientContext.newPage();
+      await resetApp(client);
+      await navigateFromSidebar(client, /Param[èe]tres|Settings/i, /\/settings/);
+      const clientCard = client.getByTestId('p2p-sync-card');
+      await clientCard.locator('input[placeholder*="ID de session"]').fill(sessionId);
+      await clientCard.locator('input[placeholder*="Code PIN"]').fill(pin);
+      await clientCard.getByRole('button', { name: 'Se connecter' }).click();
+
+      // Tant que le canal n'est pas ouvert, personne ne se dit « connecté ».
+      await expect(clientCard).toContainText("Connexion à l'appareil hôte en cours…");
+      await expect(clientCard).not.toContainText('connected');
+
+      // L'échec est signalé des deux côtés, au plus tard après le délai de 30 s.
+      await expect(clientCard).toContainText("Connexion impossible avec l'appareil hôte.", {
+        timeout: 45_000,
+      });
+      await expect(hostCard).toContainText("Connexion impossible avec l'autre appareil", {
+        timeout: 45_000,
+      });
+
+      // L'hôte garde sa session ouverte pour une nouvelle tentative.
+      await expect(sessionInfo.locator('code').first()).toHaveText(sessionId);
+      await expect(sessionInfo.locator('.peer-pin').first()).toHaveText(pin);
+      await expect(hostCard.getByRole('button', { name: 'Arrêter' })).toBeVisible();
+    } finally {
+      await clientContext.close();
+    }
+  });
+});
+
 test.describe('Settings - QR code de synchronisation P2P', () => {
   test.beforeEach(async ({ page }) => {
     await resetApp(page);

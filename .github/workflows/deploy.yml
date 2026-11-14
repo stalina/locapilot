@@ -35,6 +35,8 @@ jobs:
         env:
           NODE_ENV: production
           BUILD_SECRET_KEY: ${{ secrets.BUILD_SECRET_KEY }}
+          # Optional TURN relay for the P2P sync (JSON array of RTCIceServer).
+          VITE_P2P_ICE_SERVERS: ${{ vars.P2P_ICE_SERVERS }}
       
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -79,10 +79,89 @@ export const ACK_MAX_INTERVAL_MS = 5_000;
 export const INACTIVITY_TIMEOUT_MS = 60_000;
 /** Minimum delay between two `transfer-progress` notifications (≈ 4 / s). */
 export const PROGRESS_INTERVAL_MS = 250;
+/**
+ * Maximum time (ms) to establish the peer-to-peer data channel. Reaching the
+ * signaling broker (or receiving a connection request through it) does not
+ * mean the two devices can reach each other: the WebRTC negotiation may never
+ * complete (issue #140). Past this delay the attempt fails explicitly.
+ */
+export const CONNECT_TIMEOUT_MS = 30_000;
 /** Safety-net delay when waiting for the send buffers to drain. */
 const SEND_BUFFER_POLL_MS = 50;
 /** AES-GCM IV length (bytes). */
 const IV_BYTES = 12;
+
+// ---------------------------------------------------------------------------
+// ICE servers (issue #140 — see docs/specs/data-transfer.md, "P2P connection
+// establishment")
+//
+// The configuration is explicit instead of PeerJS's built-in default, whose
+// public TURN relays no longer exist. STUN lets two devices that can reach each
+// other directly find a route; devices that cannot (mobile network, browser
+// hiding local addresses…) need a TURN relay, which a deployment can supply at
+// build time through `VITE_P2P_ICE_SERVERS` (a JSON array of RTCIceServer).
+// ---------------------------------------------------------------------------
+
+/** One WebRTC ICE server (lib.dom's `RTCIceServer`), derived from the API. */
+export type IceServer = NonNullable<
+  ReturnType<RTCPeerConnection['getConfiguration']>['iceServers']
+>[number];
+
+/** Public STUN servers used by every pairing. */
+export const DEFAULT_ICE_SERVERS: readonly IceServer[] = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+];
+
+const ICE_URL_PATTERN = /^(stun|stuns|turn|turns):\S+$/;
+const isIceUrl = (value: unknown): value is string =>
+  typeof value === 'string' && ICE_URL_PATTERN.test(value);
+
+/**
+ * Parse the extra ICE servers of a deployment (the raw `VITE_P2P_ICE_SERVERS`
+ * value): a JSON array of `{ urls, username?, credential? }`. Returns an empty
+ * list when the value is absent; an invalid value is ignored with a warning so
+ * a configuration mistake never prevents a direct connection.
+ */
+export function parseIceServers(raw: string | undefined): IceServer[] {
+  if (!raw || raw.trim() === '') return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = null;
+  }
+  if (!Array.isArray(parsed)) {
+    console.warn('VITE_P2P_ICE_SERVERS ignored: not a JSON array of ICE servers');
+    return [];
+  }
+  const servers: IceServer[] = [];
+  for (const entry of parsed) {
+    if (!isRecord(entry)) continue;
+    const { urls, username, credential } = entry;
+    const validUrls =
+      isIceUrl(urls) || (Array.isArray(urls) && urls.length > 0 && urls.every(isIceUrl));
+    if (!validUrls) {
+      console.warn('VITE_P2P_ICE_SERVERS: entry ignored (invalid urls)');
+      continue;
+    }
+    const server: IceServer = { urls };
+    if (typeof username === 'string') server.username = username;
+    if (typeof credential === 'string') server.credential = credential;
+    servers.push(server);
+  }
+  return servers;
+}
+
+/** ICE servers of a pairing: the default STUN servers + the deployment's own. */
+export function resolveIceServers(
+  raw: string | undefined = import.meta.env.VITE_P2P_ICE_SERVERS
+): IceServer[] {
+  return [...DEFAULT_ICE_SERVERS, ...parseIceServers(raw)];
+}
+
+/** Why the peer-to-peer data channel could not be established. */
+export type ConnectionFailureReason = 'timeout' | 'negotiation';
 
 export type DataKind = 'manifest' | 'records' | 'blob_chunk' | 'end';
 const DATA_KINDS: readonly DataKind[] = ['manifest', 'records', 'blob_chunk', 'end'];
@@ -648,6 +727,11 @@ const blobKey = (table: BlobTableName, id: number) => `${table}:${id}`;
  * `stopped` (explicit stop), `locked-out` (too many wrong PINs) or
  * `transfer-complete` (the client acknowledged the `end` of a streamed
  * transfer and then disconnected).
+ *
+ * Connection establishment (issue #140): `client-connected` (host) and
+ * `connecting` (client) only mean that the signaling broker relayed the
+ * request — the data channel is usable from `connection-open`. When it does not
+ * open (`connection-failed`), the host keeps listening and the client stops.
  */
 export type PeerStatus =
   | 'idle'
@@ -655,12 +739,13 @@ export type PeerStatus =
   | 'hosting'
   | 'client-connected'
   | 'client-disconnected'
+  | 'connecting'
   | 'connection-open'
+  | 'connection-failed'
   | 'auth-pending'
   | 'auth-ok'
   | 'auth-failed'
   | 'locked-out'
-  | 'connected'
   | 'protocol-mismatch'
   | 'transfer-pending'
   | 'transfer-progress'
@@ -704,6 +789,8 @@ export class PeerSyncService {
   private signalWaiters = new Set<() => void>();
   private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
   private onInactivity: (() => void) | null = null;
+  /** Bounds the establishment of the data channel (CONNECT_TIMEOUT_MS). */
+  private connectTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Cross-session lockout state: `static` so it survives service
   // re-instantiation and a host cannot immediately re-host after being
@@ -739,6 +826,48 @@ export class PeerSyncService {
 
   private get debugLevel(): number {
     return import.meta.env.DEV ? 2 : 0;
+  }
+
+  private get peerOptions() {
+    return { debug: this.debugLevel, config: { iceServers: resolveIceServers() } };
+  }
+
+  // -------------------------------------------------------------------------
+  // Connection establishment (both sides, until the data channel is open)
+  // -------------------------------------------------------------------------
+
+  private armConnectTimeout(onTimeout: () => void) {
+    this.clearConnectTimeout();
+    this.connectTimer = setTimeout(() => {
+      this.connectTimer = null;
+      onTimeout();
+    }, CONNECT_TIMEOUT_MS);
+  }
+
+  private clearConnectTimeout() {
+    if (this.connectTimer) clearTimeout(this.connectTimer);
+    this.connectTimer = null;
+  }
+
+  /**
+   * Host: the data channel with a client that requested a connection never
+   * opened. Release that client only — the hosting session (ID, PIN, failed
+   * attempts) stays valid for a new attempt. The connection is detached before
+   * it is closed so its `close` is not reported as a client leaving.
+   */
+  private failPendingClient(c: DataConnection, reason: ConnectionFailureReason) {
+    if (this.conn !== c) return;
+    this.clearConnectTimeout();
+    this.conn = null;
+    this.resetConnectionState();
+    this.closeConnection(c);
+    this.notify('connection-failed', { reason });
+  }
+
+  /** Client: the data channel with the host never opened. */
+  private failConnecting(reason: ConnectionFailureReason) {
+    this.notify('connection-failed', { reason });
+    this.disconnect();
   }
 
   /**
@@ -852,7 +981,7 @@ export class PeerSyncService {
     this.pairingPin = pin;
     this.failedPinAttempts = 0;
     this.notify('creating');
-    this.peer = new Peer(id, { debug: this.debugLevel });
+    this.peer = new Peer(id, this.peerOptions);
 
     this.peer.on('open', (peerId: string) => {
       this.notify('hosting', peerId);
@@ -865,9 +994,16 @@ export class PeerSyncService {
         return;
       }
       this.conn = c;
+      // Only the connection request reached us (through the broker): the data
+      // channel is not open yet, and may never be.
+      let opened = false;
       this.notify('client-connected');
+      this.armConnectTimeout(() => this.failPendingClient(c, 'timeout'));
 
       c.on('open', () => {
+        if (this.conn !== c) return; // already given up on this client
+        opened = true;
+        this.clearConnectTimeout();
         this.notify('connection-open');
         // Start the handshake: send a fresh random salt for this pairing.
         this.salt = generateSalt();
@@ -895,6 +1031,12 @@ export class PeerSyncService {
           // outcome is the status shown, not a generic error over it.
           this.stopOutgoing(t, 'interrupted', { sendAbort: false });
           console.warn('P2P connection error during transfer', err);
+          return;
+        }
+        if (!opened && this.conn === c) {
+          // The WebRTC negotiation failed before the channel ever opened.
+          console.warn('P2P connection could not be established', err);
+          this.failPendingClient(c, 'negotiation');
           return;
         }
         this.notify('error', err);
@@ -1263,6 +1405,7 @@ export class PeerSyncService {
       inc.wakeLock = null;
     }
     this.clearInactivity();
+    this.clearConnectTimeout();
     this.releasePeer();
     this.resetPairingState();
   }
@@ -1286,10 +1429,14 @@ export class PeerSyncService {
 
     // Ephemeral, non-guessable client peer id (never reused across pairings).
     const ephemeralId = `peer-${crypto.randomUUID()}`;
-    this.peer = new Peer(ephemeralId, { debug: this.debugLevel });
+    this.peer = new Peer(ephemeralId, this.peerOptions);
+    // Bounds the whole establishment: broker registration + data channel.
+    let opened = false;
+    this.notify('connecting');
+    this.armConnectTimeout(() => this.failConnecting('timeout'));
 
-    this.peer.on('open', (id: string) => {
-      this.notify('connected', id);
+    this.peer.on('open', () => {
+      // Registered with the signaling broker only — not connected to the host.
       // `reliable: true` → an ORDERED data channel (PeerJS defaults to
       // `ordered: false`). The streamed protocol relies on arrival order: the
       // strict sequence check aborts on any reordered message.
@@ -1297,6 +1444,8 @@ export class PeerSyncService {
       this.conn = conn;
 
       conn.on('open', () => {
+        opened = true;
+        this.clearConnectTimeout();
         this.notify('connection-open');
         this.notify('auth-pending');
         // Wait for the host handshake (salt) before sending the PIN.
@@ -1314,6 +1463,11 @@ export class PeerSyncService {
       conn.on('close', () => {
         if (this.conn !== conn) return; // closed by this service
         this.conn = null;
+        if (!opened) {
+          // Closed before the channel ever opened (e.g. the host gave up).
+          this.failConnecting('negotiation');
+          return;
+        }
         if (this.incoming) {
           this.failIncoming('interrupted', { sendAbort: false });
         } else {
@@ -1328,11 +1482,20 @@ export class PeerSyncService {
           console.warn('P2P connection error during transfer', err);
           return;
         }
+        if (!opened && this.conn === conn) {
+          // The WebRTC negotiation failed before the channel ever opened.
+          console.warn('P2P connection could not be established', err);
+          this.failConnecting('negotiation');
+          return;
+        }
         this.notify('error', err);
       });
     });
 
     this.peer.on('error', (err: Error) => {
+      // A broker-level error (unknown session ID, broker unreachable…) is the
+      // outcome to show: do not replace it with a connection timeout later.
+      if (!opened) this.clearConnectTimeout();
       this.notify('error', err);
     });
   }

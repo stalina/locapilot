@@ -68,9 +68,11 @@ sequenceDiagram
 ### Machine à états (`PeerStatus`)
 
 `idle → creating → hosting → client-connected → connection-open → auth-pending →
-auth-ok | auth-failed`, côté client : `connected → connection-open →
+auth-ok | auth-failed`, côté client : `connecting → connection-open →
 auth-pending → auth-ok → importing`. États transverses : `warning`, `error`,
-`stopped`.
+`stopped`. `client-connected` / `connecting` signifient seulement que la demande
+de connexion a transité par le serveur de signalisation : si le canal de données
+ne s'ouvre pas sous 30 s, l'état passe à `connection-failed` (issue #140).
 
 ### Chiffrement
 
@@ -119,8 +121,12 @@ connexion concurrente est rejetée.
 - Le partage du `BUILD_SECRET_KEY` au sein d'un même déploiement signifie que la
   confidentialité repose sur le secret du build **et** le PIN d'appairage, pas
   sur une clé par-paire négociée dynamiquement.
-- WebRTC peut être bloqué par certains pare-feux/NAT restrictifs (pas de serveur
-  TURN configuré).
+- WebRTC peut être bloqué par certains pare-feux/NAT restrictifs. Les serveurs
+  ICE sont explicites (STUN publics) ; les relais TURN par défaut de PeerJS
+  n'existent plus. Un relais TURN peut être fourni au build via
+  `VITE_P2P_ICE_SERVERS` (voir `docs/specs/data-transfer.md`, « P2P connection
+  establishment ») ; sans lui, seuls les appareils joignables directement
+  (même réseau local) peuvent se synchroniser.
 
 ## Références
 
