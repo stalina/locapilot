@@ -11,7 +11,18 @@ vi.mock('../repositories/dataTransferRepository', () => ({
   clearBusinessData: vi.fn(),
 }));
 
-import { fetchRawExportData, importBusinessData } from '../repositories/dataTransferRepository';
+import {
+  clearBusinessData,
+  fetchRawExportData,
+  importBusinessData,
+} from '../repositories/dataTransferRepository';
+
+// Restore points (issue #59): the pre-operation snapshot is mocked so the
+// tests can assert when — and whether — it is taken.
+const backupStore = vi.hoisted(() => ({ createSnapshot: vi.fn() }));
+vi.mock('./backupStore', () => ({ useBackupStore: () => backupStore }));
+
+import { BackupFailedError } from '../services/backupService';
 
 const iso = '2026-01-01T00:00:00.000Z';
 
@@ -271,5 +282,121 @@ describe('dataTransferStore.buildSyncSource', () => {
     expect(source.counts.expenses).toBe(1);
     expect(source.documents).toBe(2);
     expect(source.totalBytes).toBe(120);
+  });
+});
+
+describe('dataTransferStore — restore point before a destructive operation (#59)', () => {
+  const validPayload = () => ({
+    properties: [validProperty()],
+    tenants: [validTenant()],
+    version: '1.2.0',
+  });
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+    backupStore.createSnapshot.mockResolvedValue('created');
+    vi.mocked(clearBusinessData).mockResolvedValue(undefined);
+  });
+
+  it('takes the snapshot after validation and before the data is replaced', async () => {
+    const order: string[] = [];
+    backupStore.createSnapshot.mockImplementation(async (trigger: string) => {
+      order.push(`snapshot:${trigger}`);
+      return 'created';
+    });
+    vi.mocked(importBusinessData).mockImplementation(async () => {
+      order.push('import');
+    });
+    const store = useDataTransferStore();
+
+    await store.importFromObject(validPayload(), { snapshotTrigger: 'pre-import' });
+
+    expect(order).toEqual(['snapshot:pre-import', 'import']);
+  });
+
+  it('takes no snapshot when the validation fails', async () => {
+    const store = useDataTransferStore();
+
+    await expect(
+      store.importFromObject(
+        { properties: [validProperty({ surface: 'big' })], tenants: [], version: '1' },
+        { snapshotTrigger: 'pre-sync' }
+      )
+    ).rejects.toThrow();
+
+    expect(backupStore.createSnapshot).not.toHaveBeenCalled();
+    expect(importBusinessData).not.toHaveBeenCalled();
+  });
+
+  it('aborts before any DB mutation when the snapshot fails', async () => {
+    backupStore.createSnapshot.mockRejectedValue(new BackupFailedError('quota'));
+    const store = useDataTransferStore();
+
+    await expect(
+      store.importFromObject(validPayload(), { snapshotTrigger: 'pre-import' })
+    ).rejects.toBeInstanceOf(BackupFailedError);
+
+    expect(importBusinessData).not.toHaveBeenCalled();
+    expect(store.isImporting).toBe(false);
+  });
+
+  it('imports without a snapshot when skipSnapshot is set', async () => {
+    const store = useDataTransferStore();
+
+    await store.importFromObject(validPayload(), {
+      snapshotTrigger: 'pre-import',
+      skipSnapshot: true,
+    });
+
+    expect(backupStore.createSnapshot).not.toHaveBeenCalled();
+    expect(importBusinessData).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes no snapshot without a trigger', async () => {
+    const store = useDataTransferStore();
+    await store.importFromObject(validPayload());
+    expect(backupStore.createSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('"Tout effacer" takes a pre-clear snapshot, then clears', async () => {
+    const order: string[] = [];
+    backupStore.createSnapshot.mockImplementation(async (trigger: string) => {
+      order.push(`snapshot:${trigger}`);
+      return 'created';
+    });
+    vi.mocked(clearBusinessData).mockImplementation(async () => {
+      order.push('clear');
+    });
+    const store = useDataTransferStore();
+
+    await expect(store.clearAllBusinessData()).resolves.toBe('restore-point-created');
+    expect(order).toEqual(['snapshot:pre-clear', 'clear']);
+  });
+
+  it('"Tout effacer" on an empty database clears without a restore point', async () => {
+    backupStore.createSnapshot.mockResolvedValue('skipped-empty');
+    const store = useDataTransferStore();
+
+    await expect(store.clearAllBusinessData()).resolves.toBe('no-restore-point');
+    expect(clearBusinessData).toHaveBeenCalledTimes(1);
+  });
+
+  it('"Tout effacer" clears nothing when the snapshot fails', async () => {
+    backupStore.createSnapshot.mockRejectedValue(new BackupFailedError('unavailable'));
+    const store = useDataTransferStore();
+
+    await expect(store.clearAllBusinessData()).rejects.toBeInstanceOf(BackupFailedError);
+    expect(clearBusinessData).not.toHaveBeenCalled();
+  });
+
+  it('"Tout effacer" with skipSnapshot clears without a snapshot', async () => {
+    const store = useDataTransferStore();
+
+    await expect(store.clearAllBusinessData({ skipSnapshot: true })).resolves.toBe(
+      'no-restore-point'
+    );
+    expect(backupStore.createSnapshot).not.toHaveBeenCalled();
+    expect(clearBusinessData).toHaveBeenCalledTimes(1);
   });
 });

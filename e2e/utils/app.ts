@@ -25,19 +25,22 @@ async function deleteAllIndexedDBDatabases(page: Page) {
     try {
       // @ts-expect-error databases is not in TS lib by default
       const dbs: Array<{ name?: string }> = (await indexedDB.databases?.()) ?? [];
+      // Always include the restore points database (issue #59), even where
+      // indexedDB.databases() is unsupported, so no snapshot leaks between tests.
+      const names = new Set<string>(['locapilot', 'locapilot-backups']);
+      for (const d of dbs) {
+        if (typeof d?.name === 'string' && d.name.length > 0) names.add(d.name);
+      }
       await Promise.all(
-        dbs
-          .map(d => d?.name)
-          .filter((name): name is string => typeof name === 'string' && name.length > 0)
-          .map(
-            name =>
-              new Promise<void>(resolve => {
-                const req = indexedDB.deleteDatabase(name);
-                req.onsuccess = () => resolve();
-                req.onerror = () => resolve();
-                req.onblocked = () => resolve();
-              })
-          )
+        [...names].map(
+          name =>
+            new Promise<void>(resolve => {
+              const req = indexedDB.deleteDatabase(name);
+              req.onsuccess = () => resolve();
+              req.onerror = () => resolve();
+              req.onblocked = () => resolve();
+            })
+        )
       );
     } catch {
       // ignore

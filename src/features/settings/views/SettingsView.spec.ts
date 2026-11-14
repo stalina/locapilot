@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import SettingsView from './SettingsView.vue';
 import { generatePairingQrDataUrl } from '../services/pairingLinkService';
+import {
+  BackupFailedError,
+  CONTINUE_WITHOUT_RESTORE_POINT_PROMPT,
+} from '../services/backupService';
 
 type StatusCb = (status: string, info?: unknown) => void;
 
@@ -43,14 +47,37 @@ const mocks = await vi.hoisted(async () => {
     isImporting: false,
     exportData: vi.fn(async () => ({ json: '{}' })),
     buildSyncSource: vi.fn(async () => syncSource),
-    importFromObject: vi.fn(async (_payload: unknown) => {}),
+    importFromObject: vi.fn(async (_payload: unknown, _options?: unknown) => {}),
+    clearAllBusinessData: vi.fn(
+      async (_options?: { skipSnapshot?: boolean }): Promise<string> => 'restore-point-created'
+    ),
   };
+
+  // Restore points card (issue #59): its own spec covers it; here it only
+  // needs a store to render.
+  const backupStore = reactive({
+    snapshots: [],
+    isCreating: false,
+    isRestoring: false,
+    lastAutoError: null,
+    unavailable: false,
+    persisted: null,
+    autoBackupEnabled: true,
+    loadSnapshots: vi.fn(async () => {}),
+    loadAutoBackupSetting: vi.fn(async () => true),
+    setAutoBackupEnabled: vi.fn(async () => {}),
+    createSnapshot: vi.fn(async () => 'created'),
+    restoreSnapshot: vi.fn(async () => {}),
+    downloadSnapshot: vi.fn(async () => {}),
+    deleteSnapshot: vi.fn(async () => {}),
+  });
 
   return {
     route,
     MockPeerSyncService,
     syncSource,
     dataTransferStore,
+    backupStore,
     replace: vi.fn(async (to: { hash?: string }) => {
       // Behave like the real router: the fragment is gone once replaced.
       route.hash = to.hash ?? '';
@@ -91,6 +118,10 @@ vi.mock('../stores/settingsStore', () => ({
 
 vi.mock('../stores/dataTransferStore', () => ({
   useDataTransferStore: () => mocks.dataTransferStore,
+}));
+
+vi.mock('../stores/backupStore', () => ({
+  useBackupStore: () => mocks.backupStore,
 }));
 
 const QR_DATA_URL = 'data:image/png;base64,QRCODE';
@@ -767,7 +798,10 @@ describe('SettingsView — streamed P2P transfer (#122)', () => {
       await svc.onData(payload);
       await flushPromises();
 
-      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledWith(payload);
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledWith(payload, {
+        snapshotTrigger: 'pre-sync',
+        skipSnapshot: false,
+      });
       expect(window.alert).toHaveBeenCalledWith('Données synchronisées avec succès !');
       expect(svc.disconnect).toHaveBeenCalled();
       expect(p2pCard(w).text()).toContain('Synchronisation terminée');
@@ -817,6 +851,207 @@ describe('SettingsView — streamed P2P transfer (#122)', () => {
       expect(p2pCard(w).text()).toContain(
         'Version de synchronisation incompatible — mettez à jour les deux appareils'
       );
+    });
+  });
+});
+
+describe('SettingsView — restore points (#59)', () => {
+  const dataCard = (w: VueWrapper) =>
+    w.findAll('.setting-card').find(card => card.text().includes('Effacer toutes les données'));
+  const clickButton = async (w: VueWrapper, text: string) => {
+    const button = w.findAll('button').find(b => b.text().trim() === text);
+    if (!button) throw new Error(`button "${text}" not found`);
+    await button.trigger('click');
+    await flushPromises();
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false }))
+    );
+    vi.stubGlobal('alert', vi.fn());
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true)
+    );
+    vi.mocked(generatePairingQrDataUrl).mockResolvedValue(QR_DATA_URL);
+    mocks.dataTransferStore.importFromObject.mockImplementation(async () => {});
+    mocks.dataTransferStore.clearAllBusinessData.mockImplementation(
+      async () => 'restore-point-created'
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = null;
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the "Points de restauration" card in the data section', async () => {
+    const w = await mountView();
+    const card = w.get('[data-testid="restore-points-card"]');
+    expect(card.text()).toContain('Points de restauration');
+    expect(card.text()).toContain('Créer un point de restauration');
+  });
+
+  it('no longer calls "Tout effacer" irreversible and mentions the restore point', async () => {
+    const w = await mountView();
+    const card = dataCard(w);
+    expect(card?.text()).not.toMatch(/irréversible/i);
+    expect(card?.text()).toContain('Un point de restauration est créé au préalable');
+    expect(card?.text()).toContain('« Points de restauration »');
+  });
+
+  describe('"Tout effacer"', () => {
+    it('clears after both confirmations and says a restore point was created', async () => {
+      const w = await mountView();
+      await clickButton(w, 'Tout effacer');
+
+      expect(window.confirm).toHaveBeenCalledTimes(2);
+      expect(mocks.dataTransferStore.clearAllBusinessData).toHaveBeenCalledWith({
+        skipSnapshot: false,
+      });
+      expect(window.alert).toHaveBeenCalledWith(
+        'Toutes les données ont été supprimées. Un point de restauration a été créé.'
+      );
+      expect(mocks.push).toHaveBeenCalledWith('/');
+    });
+
+    it('keeps the plain message when no restore point was needed (empty database)', async () => {
+      mocks.dataTransferStore.clearAllBusinessData.mockResolvedValueOnce('no-restore-point');
+      const w = await mountView();
+      await clickButton(w, 'Tout effacer');
+
+      expect(window.alert).toHaveBeenCalledWith('Toutes les données ont été supprimées');
+    });
+
+    it('does nothing when the first confirmation is cancelled', async () => {
+      vi.mocked(window.confirm).mockReturnValueOnce(false);
+      const w = await mountView();
+      await clickButton(w, 'Tout effacer');
+
+      expect(mocks.dataTransferStore.clearAllBusinessData).not.toHaveBeenCalled();
+    });
+
+    it('asks to continue without a restore point and leaves the data when declined', async () => {
+      mocks.dataTransferStore.clearAllBusinessData.mockRejectedValueOnce(
+        new BackupFailedError('quota')
+      );
+      vi.mocked(window.confirm)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false);
+      const w = await mountView();
+      await clickButton(w, 'Tout effacer');
+
+      expect(window.confirm).toHaveBeenLastCalledWith(CONTINUE_WITHOUT_RESTORE_POINT_PROMPT);
+      expect(mocks.dataTransferStore.clearAllBusinessData).toHaveBeenCalledTimes(1);
+      expect(window.alert).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
+    });
+
+    it('clears without a restore point when the user continues', async () => {
+      mocks.dataTransferStore.clearAllBusinessData
+        .mockRejectedValueOnce(new BackupFailedError('unavailable'))
+        .mockResolvedValueOnce('no-restore-point');
+      const w = await mountView();
+      await clickButton(w, 'Tout effacer');
+
+      expect(mocks.dataTransferStore.clearAllBusinessData).toHaveBeenLastCalledWith({
+        skipSnapshot: true,
+      });
+      expect(window.alert).toHaveBeenCalledWith('Toutes les données ont été supprimées');
+    });
+  });
+
+  describe('file import', () => {
+    const backup = { properties: [], tenants: [], version: '1.2.0' };
+
+    async function importFile(w: VueWrapper) {
+      let input: HTMLInputElement | null = null;
+      const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(function (
+        this: HTMLInputElement
+      ) {
+        input = this;
+      });
+      await clickButton(w, 'Importer');
+      click.mockRestore();
+      if (!input) throw new Error('no file input');
+      const file = new File([JSON.stringify(backup)], 'backup.json', {
+        type: 'application/json',
+      });
+      Object.defineProperty(file, 'text', { value: async () => JSON.stringify(backup) });
+      Object.defineProperty(input, 'files', { value: [file] });
+      (input as HTMLInputElement).dispatchEvent(new Event('change'));
+      await flushPromises();
+    }
+
+    it('imports with a pre-import restore point', async () => {
+      const w = await mountView();
+      await importFile(w);
+
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledWith(backup, {
+        snapshotTrigger: 'pre-import',
+        skipSnapshot: false,
+      });
+      expect(window.alert).toHaveBeenCalledWith('Données importées avec succès !');
+    });
+
+    it('imports nothing when the user declines to continue without a restore point', async () => {
+      mocks.dataTransferStore.importFromObject.mockRejectedValueOnce(
+        new BackupFailedError('quota')
+      );
+      vi.mocked(window.confirm).mockReturnValueOnce(true).mockReturnValueOnce(false);
+      const w = await mountView();
+      await importFile(w);
+
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledTimes(1);
+      expect(window.alert).not.toHaveBeenCalledWith('Données importées avec succès !');
+    });
+  });
+
+  describe('received P2P synchronisation', () => {
+    async function receive(w: VueWrapper) {
+      const sessionField = p2pCard(w).get<HTMLInputElement>('input[placeholder*="ID de session"]');
+      await sessionField.setValue('LP7K4MQ2XB');
+      await pinInput(w).setValue('482913');
+      await buttonByText(w, 'Se connecter').trigger('click');
+      await flushPromises();
+      const svc = lastPeerService();
+      await svc.onData({ properties: [], tenants: [], version: '1.2.0' });
+      await flushPromises();
+    }
+
+    it('aborts the sync when the user declines to continue without a restore point', async () => {
+      mocks.dataTransferStore.importFromObject.mockRejectedValueOnce(
+        new BackupFailedError('quota')
+      );
+      vi.mocked(window.confirm).mockReturnValueOnce(false);
+      const w = await mountView();
+      await receive(w);
+
+      expect(window.confirm).toHaveBeenCalledWith(CONTINUE_WITHOUT_RESTORE_POINT_PROMPT);
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenCalledTimes(1);
+      expect(window.alert).not.toHaveBeenCalledWith('Données synchronisées avec succès !');
+      expect(p2pCard(w).text()).toContain(
+        "Synchronisation annulée faute de point de restauration — aucune donnée n'a été modifiée"
+      );
+    });
+
+    it('imports without a restore point when the user continues', async () => {
+      mocks.dataTransferStore.importFromObject.mockRejectedValueOnce(
+        new BackupFailedError('unavailable')
+      );
+      const w = await mountView();
+      await receive(w);
+
+      expect(mocks.dataTransferStore.importFromObject).toHaveBeenLastCalledWith(expect.anything(), {
+        snapshotTrigger: 'pre-sync',
+        skipSnapshot: true,
+      });
+      expect(window.alert).toHaveBeenCalledWith('Données synchronisées avec succès !');
     });
   });
 });

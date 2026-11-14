@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import Button from '@/shared/components/Button.vue';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useDataTransferStore } from '../stores/dataTransferStore';
+import RestorePointsCard from '../components/RestorePointsCard.vue';
+import { runWithRestorePointFallback } from '../services/backupService';
 import PeerSyncService, {
   generateSessionId,
   generatePin,
@@ -72,6 +74,11 @@ const CONNECTION_FAILED_ADVICE =
 const CLIENT_CONNECTION_FAILED_STATUS = `Connexion impossible avec l'appareil hôte. ${CONNECTION_FAILED_ADVICE}`;
 const HOST_CONNECTION_FAILED_STATUS = `Connexion impossible avec l'autre appareil — en attente d'une nouvelle tentative. ${CONNECTION_FAILED_ADVICE}`;
 const SYNC_SUCCESS_MESSAGE = 'Données synchronisées avec succès !';
+const SYNC_DECLINED_STATUS =
+  "Synchronisation annulée faute de point de restauration — aucune donnée n'a été modifiée";
+const CLEAR_SUCCESS_MESSAGE = 'Toutes les données ont été supprimées';
+const CLEAR_WITH_RESTORE_POINT_MESSAGE =
+  'Toutes les données ont été supprimées. Un point de restauration a été créé.';
 const HOST_SESSION_COMPLETE_STATUS = 'Données envoyées — session de synchronisation terminée';
 
 /** Bytes → "Mo" for display (e.g. 612, 3,5, 0). */
@@ -195,7 +202,16 @@ const confirmIncomingTransfer = async (manifest: TransferManifest): Promise<bool
 const importReceivedData = async (payload: ReceivedSyncPayload) => {
   try {
     peerStatus.value = 'Import des données…';
-    await dataTransferStore.importFromObject(payload);
+    // A `pre-sync` restore point of this device's data is taken first (#59).
+    const outcome = await runWithRestorePointFallback(
+      skipSnapshot =>
+        dataTransferStore.importFromObject(payload, { snapshotTrigger: 'pre-sync', skipSnapshot }),
+      message => confirm(message)
+    );
+    if (outcome.status === 'declined') {
+      showTransferOutcome(SYNC_DECLINED_STATUS);
+      return;
+    }
     await settingsStore.loadSettings();
     await reloadSenderInfo();
     showTransferOutcome('Synchronisation terminée');
@@ -562,7 +578,14 @@ const handleImportData = () => {
         return;
       }
 
-      await dataTransferStore.importFromObject(data);
+      // A `pre-import` restore point is taken after validation, before the
+      // data is replaced (#59).
+      const outcome = await runWithRestorePointFallback(
+        skipSnapshot =>
+          dataTransferStore.importFromObject(data, { snapshotTrigger: 'pre-import', skipSnapshot }),
+        message => confirm(message)
+      );
+      if (outcome.status === 'declined') return;
 
       alert('Données importées avec succès !');
       router.push('/');
@@ -578,7 +601,7 @@ const handleImportData = () => {
 const handleClearData = async () => {
   if (
     !confirm(
-      '⚠️ Cette action va supprimer TOUTES vos données de façon irréversible. Êtes-vous sûr ?'
+      '⚠️ Cette action va supprimer TOUTES vos données. Un point de restauration sera créé au préalable. Êtes-vous sûr ?'
     )
   ) {
     return;
@@ -593,9 +616,18 @@ const handleClearData = async () => {
   }
 
   try {
-    await dataTransferStore.clearAllBusinessData();
+    // A `pre-clear` restore point is taken before anything is cleared (#59).
+    const outcome = await runWithRestorePointFallback(
+      skipSnapshot => dataTransferStore.clearAllBusinessData({ skipSnapshot }),
+      message => confirm(message)
+    );
+    if (outcome.status === 'declined') return;
 
-    alert('Toutes les données ont été supprimées');
+    alert(
+      outcome.result === 'restore-point-created'
+        ? CLEAR_WITH_RESTORE_POINT_MESSAGE
+        : CLEAR_SUCCESS_MESSAGE
+    );
     router.push('/');
   } catch (error) {
     console.error('Clear data error:', error);
@@ -615,6 +647,13 @@ onBeforeUnmount(() => {
     /* ignore */
   }
 });
+
+/** A restore point replaced the data: refresh what this view displays. */
+const handleRestored = async () => {
+  await settingsStore.loadSettings();
+  editingDefaultMsg.value = unref(settingsStore.currentDefaultRejectionMessage) || '';
+  await reloadSenderInfo();
+};
 
 const goBack = () => {
   router.push('/');
@@ -962,6 +1001,9 @@ const saveReminderThresholds = async () => {
           </Button>
         </div>
 
+        <!-- Restore points (issue #59) -->
+        <RestorePointsCard @restored="handleRestored" />
+
         <!-- Peer-to-peer Sync -->
         <div ref="p2pCard" class="setting-card" data-testid="p2p-sync-card">
           <div class="setting-info">
@@ -1042,7 +1084,11 @@ const saveReminderThresholds = async () => {
         <div class="setting-card danger">
           <div class="setting-info">
             <h3>Effacer toutes les données</h3>
-            <p>⚠️ Cette action est irréversible</p>
+            <p>
+              Supprime toutes les propriétés, locataires, baux et documents. Un point de
+              restauration est créé au préalable : vous pourrez le restaurer depuis « Points de
+              restauration ».
+            </p>
           </div>
           <Button @click="handleClearData" variant="danger" icon="delete"> Tout effacer </Button>
         </div>
